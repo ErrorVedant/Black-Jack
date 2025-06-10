@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import GameMenu from "@/components/GameMenu";
+import GameMenu from "@/components/GameMenu_dealer";
 import GameBoard from "@/components/GameBoard";
 
 const DealerPage = () => {
