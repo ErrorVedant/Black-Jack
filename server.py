@@ -373,21 +373,42 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
         hand = player["hands"][hand_index]
         print(f"Current hand before hit:", hand)
 
-        # Check if deck is empty
-        if not game_state["deck"]:
-            print("Error: Deck is empty")
-            await broadcast({
-                "action": "error",
-                "message": "Deck is empty"
-            })
-            return
-
-        # Draw card from deck
-        drawn_card = card if card else game_state["deck"].pop()
-        print(f"Card drawn: {drawn_card}")
+        # If a specific card is provided
+        if card:
+            print(f"Using provided card: {card}")
+            # Validate card format (e.g., "AS", "10H", etc.)
+            if not (len(card) >= 2 and card[-1] in ['S', 'D', 'C', 'H']):
+                print(f"Error: Invalid card format {card}")
+                await broadcast({
+                    "action": "error",
+                    "message": "Invalid card format"
+                })
+                return
+            
+            # Remove the card from deck if it exists
+            if card in game_state["deck"]:
+                game_state["deck"].remove(card)
+            else:
+                print(f"Error: Card {card} not available in deck")
+                await broadcast({
+                    "action": "error",
+                    "message": "Card not available in deck"
+                })
+                return
+        else:
+            # Draw random card if none specified
+            if not game_state["deck"]:
+                print("Error: Deck is empty")
+                await broadcast({
+                    "action": "error",
+                    "message": "Deck is empty"
+                })
+                return
+            card = game_state["deck"].pop()
+            print(f"Drew random card: {card}")
 
         # Add card to hand
-        hand["cards"].append(drawn_card)
+        hand["cards"].append(card)
         print(f"Cards after adding: {hand['cards']}")
 
         # Calculate new total
@@ -405,7 +426,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
         await save_action_history("hit_player", {
             "player_id": player_id,
             "hand_index": hand_index,
-            "card": drawn_card
+            "card": card
         })
 
         # Broadcast updated game state
@@ -413,7 +434,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             "action": "player_hit",
             "player_id": player_id,
             "hand_index": hand_index,
-            "card": drawn_card,
+            "card": card,
             "game_state": serialize_game_state()
         })
 

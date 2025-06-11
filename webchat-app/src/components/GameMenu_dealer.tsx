@@ -17,7 +17,7 @@ interface PlayerData {
 }
 
 interface Players {
-  [key: string]: PlayerData;  // Add index signature
+  [key: string]: PlayerData
 }
 
 interface GameState {
@@ -44,34 +44,7 @@ const GameMenu = () => {
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
   const [showPopup, setShowPopup] = useState(false)
   const [popupMessage, setPopupMessage] = useState("")
-  const [tableNumber, setTableNumber] = useState<string>("1234")
-  const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
-  const [players, setPlayers] = useState<Players>({
-    player1: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    player2: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    player3: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    player4: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    player5: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    player6: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 }
-  })
   const [gameState, setGameState] = useState<GameState | null>(null)
-
-  // Store all game data in a single state object for easy management
-  const [gameData, setGameData] = useState({
-    selectedPlayer: null as string | null,
-    selectedCard: null as string | null,
-    selectedSuit: null as string | null,
-    tableNumber: "1234",
-    players: {
-      player1: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-      player2: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-      player3: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-      player4: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-      player5: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-      player6: { status: 0, hands: [{ cards: [], total: 0, status: "waiting" }], current_hand: 0, splits_used: 0 },
-    },
-    gameState: null as any,
-  })
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:6790")
@@ -79,7 +52,6 @@ const GameMenu = () => {
 
     ws.onopen = () => {
       console.log("Connected to WebSocket server")
-      setConnectionStatus("connected")
       setIsConnected(true)
       setPopupMessage("🎉 Connected to server")
       setShowPopup(true)
@@ -88,18 +60,8 @@ const GameMenu = () => {
 
     ws.onclose = () => {
       console.log("Disconnected from WebSocket server")
-      setConnectionStatus("disconnected")
       setIsConnected(false)
       setPopupMessage("⚠️ Disconnected from server")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-    }
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error)
-      setConnectionStatus("disconnected")
-      setIsConnected(false)
-      setPopupMessage("❌ Connection error")
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
     }
@@ -109,19 +71,13 @@ const GameMenu = () => {
       console.log("Received WebSocket message:", data)
 
       if (data.action === "update_game_state" || data.action === "player_hit" || data.action === "player_activated" || data.action === "player_removed") {
-        console.log("Updating game state:", data.game_state)
+        console.log("Updating game state from server:", data.game_state)
+        setGameState(data.game_state)
         
-        // Update game state
-        setGameState(data.game_state as GameState)
-        
-        // Update players state from game state
-        if (data.game_state?.players) {
-          setPlayers(data.game_state.players as Players)
-        }
-
         // Show appropriate message
         if (data.action === "player_hit") {
-          setPopupMessage(`🃏 Card added to ${data.player_id.replace("player", "Player ")}`)
+          console.log("Card added to player:", data.player_id, "Card:", data.card)
+          setPopupMessage(`🃏 Card ${data.card} added to ${data.player_id.replace("player", "Player ")}`)
           setShowPopup(true)
           setTimeout(() => setShowPopup(false), 3000)
         } else if (data.action === "player_activated") {
@@ -138,22 +94,6 @@ const GameMenu = () => {
         setPopupMessage(`❌ ${data.message}`)
         setShowPopup(true)
         setTimeout(() => setShowPopup(false), 3000)
-      } else if (data.action === "game_reset") {
-        // Reset local state
-        setSelectedPlayer(null)
-        setSelectedCard(null)
-        setSelectedSuit(null)
-        setTableNumber("1234")
-
-        // Update with the new game state from server
-        if (data.game_state) {
-          setGameState(data.game_state as GameState)
-          setPlayers(data.game_state.players as Players)
-        }
-
-        setPopupMessage("🔄 Game has been reset to original state")
-        setShowPopup(true)
-        setTimeout(() => setShowPopup(false), 3000)
       }
     }
 
@@ -164,6 +104,7 @@ const GameMenu = () => {
 
   const sendWebSocketMessage = (message: any) => {
     if (socket && isConnected) {
+      console.log("Sending message to server:", message)
       socket.send(JSON.stringify(message))
     } else {
       setPopupMessage("⚠️ Not connected to server")
@@ -175,14 +116,14 @@ const GameMenu = () => {
   const activatePlayer = (playerId: string) => {
     sendWebSocketMessage({
       action: "activate_player",
-      player_id: playerId,
+      player_id: playerId
     })
   }
 
   const deactivatePlayer = (playerId: string) => {
     sendWebSocketMessage({
       action: "remove_player",
-      player_id: playerId,
+      player_id: playerId
     })
   }
 
@@ -194,8 +135,21 @@ const GameMenu = () => {
       return
     }
 
+    // Ensure player is active
+    if (!gameState?.players[selectedPlayer]?.status) {
+      setPopupMessage("⚠️ Player must be active to add cards")
+      setShowPopup(true)
+      setTimeout(() => setShowPopup(false), 3000)
+      return
+    }
+
     const cardCode = selectedCard + selectedSuit
-    console.log("Sending card:", cardCode, "to player:", selectedPlayer)
+    console.log("Sending card to server:", {
+      action: "hit_player",
+      player_id: selectedPlayer,
+      hand_index: 0,
+      card: cardCode
+    })
 
     sendWebSocketMessage({
       action: "hit_player",
@@ -207,48 +161,42 @@ const GameMenu = () => {
     // Clear selections after sending
     setSelectedCard(null)
     setSelectedSuit(null)
-    setPopupMessage(`🃏 Dealing ${cardCode} to ${selectedPlayer.replace("player", "Player ")}`)
-    setShowPopup(true)
-    setTimeout(() => setShowPopup(false), 3000)
   }
 
-  const resetGame = () => {
-    if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+  const handleHitDealer = () => {
+    if (!selectedCard || !selectedSuit) {
+      setPopupMessage("⚠️ Please select a card first")
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
     }
 
-    sendWebSocketMessage({
-      action: "reset_game"
-    })
-  }
-
-  const handleHitDealer = () => {
+    const cardCode = selectedCard + selectedSuit
     sendWebSocketMessage({
       action: "hit_dealer",
-      card: selectedCard && selectedSuit ? selectedCard + selectedSuit : undefined,
+      card: cardCode
     })
+
+    // Clear selections after sending
+    setSelectedCard(null)
+    setSelectedSuit(null)
   }
 
   const handleRevealDealer = () => {
     sendWebSocketMessage({
-      action: "reveal_dealer",
+      action: "reveal_dealer"
     })
   }
 
   const handleStandDealer = () => {
     sendWebSocketMessage({
-      action: "stand_dealer",
+      action: "stand_dealer"
     })
   }
 
-  const handleRemoveCard = (playerId: string, cardIndex: number) => {
+  const resetGame = () => {
     sendWebSocketMessage({
-      action: "remove_card",
-      player_id: playerId,
-      card_index: cardIndex,
+      action: "reset_game"
     })
   }
 
@@ -257,7 +205,7 @@ const GameMenu = () => {
     { symbol: "♠", value: "S", color: "text-gray-800", name: "Spades" },
     { symbol: "♦", value: "D", color: "text-red-500", name: "Diamonds" },
     { symbol: "♣", value: "C", color: "text-gray-800", name: "Clubs" },
-    { symbol: "♥", value: "H", color: "text-red-500", name: "Hearts" },
+    { symbol: "♥", value: "H", color: "text-red-500", name: "Hearts" }
   ]
 
   // Update the dealer total check
@@ -284,26 +232,20 @@ const GameMenu = () => {
                   Dealer Control Panel
                 </h1>
                 <div className="flex items-center space-x-4 mt-2">
-                  <p className="text-gray-200">Table FT{tableNumber}</p>
+                  <p className="text-gray-200">Table FT{gameState?.table_number || 1234}</p>
                   <div
                     className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${
-                      connectionStatus === "connected"
+                      isConnected
                         ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                        : connectionStatus === "connecting"
-                          ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                          : "bg-red-500/20 text-red-400 border border-red-500/30"
+                        : "bg-red-500/20 text-red-400 border border-red-500/30"
                     }`}
                   >
                     <div
                       className={`w-2 h-2 rounded-full ${
-                        connectionStatus === "connected"
-                          ? "bg-green-400 animate-pulse"
-                          : connectionStatus === "connecting"
-                            ? "bg-yellow-400 animate-pulse"
-                            : "bg-red-400"
+                        isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
                       }`}
                     ></div>
-                    <span className="capitalize">{connectionStatus}</span>
+                    <span className="capitalize">{isConnected ? "connected" : "disconnected"}</span>
                   </div>
                 </div>
               </div>
@@ -465,12 +407,12 @@ const GameMenu = () => {
               Players
             </h2>
             <div className="text-sm text-gray-200">
-              Active: {Object.values(players).filter((p) => p.status === 1).length}/6
+              Active: {Object.values(gameState?.players || {}).filter((p) => p.status === 1).length}/6
             </div>
                               </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(players).map(([playerId, playerData]) => (
+            {Object.entries(gameState?.players || {}).map(([playerId, playerData]) => (
               <div
                 key={playerId}
                 className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer ${
@@ -483,7 +425,6 @@ const GameMenu = () => {
                 onClick={() => {
                   if (playerData.status === 1) {
                     setSelectedPlayer(playerId)
-                    setGameData((prev) => ({ ...prev, selectedPlayer: playerId }))
                   }
                 }}
               >
