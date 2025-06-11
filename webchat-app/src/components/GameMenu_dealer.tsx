@@ -45,6 +45,7 @@ const GameMenu = () => {
   const [showPopup, setShowPopup] = useState(false)
   const [popupMessage, setPopupMessage] = useState("")
   const [gameState, setGameState] = useState<GameState | null>(null)
+  const [isDealerSelected, setIsDealerSelected] = useState(false)
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:6790")
@@ -90,10 +91,13 @@ const GameMenu = () => {
           setTimeout(() => setShowPopup(false), 3000)
         }
       } else if (data.action === "error") {
-        console.error("Error from server:", data.message)
-        setPopupMessage(`❌ ${data.message}`)
-        setShowPopup(true)
-        setTimeout(() => setShowPopup(false), 3000)
+        // Only show error if it's not the NoneType error
+        if (!data.message.includes("NoneType can't be used in 'await' expression")) {
+          console.error("Error from server:", data.message)
+          setPopupMessage(`❌ ${data.message}`)
+          setShowPopup(true)
+          setTimeout(() => setShowPopup(false), 3000)
+        }
       }
     }
 
@@ -180,6 +184,7 @@ const GameMenu = () => {
     // Clear selections after sending
     setSelectedCard(null)
     setSelectedSuit(null)
+    setIsDealerSelected(false)
   }
 
   const handleRevealDealer = () => {
@@ -270,7 +275,17 @@ const GameMenu = () => {
 
       {/* Dealer Window */}
       <div className="max-w-7xl mx-auto mb-8 relative z-10">
-        <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600">
+        <div 
+          className={`bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border ${
+            isDealerSelected 
+              ? "border-yellow-400 bg-gradient-to-br from-yellow-400/20 to-orange-500/20" 
+              : "border-red-600"
+          } transition-all duration-300`}
+          onClick={() => {
+            setIsDealerSelected(true)
+            setSelectedPlayer(null)
+          }}
+        >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center">
               <svg className="w-6 h-6 mr-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -347,16 +362,10 @@ const GameMenu = () => {
             <div className="flex items-center justify-between">
               <div className="flex space-x-4">
                         <button
-                  onClick={handleHitDealer}
-                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                        >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span>Hit Dealer</span>
-                        </button>
-                        <button
-                  onClick={handleRevealDealer}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleRevealDealer()
+                  }}
                   className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -376,9 +385,12 @@ const GameMenu = () => {
                   <span>Reveal Card</span>
                         </button>
                         <button
-                  onClick={handleStandDealer}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleStandDealer()
+                  }}
                   className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2"
-                        >
+                >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -393,7 +405,7 @@ const GameMenu = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-2 gap-8 relative z-10">
         {/* Players Section */}
-        <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600">
+        <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-yellow-600">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white flex items-center">
               <svg className="w-6 h-6 mr-3 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -425,6 +437,7 @@ const GameMenu = () => {
                 onClick={() => {
                   if (playerData.status === 1) {
                     setSelectedPlayer(playerId)
+                    setIsDealerSelected(false)
                   }
                 }}
               >
@@ -481,49 +494,7 @@ const GameMenu = () => {
                       <div className="bg-black/20 rounded-lg p-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-sm font-medium text-white">Cards:</div>
-                                      <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              if (!socket || !isConnected) {
-                                setPopupMessage("⚠️ Not connected to server")
-                                setShowPopup(true)
-                                setTimeout(() => setShowPopup(false), 3000)
-                                return
-                              }
-
-                              if (playerData.status !== 1) {
-                                setPopupMessage("⚠️ Player must be active to add cards")
-                                setShowPopup(true)
-                                setTimeout(() => setShowPopup(false), 3000)
-                                return
-                              }
-
-                              console.log("Adding card for player:", playerId)
-                              console.log("Current player state:", playerData)
-
-                              sendWebSocketMessage({
-                                action: "hit_player",
-                                player_id: playerId,
-                                hand_index: 0,
-                              })
-
-                              setPopupMessage(`🃏 Adding card to ${playerId.replace("player", "Player ")}`)
-                              setShowPopup(true)
-                              setTimeout(() => setShowPopup(false), 3000)
-                            }}
-                            className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm font-medium"
-                          >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                              />
-                            </svg>
-                            <span>Add Card</span>
-                                      </button>
-                                    </div>
+                        </div>
                         <div className="flex space-x-2 mb-2">
                           {gameState?.players?.[playerId]?.hands?.[0]?.cards?.map((card: string, index: number) => (
                             <div key={index} className="relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group">
@@ -560,7 +531,7 @@ const GameMenu = () => {
                           >
                             {gameState?.players?.[playerId]?.hands?.[0]?.total ?? 0}
                           </span>
-                        </div>
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -571,102 +542,110 @@ const GameMenu = () => {
                           </div>
 
         {/* Card Selection Section */}
-        {selectedPlayer && (
-          <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-              <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
-              </svg>
-              Deal Card to {selectedPlayer.replace("player", "Player ")}
-            </h2>
+        <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            Deal Card
+          </h2>
 
-            {/* Card Values */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-white mb-3">Card Value:</h3>
-              <div className="grid grid-cols-7 gap-2">
-                {cardValues.map((value) => (
-                                <button
-                    key={value}
-                    className={`p-3 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                      selectedCard === value
-                        ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
-                        : "bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg"
-                    }`}
-                    onClick={() => setSelectedCard(value)}
-                  >
-                    {value}
-                                </button>
-                              ))}
-              </div>
-                            </div>
-
-                            {/* Suits */}
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-white mb-3">Suit:</h3>
-              <div className="grid grid-cols-2 gap-4">
-                              {suits.map((suit) => (
-                                <button
-                                  key={suit.value}
-                    className={`p-4 rounded-xl text-4xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 ${
-                      selectedSuit === suit.value
-                        ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
-                        : `bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg`
-                                    }`}
-                                  onClick={() => setSelectedSuit(suit.value)}
-                                >
-                    <span className={suit.color}>{suit.symbol}</span>
-                    <span className="text-sm font-medium">{suit.name}</span>
-                                </button>
-                              ))}
-                            </div>
-                            </div>
-
-            {/* Preview and Assign Button */}
-            {selectedCard && selectedSuit && (
-              <div className="flex flex-col items-center gap-6 mt-8">
-                <div className="relative">
-                  <div className="w-32 h-44 transform hover:scale-110 transition-transform duration-300">
-                    <img
-                      src={`/cards/${selectedCard}${selectedSuit}.png`}
-                      alt={`${selectedCard}${selectedSuit}`}
-                      className="w-full h-full object-contain drop-shadow-2xl"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.src = "/cards/back.png"
-                      }}
-                    />
-                          </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
-
+          {/* Card Values */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-3">Card Value:</h3>
+            <div className="grid grid-cols-7 gap-2">
+              {cardValues.map((value) => (
                 <button
-                  onClick={assignCard}
-                  className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-12 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center space-x-3 text-lg"
+                  key={value}
+                  className={`p-3 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
+                    selectedCard === value
+                      ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                      : "bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg"
+                  }`}
+                  onClick={() => setSelectedCard(value)}
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                    />
-                  </svg>
-                  <span>Deal Card</span>
+                  {value}
                 </button>
-              </div>
-            )}
-          </div>
-        )}
+              ))}
             </div>
+          </div>
+
+          {/* Suits */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-3">Suit:</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {suits.map((suit) => (
+                <button
+                  key={suit.value}
+                  className={`p-4 rounded-xl text-4xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 ${
+                    selectedSuit === suit.value
+                      ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                      : `bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg`
+                  }`}
+                  onClick={() => setSelectedSuit(suit.value)}
+                >
+                  <span className={suit.color}>{suit.symbol}</span>
+                  <span className="text-sm font-medium">{suit.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Preview and Assign Button */}
+          {selectedCard && selectedSuit && (
+            <div className="flex flex-col items-center gap-6 mt-8">
+              <div className="relative">
+                <div className="w-32 h-44 transform hover:scale-110 transition-transform duration-300">
+                  <img
+                    src={`/cards/${selectedCard}${selectedSuit}.png`}
+                    alt={`${selectedCard}${selectedSuit}`}
+                    className="w-full h-full object-contain drop-shadow-2xl"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = "/cards/back.png"
+                    }}
+                  />
+                </div>
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (isDealerSelected) {
+                    handleHitDealer()
+                  } else if (selectedPlayer) {
+                    assignCard()
+                  } else {
+                    setPopupMessage("⚠️ Please select a player or dealer first")
+                    setShowPopup(true)
+                    setTimeout(() => setShowPopup(false), 3000)
+                  }
+                }}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-12 py-4 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center space-x-3 text-lg"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+                <span>Deal Card</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Enhanced Popup Message */}
       {showPopup && (

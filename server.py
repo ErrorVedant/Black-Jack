@@ -92,7 +92,7 @@ def should_auto_reshuffle():
     log_function_call("should_auto_reshuffle")
     return len(game_state["deck"]) < game_state["auto_reshuffle_threshold"]
 
-def save_action_history(action, data):
+async def save_action_history(action, data):
     """Save action for undo functionality"""
     log_function_call("save_action_history", action=action, data=data)
     game_state["action_history"].append({
@@ -134,11 +134,26 @@ def serialize_game_state():
 async def broadcast(message):
     """Send message to all connected clients"""
     log_function_call("broadcast", message=message)
+    print("\n=== BROADCAST STARTED ===")
+    print(f"Message to broadcast: {message}")
+    print(f"Number of connected clients: {len(connected_clients)}")
+    
     if connected_clients:
-        await asyncio.gather(
-            *[client.send(json.dumps(message)) for client in connected_clients],
-            return_exceptions=True
-        )
+        try:
+            print("Attempting to broadcast to all clients...")
+            await asyncio.gather(
+                *[client.send(json.dumps(message)) for client in connected_clients],
+                return_exceptions=True
+            )
+            print("Broadcast completed successfully")
+        except Exception as e:
+            print(f"Error during broadcast: {str(e)}")
+            print("Error type:", type(e))
+            import traceback
+            print("Traceback:", traceback.format_exc())
+    else:
+        print("No connected clients to broadcast to")
+    print("=== BROADCAST COMPLETED ===\n")
 
 async def handle_connection(websocket):
     """Handle new client connections"""
@@ -290,7 +305,7 @@ async def handle_deal_cards():
         await broadcast({"action": "error", "message": "Not enough cards in deck"})
         return
     
-    save_action_history("deal_cards", {"before_deal": True})
+    await save_action_history("deal_cards", {"before_deal": True})
     
     # Reset all hands
     for player_data in game_state["players"].values():
@@ -336,6 +351,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     """Add a card to a player's hand"""
     log_function_call("handle_hit_player", player_id=player_id, hand_index=hand_index, card=card)
     print("\n=== HANDLE HIT PLAYER STARTED ===")
+    print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
     
     try:
         # Validate player exists
@@ -423,20 +439,28 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             print(f"Hand busted with total {hand['total']}")
 
         # Save action to history
-        await save_action_history("hit_player", {
+        print("Saving action to history...")
+        history_data = {
             "player_id": player_id,
             "hand_index": hand_index,
             "card": card
-        })
+        }
+        print(f"History data: {history_data}")
+        await save_action_history("hit_player", history_data)
+        print("Action saved to history")
 
         # Broadcast updated game state
-        await broadcast({
+        print("Broadcasting updated game state...")
+        broadcast_data = {
             "action": "player_hit",
             "player_id": player_id,
             "hand_index": hand_index,
             "card": card,
             "game_state": serialize_game_state()
-        })
+        }
+        print(f"Broadcast data: {broadcast_data}")
+        await broadcast(broadcast_data)
+        print("Game state broadcasted")
 
         print("\n=== HANDLE HIT PLAYER COMPLETED ===")
         print("Updated player state:", game_state["players"][player_id])
@@ -445,6 +469,9 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     except Exception as e:
         print(f"Error in handle_hit_player: {str(e)}")
         print("Full error:", e)
+        print("Error type:", type(e))
+        import traceback
+        print("Traceback:", traceback.format_exc())
         await broadcast({
             "action": "error",
             "message": f"Error adding card: {str(e)}"
@@ -463,7 +490,7 @@ async def handle_stand_player(player_id, hand_index=0):
     if hand["status"] == "playing":
         hand["status"] = "standing"
     
-    save_action_history("stand_player", {"player_id": player_id, "hand_index": hand_index})
+    await save_action_history("stand_player", {"player_id": player_id, "hand_index": hand_index})
     await broadcast({"action": "player_stand", "player_id": player_id, "hand_index": hand_index, "game_state": serialize_game_state()})
     log_game_state()
 
@@ -483,7 +510,7 @@ async def handle_split_player(player_id):
         await broadcast({"action": "error", "message": "Cannot split - invalid conditions"})
         return
     
-    save_action_history("split_player", {"player_id": player_id})
+    await save_action_history("split_player", {"player_id": player_id})
     
     # Split cards
     card1, card2 = current_hand["cards"]
@@ -526,7 +553,7 @@ async def handle_double_player(player_id, hand_index=0):
         await broadcast({"action": "error", "message": "Can only double on initial 2 cards"})
         return
     
-    save_action_history("double_player", {"player_id": player_id, "hand_index": hand_index})
+    await save_action_history("double_player", {"player_id": player_id, "hand_index": hand_index})
     
     hand["bet"] *= 2
     card = game_state["deck"].pop(0)
@@ -556,7 +583,7 @@ async def handle_surrender_player(player_id):
         await broadcast({"action": "error", "message": "Cannot surrender under current conditions"})
         return
     
-    save_action_history("surrender_player", {"player_id": player_id})
+    await save_action_history("surrender_player", {"player_id": player_id})
     
     hand.update({"bet": hand["bet"] * 0.5, "status": "surrendered", "result": "surrender"})
     player_data["status"] = "surrendered"
@@ -570,7 +597,7 @@ async def handle_hit_dealer(card=None):
         await broadcast({"action": "error", "message": "Deck is empty"})
         return
     
-    save_action_history("hit_dealer", {})
+    await save_action_history("hit_dealer", {})
     
     # If a specific card is provided, use it; otherwise draw from deck
     if card:
@@ -610,7 +637,7 @@ async def handle_hit_dealer(card=None):
 
 async def handle_stand_dealer():
     log_function_call("handle_stand_dealer")
-    save_action_history("stand_dealer", {})
+    await save_action_history("stand_dealer", {})
     
     # If there's a hidden card, reveal it first
     if game_state["dealer"]["hidden_card"]:
@@ -629,7 +656,7 @@ async def handle_stand_dealer():
 async def handle_reveal_dealer():
     log_function_call("handle_reveal_dealer")
     if game_state["dealer"]["hidden_card"]:
-        save_action_history("reveal_dealer", {})
+        await save_action_history("reveal_dealer", {})
         
         hidden_card = game_state["dealer"]["hidden_card"]
         game_state["dealer"]["cards"].append(hidden_card)
@@ -739,7 +766,7 @@ async def save_round_results(results):
 
 async def handle_reset_round():
     log_function_call("handle_reset_round")
-    save_action_history("reset_round", {})
+    await save_action_history("reset_round", {})
     
     # Reset players
     for player_data in game_state["players"].values():
@@ -784,7 +811,7 @@ async def handle_set_table_number(table_number):
 
 async def handle_reset_game():
     log_function_call("handle_reset_game")
-    save_action_history("reset_game", {})
+    await save_action_history("reset_game", {})
     
     # Reset all players to original state
     for player_id, player_data in game_state["players"].items():
@@ -833,7 +860,7 @@ async def handle_remove_card(player_id, card_index):
         await broadcast({"action": "error", "message": "Invalid card index"})
         return
     
-    save_action_history("remove_card", {"player_id": player_id, "card_index": card_index})
+    await save_action_history("remove_card", {"player_id": player_id, "card_index": card_index})
     
     # Remove the card and add it back to the deck
     removed_card = player_data["hands"][0]["cards"].pop(card_index)
