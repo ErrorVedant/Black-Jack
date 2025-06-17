@@ -654,15 +654,19 @@ async def handle_split_player_auto(player_id):
     new_hand = {
         "cards": [card2],
         "total": calculate_hand_value([card2]),
-        "status": "playing",
+        "status": "waiting",
         "result": ""
     }
     
     # Add new hand to the appropriate split level
     if split_level == 0:
-        # First split goes to split1
-        player_data["split1"] = [new_hand]  # Replace instead of append
-        player_data["split1_status"] = 1  # Mark split1 as active
+        # If main hand is splitting and split1 is already in use, use split2
+        if player_data["split1_status"] == 1:
+            player_data["split2"] = [new_hand]  # Replace instead of append
+            player_data["split2_status"] = 1  # Mark split2 as active
+        else:
+            player_data["split1"] = [new_hand]  # Replace instead of append
+            player_data["split1_status"] = 1  # Mark split1 as active
     elif split_level == 1:
         # Second split goes to split2
         player_data["split2"] = [new_hand]  # Replace instead of append
