@@ -16,6 +16,8 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  split3: Hand[]
+  split3_status: number
 }
 
 interface Players {
@@ -132,13 +134,25 @@ const DebugPanel = ({ gameState }: { gameState: GameState | null }) => {
                       </div>
                     )}
 
-                    {/* Split2 Display */}
                     {playerData.split2?.[0]?.cards?.length > 0 && (
-                      <div className="mt-2 p-2 bg-gray-800 rounded">
+                      <div>
                         <p className="text-gray-400">Split 2:</p>
-                        <p><span className="text-gray-400">Cards:</span> {playerData.split2[0].cards.join(', ')}</p>
-                        <p><span className="text-gray-400">Total:</span> {playerData.split2[0].total}</p>
-                        <p><span className="text-gray-400">Status:</span> {playerData.split2[0].status}</p>
+                        <div className="ml-2">
+                          <p><span className="text-gray-400">Cards:</span> {playerData.split2[0].cards.join(', ')}</p>
+                          <p><span className="text-gray-400">Total:</span> {playerData.split2[0].total}</p>
+                          <p><span className="text-gray-400">Status:</span> {playerData.split2[0].status}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {playerData.split3?.[0]?.cards?.length > 0 && (
+                      <div>
+                        <p className="text-gray-400">Split 3:</p>
+                        <div className="ml-2">
+                          <p><span className="text-gray-400">Cards:</span> {playerData.split3[0].cards.join(', ')}</p>
+                          <p><span className="text-gray-400">Total:</span> {playerData.split3[0].total}</p>
+                          <p><span className="text-gray-400">Status:</span> {playerData.split3[0].status}</p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -899,10 +913,63 @@ const GameMenu = () => {
                                 Split
                               </button>
                             )}
-                                    </div>
-                                  </div>
+                          </div>
+                        </div>
+
+                        {/* Split1 Hands Display */}
+                        {gameState?.players?.[playerId]?.split1?.[0]?.cards?.length > 0 && (
+                          <div className="mt-4 border-t border-gray-300 pt-3">
+                            <div className="text-sm font-medium text-gray-400 mb-2">Split 1:</div>
+                            <div className="flex space-x-2 mb-2">
+                              {gameState?.players?.[playerId]?.split1?.[0]?.cards?.map((card: string, index: number) => (
+                                <div key={index} className="relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group">
+                                  <img
+                                    src={`/cards/${card}.png`}
+                                    alt={card}
+                                    className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement
+                                      target.src = "/cards/back.png"
+                                    }}
+                                  />
                                 </div>
+                              ))}
+                              {/* Empty card slots for split1 */}
+                              {[
+                                ...Array(Math.max(0, 2 - (gameState?.players?.[playerId]?.split1?.[0]?.cards?.length ?? 0))),
+                              ].map((_, index) => (
+                                <div
+                                  key={`split1-empty-${index}`}
+                                  className="w-12 h-16 border-2 border-dashed rounded-lg border-gray-400 bg-gray-800/50"
+                                />
+                              ))}
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <span
+                                className={`text-lg font-bold ${
+                                  (gameState?.players?.[playerId]?.split1?.[0]?.total ?? 0) > 21
+                                    ? "text-red-500"
+                                    : "text-blue-400"
+                                }`}
+                              >
+                                {gameState?.players?.[playerId]?.split1?.[0]?.total ?? 0}
+                              </span>
+                              {/* Split button for split1 if conditions are met */}
+                              {gameState?.players?.[playerId]?.split1?.[0]?.cards?.length === 2 && 
+                               gameState?.players?.[playerId]?.split1?.[0]?.cards?.[0]?.[0] === gameState?.players?.[playerId]?.split1?.[0]?.cards?.[1]?.[0] && 
+                               gameState?.players?.[playerId]?.split1?.[0]?.status === "playing" && (
+                                <button
+                                  onClick={() => sendWebSocketMessage({ action: "split_player", player_id: playerId })}
+                                  className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                                >
+                                  Split
+                                </button>
                               )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Next Button - Show for current player */}

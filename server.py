@@ -38,69 +38,57 @@ game_state = {
     "dealer": {"cards": [], "total": 0, "hidden_card": None, "revealed": False, "status": "waiting"},
     "players": {
         "player1": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         },
         "player2": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         },
         "player3": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         },
         "player4": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         },
         "player5": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         },
         "player6": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         }
     },
     "max_players": 6,
     "current_player": None,
-    "selected_player": None,
+    "selected_hand": None,
     "game_phase": "waiting",
     "table_number": 1,
     "action_history": [],
@@ -164,7 +152,7 @@ def serialize_game_state():
     log_function_call("serialize_game_state")
     return {
         "deck_count": len(game_state["deck"]),
-        "game_mode": game_state["game_mode"],
+        "game_mode": game_state["game_mode"],                            
         "dealer": {
             "cards": game_state["dealer"]["cards"],
             "total": game_state["dealer"]["total"],
@@ -179,15 +167,13 @@ def serialize_game_state():
                 "split1_status": pdata["split1_status"],
                 "split2": pdata["split2"],
                 "split2_status": pdata["split2_status"],
-                "split3": pdata["split3"],
-                "split3_status": pdata["split3_status"],
                 "status": pdata["status"]
             }
             for pid, pdata in game_state["players"].items()
         },
         "game_phase": game_state["game_phase"],
         "current_player": game_state["current_player"],
-        "selected_player": game_state["selected_player"],
+        "selected_hand": game_state["selected_hand"],
         "table_number": game_state["table_number"]
     }
 
@@ -232,8 +218,8 @@ async def handle_connection(websocket):
         await websocket.send(json.dumps({
             "action": "turn_updated",
             "current_player": game_state["current_player"],
-            "game_state": serialize_game_state()
-        }))
+        "game_state": serialize_game_state()
+    }))
 
     # Action handlers mapping
     action_handlers = {
@@ -241,10 +227,10 @@ async def handle_connection(websocket):
         "reshuffle": lambda d: handle_reshuffle(),
         "activate_player": lambda d: handle_activate_player(d.get("player_id")),
         "remove_player": lambda d: handle_remove_player(d.get("player_id")),
-        "deal_cards": lambda d: handle_deal_cards(),
         "hit_player": lambda d: handle_hit_player(d.get("player_id"), d.get("hand_index", 0), d.get("card")),
         "stand_player": lambda d: handle_stand_player(d.get("player_id"), d.get("hand_index", 0)),
-        "split_player": lambda d: handle_split_player(d.get("player_id")),
+        "split_player_auto": lambda d: handle_split_player_auto(d.get("player_id")),
+        "split_player_manual": lambda d: handle_split_player_manual(d.get("player_id")),
         "double_player": lambda d: handle_double_player(d.get("player_id"), d.get("hand_index", 0)),
         "surrender_player": lambda d: handle_surrender_player(d.get("player_id")),
         "hit_dealer": lambda d: handle_hit_dealer(d.get("card")),
@@ -307,7 +293,7 @@ async def handle_activate_player(player_id=None):
         if game_state["players"][player_id]["status"] == 0:
             game_state["players"][player_id].update({
                 "status": 1,
-                "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}]
+                "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
             })
             
             # If this is the first active player, set them as current player
@@ -316,14 +302,18 @@ async def handle_activate_player(player_id=None):
                 game_state["game_phase"] = "waiting"
             
             # Set this player as selected when activating
-            game_state["selected_player"] = player_id
+            game_state["selected_hand"] = {
+                "player_id": player_id,
+                "hand_index": 0,
+                "split_level": 0
+            }
             
             await broadcast({
                 "action": "player_activated",
                 "player_id": player_id,
                 "message": f"Player {player_id} has been activated",
                 "current_player": game_state["current_player"],
-                "selected_player": game_state["selected_player"],
+                "selected_hand": game_state["selected_hand"],
                 "game_state": serialize_game_state()
             })
         else:
@@ -353,11 +343,11 @@ async def handle_remove_player(player_id):
             "message": f"Player {player_id} is already inactive"
         })
         return
-
+    
     # Reset player state
     game_state["players"][player_id].update({
         "status": 0,
-        "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}]
+        "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
     })
     
     # If removing current player, update to next active player
@@ -369,9 +359,9 @@ async def handle_remove_player(player_id):
             game_state["current_player"] = None
             game_state["game_phase"] = "waiting"
     
-    # Clear selected player if it was the removed player
-    if game_state["selected_player"] == player_id:
-        game_state["selected_player"] = None
+    # Clear selected hand if it was the removed player
+    if game_state["selected_hand"] and game_state["selected_hand"]["player_id"] == player_id:
+        game_state["selected_hand"] = None
     
     # Broadcast the update to all clients
     await broadcast({
@@ -379,66 +369,9 @@ async def handle_remove_player(player_id):
         "player_id": player_id,
         "message": f"Player {player_id} has been deactivated",
         "current_player": game_state["current_player"],
-        "selected_player": game_state["selected_player"],
+        "selected_hand": game_state["selected_hand"],
         "game_state": serialize_game_state()
     })
-    log_game_state()
-
-async def handle_deal_cards():
-    log_function_call("handle_deal_cards")
-    if not game_state["players"]:
-        await broadcast({"action": "error", "message": "No players to deal to"})
-        return
-    
-    if should_auto_reshuffle():
-        await handle_reshuffle()
-    
-    cards_needed = (len(get_active_players()) + 1) * 2  # Only count active players
-    if len(game_state["deck"]) < cards_needed:
-        await broadcast({"action": "error", "message": "Not enough cards in deck"})
-        return
-    
-    await save_action_history("deal_cards", {"before_deal": True})
-    
-    # Reset all hands for active players
-    for player_data in game_state["players"].values():
-        if player_data["status"] == 1:  # Only deal to active players
-            player_data["hands"] = [{"cards": [], "total": 0, "status": "playing", "result": "", "selected": 0}]
-    
-    # Reset dealer
-    game_state["dealer"].update({
-        "cards": [],
-        "total": 0,
-        "hidden_card": None,
-        "revealed": False,
-        "status": "waiting"
-    })
-    
-    # Deal cards efficiently
-    for _ in range(2):
-        for player_id in game_state["players"]:
-            if game_state["players"][player_id]["status"] == 1:  # Only deal to active players
-                card = game_state["deck"].pop(0)
-                game_state["players"][player_id]["hands"][0]["cards"].append(card)
-        
-        dealer_card = game_state["deck"].pop(0)
-        if _ == 0:
-            game_state["dealer"]["cards"].append(dealer_card)
-        else:
-            game_state["dealer"]["hidden_card"] = dealer_card
-    
-    # Update totals and check blackjacks
-    for player_id, player_data in game_state["players"].items():
-        if player_data["status"] == 1:  # Only update active players
-            hand = player_data["hands"][0]
-            hand["total"] = calculate_hand_value(hand["cards"])
-            if is_blackjack(hand["cards"]):
-                hand["status"] = player_data["status"] = "blackjack"
-    
-    # Calculate dealer's initial total (only visible card)
-    game_state["dealer"]["total"] = calculate_hand_value(game_state["dealer"]["cards"])
-    
-    await broadcast({"action": "cards_dealt", "game_state": serialize_game_state()})
     log_game_state()
 
 async def handle_hit_player(player_id, hand_index=0, card=None):
@@ -456,7 +389,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 "message": f"Invalid player ID: {player_id}"
             })
             return
-
+        
         # Get player data
         player = game_state["players"][player_id]
         print(f"Player {player_id} current state:", player)
@@ -469,7 +402,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 "message": f"Player {player_id} is not active"
             })
             return
-
+        
         # Validate hand index
         if hand_index >= len(player["hands"]):
             print(f"Error: Invalid hand index {hand_index} for player {player_id}")
@@ -478,7 +411,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 "message": f"Invalid hand index: {hand_index}"
             })
             return
-
+        
         # Get the current hand
         hand = player["hands"][hand_index]
         print(f"Current hand before hit:", hand)
@@ -524,7 +457,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
         # Calculate new total
         hand["total"] = calculate_hand_value(hand["cards"])
         print(f"New total: {hand['total']}")
-
+        
         # Update hand status
         if hand["status"] == "waiting":
             hand["status"] = "playing"
@@ -606,9 +539,9 @@ async def handle_stand_player(player_id, hand_index=0):
     
     log_game_state()
 
-async def handle_split_player(player_id):
+async def handle_split_player_auto(player_id):
     """Handle splitting a player's hand into two separate hands"""
-    log_function_call("handle_split_player", player_id=player_id)
+    log_function_call("handle_split_player_auto", player_id=player_id)
     
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
@@ -620,7 +553,7 @@ async def handle_split_player(player_id):
     active_hand = None
     split_level = None
     
-    # Check hands in order: main hands -> split1 -> split2 -> split3
+    # Check hands in order: main hands -> split1 -> split2
     if len(player_data["hands"]) > 0 and len(player_data["hands"][0]["cards"]) == 2:
         active_hand = player_data["hands"][0]
         split_level = 0
@@ -630,13 +563,15 @@ async def handle_split_player(player_id):
     elif len(player_data["split2"]) > 0 and len(player_data["split2"][0]["cards"]) == 2:
         active_hand = player_data["split2"][0]
         split_level = 2
-    elif len(player_data["split3"]) > 0 and len(player_data["split3"][0]["cards"]) == 2:
-        active_hand = player_data["split3"][0]
-        split_level = 3
     
     # Validate conditions for splitting
     if not active_hand or len(game_state["deck"]) < 2:
         await broadcast({"action": "error", "message": "Cannot split - invalid conditions"})
+        return
+    
+    # Validate that the cards are of the same rank
+    if not can_split(active_hand["cards"]):
+        await broadcast({"action": "error", "message": "Cannot split - cards must be of same rank"})
         return
     
     # Save action to history before modifying state
@@ -652,29 +587,25 @@ async def handle_split_player(player_id):
     # Update the original hand with first card
     active_hand["cards"] = [card1]
     active_hand["total"] = calculate_hand_value([card1])
+    active_hand["status"] = "playing"
     
     # Create new hand with second card
     new_hand = {
         "cards": [card2],
         "total": calculate_hand_value([card2]),
         "status": "playing",
-        "result": "",
-        "selected": 0
+        "result": ""
     }
     
     # Add new hand to the appropriate split level
     if split_level == 0:
         # First split goes to split1
-        player_data["split1"].append(new_hand)
+        player_data["split1"] = [new_hand]  # Replace instead of append
         player_data["split1_status"] = 1  # Mark split1 as active
     elif split_level == 1:
         # Second split goes to split2
-        player_data["split2"].append(new_hand)
+        player_data["split2"] = [new_hand]  # Replace instead of append
         player_data["split2_status"] = 1
-    elif split_level == 2:
-        # Third split goes to split3
-        player_data["split3"].append(new_hand)
-        player_data["split3_status"] = 1
     else:
         await broadcast({"action": "error", "message": "Maximum splits reached"})
         return
@@ -702,7 +633,92 @@ async def handle_split_player(player_id):
     })
     
     log_game_state()
+
+async def handle_split_player_manual(player_id):
+    """Handle splitting a player's hand into two separate hands in manual mode"""
+    log_function_call("handle_split_player_manual", player_id=player_id)
     
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    
+    player_data = game_state["players"][player_id]
+    
+    # Find the active hand that can be split
+    active_hand = None
+    split_level = None
+    
+    # Check hands in order: main hands -> split1 -> split2
+    if len(player_data["hands"]) > 0 and len(player_data["hands"][0]["cards"]) == 2:
+        active_hand = player_data["hands"][0]
+        split_level = 0
+    elif len(player_data["split1"]) > 0 and len(player_data["split1"][0]["cards"]) == 2:
+        active_hand = player_data["split1"][0]
+        split_level = 1
+    elif len(player_data["split2"]) > 0 and len(player_data["split2"][0]["cards"]) == 2:
+        active_hand = player_data["split2"][0]
+        split_level = 2
+    
+    # Validate conditions for splitting
+    if not active_hand:
+        await broadcast({"action": "error", "message": "Cannot split - invalid conditions"})
+        return
+    
+    # Validate that the cards are of the same rank
+    if not can_split(active_hand["cards"]):
+        await broadcast({"action": "error", "message": "Cannot split - cards must be of same rank"})
+        return
+    
+    # Save action to history before modifying state
+    await save_action_history("split_player", {
+        "player_id": player_id,
+        "original_hand": copy.deepcopy(active_hand),
+        "split_level": split_level
+    })
+    
+    # Split the cards
+    card1, card2 = active_hand["cards"]
+    
+    # Update the original hand with first card
+    active_hand["cards"] = [card1]
+    active_hand["total"] = calculate_hand_value([card1])
+    active_hand["status"] = "playing"
+    
+    # Create new hand with second card
+    new_hand = {
+        "cards": [card2],
+        "total": calculate_hand_value([card2]),
+        "status": "playing",
+        "result": ""
+    }
+    
+    # Add new hand to the appropriate split level
+    if split_level == 0:
+        # First split goes to split1
+        player_data["split1"] = [new_hand]  # Replace instead of append
+        player_data["split1_status"] = 1  # Mark split1 as active
+    elif split_level == 1:
+        # Second split goes to split2
+        player_data["split2"] = [new_hand]  # Replace instead of append
+        player_data["split2_status"] = 1
+    else:
+        await broadcast({"action": "error", "message": "Maximum splits reached"})
+        return
+    
+    # If the original hand was blackjack, it's no longer blackjack after split
+    if active_hand.get("blackjack", False):
+        active_hand["blackjack"] = False
+        active_hand["status"] = "playing"
+    
+    await broadcast({
+        "action": "player_split",
+        "player_id": player_id,
+        "split_level": split_level,
+        "game_state": serialize_game_state()
+    })
+    
+    log_game_state()
+
 async def handle_double_player(player_id, hand_index=0):
     log_function_call("handle_double_player", player_id=player_id, hand_index=hand_index)
     if not player_id or player_id not in game_state["players"] or not game_state["deck"]:
@@ -724,10 +740,6 @@ async def handle_double_player(player_id, hand_index=0):
         if hand_index >= len(player_data["split2"]):
             return
         current_hand = player_data["split2"][hand_index]
-    elif len(player_data["split3"]) > 0:
-        if hand_index >= len(player_data["split3"]):
-            return
-        current_hand = player_data["split3"][hand_index]
     
     if not current_hand:
         await broadcast({"action": "error", "message": "Invalid hand"})
@@ -865,7 +877,7 @@ async def handle_reveal_dealer():
             "total": calculate_hand_value(game_state["dealer"]["cards"]),
             "status": "playing"
         })
-        
+    
         if is_bust(game_state["dealer"]["cards"]):
             game_state["dealer"]["status"] = "bust"
         
@@ -962,22 +974,6 @@ async def calculate_results():
                 "player_total": hand["total"],
                 "dealer_total": dealer_total
             })
-            
-        # Check split3 hands
-        for hand_index, hand in enumerate(player_data["split3"]):
-            if hand["status"] == "waiting":
-                continue
-                
-            result = calculate_hand_result(hand, dealer_total, dealer_blackjack, dealer_bust)
-            hand["result"] = result
-            results.append({
-                "player_id": player_id,
-                "hand_index": hand_index,
-                "split_level": 3,
-                "result": result,
-                "player_total": hand["total"],
-                "dealer_total": dealer_total
-            })
     
     await save_round_results(results)
 
@@ -1042,13 +1038,11 @@ async def handle_reset_round():
     # Reset players
     for player_data in game_state["players"].values():
         player_data.update({
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         })
     
@@ -1057,7 +1051,7 @@ async def handle_reset_round():
     game_state.update({
         "game_phase": "waiting", 
         "current_player": None,
-        "selected_player": None  # Clear selected player on round reset
+        "selected_hand": None  # Clear selected hand on round reset
     })
     
     await broadcast({"action": "round_reset", "game_state": serialize_game_state()})
@@ -1095,13 +1089,11 @@ async def handle_reset_game():
     # Reset all players to original state
     for player_id, player_data in game_state["players"].items():
         player_data.update({
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "split3": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}],
-            "split3_status": 0,
             "status": 0
         })
     
@@ -1118,7 +1110,7 @@ async def handle_reset_game():
     game_state.update({
         "game_phase": "waiting",
         "current_player": None,
-        "selected_player": None,  # Clear selected player on game reset
+        "selected_hand": None,  # Clear selected hand on game reset
         "deck": create_deck(),
         "action_history": [],
         "game_mode": "manual",  # Reset to default game mode
@@ -1165,129 +1157,132 @@ async def handle_remove_card(player_id, card_index):
     })
     log_game_state()
 
+def get_active_hands():
+    """Get list of active hands for all players in order"""
+    active_hands = []
+    active_players = get_active_players()
+    
+    for player_id in active_players:
+        player_data = game_state["players"][player_id]
+        
+        # Check main hands
+        for hand_index, hand in enumerate(player_data["hands"]):
+            if hand["status"] == "playing":
+                active_hands.append({
+                    "player_id": player_id,
+                    "hand_index": hand_index,
+                    "split_level": 0,
+                    "hand": hand
+                })
+        
+        # Check split1 hands
+        if player_data["split1_status"] == 1:
+            for hand_index, hand in enumerate(player_data["split1"]):
+                if hand["status"] == "playing":
+                    active_hands.append({
+                        "player_id": player_id,
+                        "hand_index": hand_index,
+                        "split_level": 1,
+                        "hand": hand
+                    })
+        
+        # Check split2 hands
+        if player_data["split2_status"] == 1:
+            for hand_index, hand in enumerate(player_data["split2"]):
+                if hand["status"] == "playing":
+                    active_hands.append({
+                        "player_id": player_id,
+                        "hand_index": hand_index,
+                        "split_level": 2,
+                        "hand": hand
+                    })
+    
+    return active_hands
+
+def get_next_active_player(current_player):
+    """Get the next active player in sequence"""
+    log_function_call("get_next_active_player", current_player=current_player)
+    active_players = get_active_players()
+    if not active_players:
+        return None
+        
+    # If no current player, return first active player
+    if not current_player:
+        return active_players[0]
+        
+    # Find current player's index
+    try:
+        current_index = active_players.index(current_player)
+        # Get next player in sequence
+        next_index = (current_index + 1) % len(active_players)
+        return active_players[next_index]
+    except ValueError:
+        # If current player not found in active players, return first active player
+        return active_players[0]
+
 async def handle_next_turn():
     """Handle moving to the next turn with proper player/dealer sequencing"""
     log_function_call("handle_next_turn")
     active_players = get_active_players()
+    active_hands = get_active_hands()
     
     print("\n=== NEXT TURN ===")
     print(f"Active Players: {active_players}")
+    print(f"Active Hands: {active_hands}")
     print(f"Current Player: {game_state['current_player']}")
     print(f"Game Phase: {game_state['game_phase']}")
     
-    if not active_players:
-        await broadcast({"action": "error", "message": "No active players"})
-        return
-    
-    # If current_player is None, we're in dealer's turn
-    if game_state["current_player"] is None:
-        # Dealer's turn is complete - end the round
-        game_state["game_phase"] = "finished"
-        print("Dealer's turn complete - ending round")
-        
-        # Calculate final results
-        await calculate_results()
-        
-        # Reset for new round
-        first_player = active_players[0]
-        game_state["current_player"] = first_player
-        game_state["selected_player"] = first_player
-        game_state["game_phase"] = "playing"
-        print(f"Starting new round with player: {first_player}")
-    else:
-        current_player = game_state["current_player"]
-        
-        # Check if current player has completed all hands
-        if current_player:
-            player_data = game_state["players"][current_player]
-            
-            # Check all hands across all split levels
-            all_hands_completed = True
-            for hand in player_data["hands"]:
-                if hand["status"] == "playing":
-                    all_hands_completed = False
-                    break
-            
-            if all_hands_completed:
-                for hand in player_data["split1"]:
-                    if hand["status"] == "playing":
-                        all_hands_completed = False
-                        break
-            
-            if all_hands_completed:
-                for hand in player_data["split2"]:
-                    if hand["status"] == "playing":
-                        all_hands_completed = False
-                        break
-            
-            if all_hands_completed:
-                for hand in player_data["split3"]:
-                    if hand["status"] == "playing":
-                        all_hands_completed = False
-                        break
-            
-            if not all_hands_completed:
-                # Player still has hands to play - don't advance turn
-                print(f"Player {current_player} still has hands to play")
-                return
-        
-        # Find next player with incomplete hands
-        next_player = None
-        for player_id in active_players:
-            if player_id == current_player:
-                continue
-                
-            player_data = game_state["players"][player_id]
-            has_incomplete_hands = False
-            
-            # Check all hands across all split levels
-            for hand in player_data["hands"]:
-                if hand["status"] == "playing":
-                    has_incomplete_hands = True
-                    break
-            
-            if not has_incomplete_hands:
-                for hand in player_data["split1"]:
-                    if hand["status"] == "playing":
-                        has_incomplete_hands = True
-                        break
-            
-            if not has_incomplete_hands:
-                for hand in player_data["split2"]:
-                    if hand["status"] == "playing":
-                        has_incomplete_hands = True
-                        break
-            
-            if not has_incomplete_hands:
-                for hand in player_data["split3"]:
-                    if hand["status"] == "playing":
-                        has_incomplete_hands = True
-                        break
-            
-            if has_incomplete_hands:
-                next_player = player_id
-                break
-        
-        if next_player:
-            # Move to next player with incomplete hands
-            game_state["current_player"] = next_player
-            game_state["selected_player"] = next_player
-            print(f"Moving to next player: {next_player}")
-        else:
-            # All players have completed - move to dealer
+    if not active_hands:
+        # If no active hands, check if we should move to dealer
+        if game_state["current_player"] is not None:
+            # Move to dealer's turn
             game_state["current_player"] = None
-            game_state["selected_player"] = None
-            print("All players completed - moving to dealer")
+            game_state["selected_hand"] = None
+            game_state["game_phase"] = "dealer"
+            print("No more active hands - moving to dealer")
+        else:
+            # Dealer's turn is complete - end the round
+            game_state["game_phase"] = "finished"
+            print("Dealer's turn complete - ending round")
+            
+            # Calculate final results
+            await calculate_results()
+            
+            # Reset for new round
+            if active_players:
+                # Always start with Player1 if active, otherwise first active player
+                first_player = "player1" if "player1" in active_players else active_players[0]
+                game_state["current_player"] = first_player
+                game_state["selected_hand"] = {
+                    "player_id": first_player,
+                    "hand_index": 0,
+                    "split_level": 0
+                }
+                game_state["game_phase"] = "playing"
+                # Set the first player's hand to playing status
+                game_state["players"][first_player]["hands"][0]["status"] = "playing"
+                print(f"Starting new round with player: {first_player}")
+    else:
+        # Get the first active hand
+        next_hand = active_hands[0]
+        game_state["current_player"] = next_hand["player_id"]
+        game_state["selected_hand"] = {
+            "player_id": next_hand["player_id"],
+            "hand_index": next_hand["hand_index"],
+            "split_level": next_hand["split_level"]
+        }
+        game_state["game_phase"] = "playing"
+        print(f"Moving to next hand: Player {next_hand['player_id']}, Split Level {next_hand['split_level']}")
     
     print(f"New Current Player: {game_state['current_player']}")
-    print(f"Selected Player: {game_state['selected_player']}")
+    print(f"Selected Hand: {game_state['selected_hand']}")
     print(f"Game Phase: {game_state['game_phase']}")
     
     # Broadcast turn update
     await broadcast({
         "action": "turn_updated",
         "current_player": game_state["current_player"],
-        "selected_player": game_state["selected_player"],
+        "selected_hand": game_state["selected_hand"],
         "game_state": serialize_game_state()
     })
     print("=== TURN UPDATED ===\n")
@@ -1318,27 +1313,35 @@ async def handle_start_game():
     for player_data in game_state["players"].values():
         if player_data["status"] == 1:  # Only reset active players
             player_data.update({
-                "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "selected": 0}]
+                "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+                "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+                "split1_status": 0,
+                "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+                "split2_status": 0
             })
     
-    # Set initial player and game phase
-    first_player = active_players[0]
+    # Always start with Player1 if active, otherwise first active player
+    first_player = "player1" if "player1" in active_players else active_players[0]
     game_state["current_player"] = first_player
-    game_state["selected_player"] = first_player
+    game_state["selected_hand"] = {
+        "player_id": first_player,
+        "hand_index": 0,
+        "split_level": 0
+    }
     game_state["game_phase"] = "playing"
     
-    print(f"Current Player: {game_state['current_player']}")
-    print(f"Selected Player: {game_state['selected_player']}")
-    print(f"Game Phase: {game_state['game_phase']}")
+    # Set the first player's hand to playing status
+    game_state["players"][first_player]["hands"][0]["status"] = "playing"
     
-    # Deal initial cards
-    await handle_deal_cards()
+    print(f"Current Player: {game_state['current_player']}")
+    print(f"Selected Hand: {game_state['selected_hand']}")
+    print(f"Game Phase: {game_state['game_phase']}")
     
     # Broadcast game started with complete state
     await broadcast({
         "action": "game_started",
         "current_player": game_state["current_player"],
-        "selected_player": game_state["selected_player"],
+        "selected_hand": game_state["selected_hand"],
         "game_state": serialize_game_state()
     })
     
@@ -1346,7 +1349,7 @@ async def handle_start_game():
     await broadcast({
         "action": "turn_updated",
         "current_player": game_state["current_player"],
-        "selected_player": game_state["selected_player"],
+        "selected_hand": game_state["selected_hand"],
         "game_state": serialize_game_state()
     })
     
