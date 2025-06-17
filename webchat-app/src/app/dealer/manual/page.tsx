@@ -784,7 +784,7 @@ const GameMenu = () => {
                   key={playerId}
                   className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
                     isCurrentPlayer
-                      ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                      ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
                       : isActive
                         ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
                         : "bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30"
@@ -802,7 +802,7 @@ const GameMenu = () => {
                         <div
                           className={`w-4 h-4 rounded-full shadow-lg ${
                             isCurrentPlayer 
-                              ? "bg-yellow-400 animate-pulse" 
+                              ? "bg-blue-400 animate-pulse" 
                               : isActive 
                                 ? "bg-green-400 animate-pulse" 
                                 : "bg-gray-400"
@@ -855,7 +855,7 @@ const GameMenu = () => {
                         {/* Cards Display */}
                         <div className={`rounded-lg p-3 ${
                           isCurrentPlayer 
-                            ? "bg-yellow-500/20" 
+                            ? "bg-blue-500/20" 
                             : "bg-black/20"
                         }`}>
                           <div className="flex items-center justify-between mb-2">
@@ -885,7 +885,7 @@ const GameMenu = () => {
                                 key={`empty-${index}`}
                                 className={`w-12 h-16 border-2 border-dashed rounded-lg ${
                                   isCurrentPlayer 
-                                    ? "border-yellow-400/50 bg-yellow-500/10" 
+                                    ? "border-blue-400/50 bg-blue-500/10" 
                                     : "border-gray-400 bg-gray-800/50"
                                 }`}
                               />
