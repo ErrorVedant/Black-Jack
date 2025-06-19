@@ -90,7 +90,7 @@ game_state = {
     },
     "max_players": 6,
     "current_player": None,  # Currently selected player
-    "selected_hand": None,   # Currently selected hand (0: main, 1: split1, 2: split2)
+    "selected_hand": None,   
     "game_phase": "waiting",
     "table_number": 1,
     "action_history": [],
@@ -239,6 +239,7 @@ async def handle_connection(websocket):
         "activate_player": lambda d: handle_activate_player(d.get("player_id")),
         "remove_player": lambda d: handle_remove_player(d.get("player_id")),
         "hit_player": lambda d: handle_hit_player(d.get("player_id"), d.get("hand_index", 0), d.get("card")),
+        "hit_dealer": lambda d: handle_hit_player("dealer", 0, d.get("card")),
         "stand_player": lambda d: handle_next_turn(),
         "split_player_auto": lambda d: handle_split_player_auto(d.get("player_id")),
         "split_player_manual": lambda d: handle_split_player_manual(d.get("player_id")),
@@ -379,26 +380,56 @@ async def handle_remove_player(player_id):
     log_game_state()
 
 async def handle_hit_player(player_id, hand_index=0, card=None):
-    """Add a card to a player's hand"""
+    """Add a card to a player's hand or the dealer's hand"""
     log_function_call("handle_hit_player", player_id=player_id, hand_index=hand_index, card=card)
     print("\n=== HANDLE HIT PLAYER STARTED ===")
     print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
-    
     try:
+        if player_id == "dealer":
+            # Handle dealer card draw
+            hand = game_state["dealer"]
+            # If a specific card is provided
+            if card:
+                if not (len(card) >= 2 and card[-1] in ['S', 'D', 'C', 'H']):
+                    await broadcast({"action": "error", "message": "Invalid card format"})
+                    return
+                if card in game_state["deck"]:
+                    game_state["deck"].remove(card)
+                else:
+                    await broadcast({"action": "error", "message": "Card not available in deck"})
+                    return
+            else:
+                if not game_state["deck"]:
+                    await broadcast({"action": "error", "message": "Deck is empty"})
+                    return
+                card = game_state["deck"].pop()
+            hand["cards"].append(card)
+            hand["total"] = calculate_hand_value(hand["cards"])
+            if is_bust(hand["cards"]):
+                hand["status"] = "bust"
+            elif is_blackjack(hand["cards"]):
+                hand["status"] = "blackjack"
+            else:
+                hand["status"] = "playing"
+            await save_action_history("hit_dealer", {"card": card})
+            await broadcast({
+                "action": "dealer_hit",
+                "card": card,
+                "game_state": serialize_game_state()
+            })
+            print("=== HANDLE HIT DEALER COMPLETED ===")
+            log_game_state()
+            return
         # Validate player exists
-        if player_id not in game_state["players"]:
+        if player_id not in game_state["players"] and player_id != "dealer":            
             print(f"Error: Invalid player ID {player_id}")
             await broadcast({
                 "action": "error",
                 "message": f"Invalid player ID: {player_id}"
             })
             return
-        
-        # Get player data
         player = game_state["players"][player_id]
         print(f"Player {player_id} current state:", player)
-
-        # Check if player is active
         if player["status"] != 1:
             print(f"Error: Player {player_id} is not active")
             await broadcast({
@@ -406,12 +437,8 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 "message": f"Player {player_id} is not active"
             })
             return
-        
-        # Get the current hand based on split level
         hand = None
         split_level = 0
-        
-        # Check if we're dealing with a split hand
         if game_state["selected_hand"] and game_state["selected_hand"]["player_id"] == player_id:
             split_level = game_state["selected_hand"]["split_level"]
             if split_level == 1:
@@ -430,18 +457,13 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     return
                 hand = player["hands"][hand_index]
         else:
-            # Default to main hand if no split level specified
             if hand_index >= len(player["hands"]):
                 await broadcast({"action": "error", "message": "Invalid hand index"})
                 return
             hand = player["hands"][hand_index]
-        
         print(f"Current hand before hit:", hand)
-
-        # If a specific card is provided
         if card:
             print(f"Using provided card: {card}")
-            # Validate card format (e.g., "AS", "10H", etc.)
             if not (len(card) >= 2 and card[-1] in ['S', 'D', 'C', 'H']):
                 print(f"Error: Invalid card format {card}")
                 await broadcast({
@@ -449,7 +471,6 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     "message": "Invalid card format"
                 })
                 return
-            # Remove the card from deck if it exists
             if card in game_state["deck"]:
                 game_state["deck"].remove(card)
             else:
@@ -460,7 +481,6 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 })
                 return
         else:
-            # Draw random card if none specified
             if not game_state["deck"]:
                 print("Error: Deck is empty")
                 await broadcast({
@@ -470,30 +490,20 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 return
             card = game_state["deck"].pop()
             print(f"Drew random card: {card}")
-
-        # Add card to hand
         hand["cards"].append(card)
         print(f"Cards after adding: {hand['cards']}")
-
-        # Calculate new total
         hand["total"] = calculate_hand_value(hand["cards"])
         print(f"New total: {hand['total']}")
-    
-        # Update hand status
         if hand["status"] == "waiting":
             hand["status"] = "playing"
         if is_bust(hand["cards"]):
             hand["status"] = "bust"
             print(f"Hand busted with total {hand['total']}")
-            # Automatically stand if bust
             await handle_next_turn()
         elif is_blackjack(hand["cards"]):
             hand["status"] = "blackjack"
             print(f"Blackjack!")
-            # Automatically stand if blackjack
             await handle_next_turn()
-
-        # Save action to history
         print("Saving action to history...")
         history_data = {
             "player_id": player_id,
@@ -504,8 +514,6 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
         print(f"History data: {history_data}")
         await save_action_history("hit_player", history_data)
         print("Action saved to history")
-
-        # Broadcast updated game state
         print("Broadcasting updated game state...")
         broadcast_data = {
             "action": "player_hit",
@@ -518,11 +526,9 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
         print(f"Broadcast data: {broadcast_data}")
         await broadcast(broadcast_data)
         print("Game state broadcasted")
-
         print("\n=== HANDLE HIT PLAYER COMPLETED ===")
         print("Updated player state:", game_state["players"][player_id])
         log_game_state()
-
     except Exception as e:
         print(f"Error in handle_hit_player: {str(e)}")
         print("Full error:", e)
@@ -551,64 +557,93 @@ def get_last_active_hand():
     return player_hands[-1]
 
 async def handle_split_player_auto(player_id):
-    """Handle player split in auto mode"""
-    try:
-        log_function_call("handle_split_player_auto", player_id=player_id)
-        player_data = game_state["players"][player_id]
-        
-        # Check if player can split
-        if not can_split(player_data["hands"][0]["cards"]):
-            await broadcast({"action": "error", "message": "Cannot split this hand"})
-            return
-        
-        # Save current state for undo
-        await save_action_history("split", {
-            "player_id": player_id,
-            "old_state": serialize_game_state()
-        })
-        
-        # Get the cards to split
-        card1, card2 = player_data["hands"][0]["cards"]
-        
-        # Update main hand
-        player_data["hands"][0]["cards"] = [card1]
-        player_data["hands"][0]["total"] = get_card_value(card1)
-        player_data["hands"][0]["status"] = "playing"
-        
-        # Create split1 hand
-        player_data["split1"] = [{
-            "cards": [card2],
-            "total": get_card_value(card2),
-            "status": "playing",
-            "result": ""
-        }]
-        player_data["split1_status"] = 1
-        
-        # Update active hands list
-        active_hands = get_active_hands()
-        last_hand = get_last_active_hand()
-        
-        # Set current player and selected hand to the last active hand
-        if last_hand:
-            game_state["current_player"] = last_hand["player_id"]
-            game_state["selected_hand"] = {
-                "player_id": last_hand["player_id"],
-                "hand_index": last_hand["hand_index"],
-                "split_level": last_hand["split_level"]
-            }
-        
-        # Broadcast split update
-        await broadcast({
-            "action": "split_completed",
-            "player_id": player_id,
-            "game_state": serialize_game_state()
-        })
-        
-        print(f"=== SPLIT COMPLETED FOR PLAYER {player_id} ===")
-        log_game_state()
-    except Exception as e:
-        print(f"Error in handle_split_player_auto: {str(e)}")
-        await broadcast({"action": "error", "message": f"Error in split: {str(e)}"})
+    """Handle splitting a player's hand into two separate hands"""
+    log_function_call("handle_split_player_auto", player_id=player_id)
+
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+
+    player_data = game_state["players"][player_id]
+
+    # Find the active hand that can be split
+    active_hand = None
+    split_level = None
+
+    # Check hands in order: main hands -> split1 -> split2
+    if len(player_data["hands"]) > 0 and len(player_data["hands"][0]["cards"]) == 2:
+        active_hand = player_data["hands"][0]
+        split_level = 0
+    elif len(player_data["split1"]) > 0 and len(player_data["split1"][0]["cards"]) == 2:
+        active_hand = player_data["split1"][0]
+        split_level = 1
+    elif len(player_data["split2"]) > 0 and len(player_data["split2"][0]["cards"]) == 2:
+        active_hand = player_data["split2"][0]
+        split_level = 2
+
+    # Validate conditions for splitting
+    if not active_hand or len(game_state["deck"]) < 2:
+        await broadcast({"action": "error", "message": "Cannot split - invalid conditions"})
+        return
+
+    # Validate that the cards are of the same rank
+    if not can_split(active_hand["cards"]):
+        await broadcast({"action": "error", "message": "Cannot split - cards must be of same rank"})
+        return
+
+    # Save action to history before modifying state
+    await save_action_history("split_player", {
+        "player_id": player_id,
+        "original_hand": copy.deepcopy(active_hand),
+        "split_level": split_level
+    })
+
+    # Split the cards
+    card1, card2 = active_hand["cards"]
+
+    # Update the original hand with first card
+    active_hand["cards"] = [card1]
+    active_hand["total"] = calculate_hand_value([card1])
+    active_hand["status"] = "playing"
+
+    # Create new hand with second card
+    new_hand = {
+        "cards": [card2],
+        "total": calculate_hand_value([card2]),
+        "status": "playing",
+        "result": ""
+    }
+
+    # Add new hand to the appropriate split level
+    if split_level == 0:
+        # If main hand is splitting and split1 is already in use, use split2
+        if player_data["split1_status"] == 1:
+            player_data["split2"] = [new_hand]  # Replace instead of append
+            player_data["split2_status"] = 1  # Mark split2 as active
+        else:
+            player_data["split1"] = [new_hand]  # Replace instead of append
+            player_data["split1_status"] = 1  # Mark split1 as active
+    elif split_level == 1:
+        # Second split goes to split2
+        player_data["split2"] = [new_hand]  # Replace instead of append
+        player_data["split2_status"] = 1
+    else:
+        await broadcast({"action": "error", "message": "Maximum splits reached"})
+        return
+
+    # If the original hand was blackjack, it's no longer blackjack after split
+    if active_hand.get("blackjack", False):
+        active_hand["blackjack"] = False
+        active_hand["status"] = "playing"
+
+    await broadcast({
+        "action": "player_split",
+        "player_id": player_id,
+        "split_level": split_level,
+        "game_state": serialize_game_state()
+    })
+
+    log_game_state()
 
 async def handle_split_player_manual(player_id):
     """Handle splitting a player's hand into two separate hands in manual mode"""

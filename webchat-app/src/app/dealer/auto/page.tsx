@@ -829,54 +829,43 @@ const GameMenu = () => {
     setTimeout(() => setShowPopup(false), 3000);
   };
 
-  const handleHitDealer = () => {
-    if (!selectedCard || !selectedSuit) {
-      setPopupMessage("⚠️ Please select a card first")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
-    }
-
-    const cardCode = selectedCard + selectedSuit
-    sendWebSocketMessage({
-      action: "hit_dealer",
-      card: cardCode
-    })
-
-    // Clear selections after sending
-    setSelectedCard(null)
-    setSelectedSuit(null)
-    setIsDealerSelected(false)
-  }
 
   const assignCard = () => {
-    if (!gameState?.selected_hand?.player_id || !selectedCard || !selectedSuit) {
-      setPopupMessage("⚠️ Please select player, card, and suit")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+    if (gameState?.game_phase === "dealer" && selectedCard && selectedSuit) {
+      // Allow dealing card to dealer
+      const cardCode = selectedCard + selectedSuit;
+      sendWebSocketMessage({
+        action: "hit_dealer",
+        card: cardCode
+      });
+      setSelectedCard(null);
+      setSelectedSuit(null);
+      setIsDealerSelected(false);
+      return;
     }
-
+    if (!gameState?.selected_hand?.player_id || !selectedCard || !selectedSuit) {
+      setPopupMessage("⚠️ Please select player, card, and suit");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
+    }
     // Ensure player is active
     if (!gameState?.players[gameState.selected_hand.player_id]?.status) {
-      setPopupMessage("⚠️ Player must be active to add cards")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Player must be active to add cards");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
-
-    const cardCode = selectedCard + selectedSuit
+    const cardCode = selectedCard + selectedSuit;
     sendWebSocketMessage({
       action: "hit_player",
       player_id: gameState.selected_hand.player_id,
       hand_index: gameState.selected_hand.hand_index,
       card: cardCode
-    })
-
-    // Clear selections after sending
-    setSelectedCard(null)
-    setSelectedSuit(null)
-  }
+    });
+    setSelectedCard(null);
+    setSelectedSuit(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
@@ -1077,18 +1066,18 @@ const GameMenu = () => {
                 {/* Dealer Controls: Show all when dealer phase */}
                 {gameState?.game_phase === "dealer" && (
                   <div className="flex items-center justify-center space-x-3 mt-4">
-                    <button
-                      onClick={() => sendWebSocketMessage({ action: "hit_dealer" })}
+                      <button
+                      onClick={() => sendWebSocketMessage({ action: "hit_player" })}
                       className="px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                     >
                       Hit
-                    </button>
-                    <button
+                </button>
+                      <button
                       onClick={() => sendWebSocketMessage({ action: "stand_dealer" })}
                       className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
                     >
                       Stand
-                    </button>
+                      </button>
                     <button
                       onClick={() => sendWebSocketMessage({ action: "reveal_dealer" })}
                       className="px-3 py-1.5 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
@@ -1225,7 +1214,7 @@ const GameMenu = () => {
                               <div
                                 key={`empty-${index}`}
                                 className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentHand
-                                    ? "border-yellow-400/50 bg-yellow-500/10" 
+                                    ? "border-yellow-400/50 bg-yellow-500/10"
                                     : "border-gray-400 bg-gray-800/50"
                                 }`}
                               />
@@ -1475,8 +1464,8 @@ const GameMenu = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                         </svg>
                         <span>Next</span>
-                              </button>
-                            </div>
+                      </button>
+                    </div>
                   )}
                 </div>
               )
@@ -1605,18 +1594,10 @@ const GameMenu = () => {
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (gameState?.current_turn === "dealer") {
-                      handleHitDealer()
-                      } else if (gameState?.selected_hand?.player_id) {
-                      assignCard()
-                    } else {
-                      setPopupMessage("⚠️ Please select a player or dealer first")
-                      setShowPopup(true)
-                      setTimeout(() => setShowPopup(false), 3000)
-                    }
-                  }}
-                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-2 text-lg mb-3"
+                  onClick={assignCard}
+                  className={`w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-2 text-lg mb-3
+    ${selectedCard && selectedSuit && (gameState?.game_phase === "dealer" || gameState?.selected_hand?.player_id) ? '' : 'opacity-50 cursor-not-allowed'}`}
+                  disabled={!(selectedCard && selectedSuit && (gameState?.game_phase === "dealer" || gameState?.selected_hand?.player_id))}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
@@ -1634,7 +1615,7 @@ const GameMenu = () => {
               <button
                 onClick={() => {
                   if (gameState?.current_turn === "dealer") {
-                    sendWebSocketMessage({ action: "hit_dealer" })
+                    sendWebSocketMessage({ action: "hit_player" })
                   } else if (gameState?.selected_hand?.player_id) {
                     sendWebSocketMessage({
                       action: "hit_player",
