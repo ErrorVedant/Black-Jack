@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 interface Hand {
   cards: string[]
@@ -7,6 +7,7 @@ interface Hand {
   status: string
   result?: string
   bet?: number
+  insurence?: number
 }
 
 interface PlayerData {
@@ -16,8 +17,6 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
-  split3: Hand[]
-  split3_status: number
 }
 
 interface Players {
@@ -30,17 +29,32 @@ interface GameState {
   dealer: {
     cards: string[]
     total: number
-    revealed: boolean
-    hidden_card: string | null
     status: string
   }
   players: Players
   game_phase: string
-  current_player: string | null
   table_number: number
   current_turn: string
-  selected_player?: string
+  selected_hand?: {
+    player_id: string
+    hand_index: number
+    split_level: number
+  }
+  current_player?: string
 }
+
+// Add these helper functions at the top of the file, after the interfaces
+const isHandSelected = (gameState: GameState | null, playerId: string, handIndex: number, splitLevel: number): boolean => {
+  return gameState?.selected_hand?.player_id === playerId &&
+    gameState?.selected_hand?.hand_index === handIndex &&
+    gameState?.selected_hand?.split_level === splitLevel;
+};
+
+const canSplit = (cards: string[]): boolean => {
+  if (cards.length !== 2) return false;
+  // Only compare the rank (first character)
+  return cards[0][0] === cards[1][0];
+};
 
 const DebugPanel = ({ gameState }: { gameState: GameState | null }) => {
   if (!gameState) return null;
@@ -53,116 +67,7 @@ const DebugPanel = ({ gameState }: { gameState: GameState | null }) => {
   }
 
   return (
-    <div className="fixed bottom-0 right-0 w-[80vw] h-[80vh] bg-gray-900/95 p-4 overflow-y-auto border-l border-gray-700">
-      <h2 className="text-xl font-bold text-yellow-400 mb-4">Backend Information</h2>
-      
-      {/* Complete Game State */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-blue-400 mb-2">Complete Game State</h3>
-        <pre className="bg-gray-800 p-4 rounded text-sm overflow-x-auto">
-          {JSON.stringify(gameState, null, 2)}
-        </pre>
-      </div>
-
-      {/* Game State Summary */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-blue-400 mb-2">Game State Summary</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2 text-sm">
-            <p><span className="text-gray-400">Game Phase:</span> {gameState.game_phase}</p>
-            <p><span className="text-gray-400">Game Mode:</span> {gameState.game_mode}</p>
-            <p><span className="text-gray-400">Current Player:</span> {gameState.current_player || 'None'}</p>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p><span className="text-gray-400">Selected Player:</span> {gameState.selected_player || 'None'}</p>
-            <p><span className="text-gray-400">Table Number:</span> {gameState.table_number}</p>
-            <p><span className="text-gray-400">Deck Count:</span> {gameState.deck_count}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Dealer State */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-blue-400 mb-2">Dealer State</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2 text-sm">
-            <p><span className="text-gray-400">Status:</span> {gameState.dealer.status}</p>
-            <p><span className="text-gray-400">Total:</span> {gameState.dealer.total}</p>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p><span className="text-gray-400">Cards:</span> {gameState.dealer.cards?.join(', ') || 'None'}</p>
-            <p><span className="text-gray-400">Hidden Card:</span> {gameState.dealer.hidden_card || 'None'}</p>
-          </div>
-          <div className="space-y-2 text-sm">
-            <p><span className="text-gray-400">Revealed:</span> {gameState.dealer.revealed ? 'Yes' : 'No'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Players State */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-blue-400 mb-2">Players State</h3>
-        <div className="space-y-6">
-          {playerRows.map((row, rowIndex) => (
-            <div key={rowIndex} className="grid grid-cols-3 gap-4">
-              {row.map(([playerId, playerData]) => (
-                <div key={playerId} className="border border-gray-700 rounded p-3">
-                  <h4 className="text-md font-medium text-green-400 mb-2">{playerId}</h4>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="text-gray-400">Status:</span> {playerData.status === 1 ? 'Active' : 'Inactive'}</p>
-                    
-                    {/* Main Hand */}
-                    <div>
-                      <p className="text-gray-400">Main Hand:</p>
-                      <div className="ml-2">
-                        <p><span className="text-gray-400">Cards:</span> {playerData.hands?.[0]?.cards?.join(', ') || 'None'}</p>
-                        <p><span className="text-gray-400">Total:</span> {playerData.hands?.[0]?.total || 0}</p>
-                        <p><span className="text-gray-400">Status:</span> {playerData.hands?.[0]?.status || 'None'}</p>
-                        <p><span className="text-gray-400">Result:</span> {playerData.hands?.[0]?.result || 'None'}</p>
-                      </div>
-                    </div>
-
-                    {/* Split Hands */}
-                    {playerData.split1?.[0]?.cards?.length > 0 && (
-                      <div>
-                        <p className="text-gray-400">Split 1:</p>
-                        <div className="ml-2">
-                          <p><span className="text-gray-400">Cards:</span> {playerData.split1[0].cards.join(', ')}</p>
-                          <p><span className="text-gray-400">Total:</span> {playerData.split1[0].total}</p>
-                          <p><span className="text-gray-400">Status:</span> {playerData.split1[0].status}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {playerData.split2?.[0]?.cards?.length > 0 && (
-                      <div>
-                        <p className="text-gray-400">Split 2:</p>
-                        <div className="ml-2">
-                          <p><span className="text-gray-400">Cards:</span> {playerData.split2[0].cards.join(', ')}</p>
-                          <p><span className="text-gray-400">Total:</span> {playerData.split2[0].total}</p>
-                          <p><span className="text-gray-400">Status:</span> {playerData.split2[0].status}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {playerData.split3?.[0]?.cards?.length > 0 && (
-                      <div>
-                        <p className="text-gray-400">Split 3:</p>
-                        <div className="ml-2">
-                          <p><span className="text-gray-400">Cards:</span> {playerData.split3[0].cards.join(', ')}</p>
-                          <p><span className="text-gray-400">Total:</span> {playerData.split3[0].total}</p>
-                          <p><span className="text-gray-400">Status:</span> {playerData.split3[0].status}</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <></>
   );
 };
 
@@ -179,6 +84,7 @@ const GameMenu = () => {
   const [isDealerSelected, setIsDealerSelected] = useState(false)
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
+  const [insuranceState, setInsuranceState] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -329,7 +235,7 @@ const GameMenu = () => {
     }
 
     // Clear selection if deactivating selected player
-    if (gameState?.selected_player === playerId) {
+    if (gameState?.selected_hand?.player_id === playerId) {
       sendWebSocketMessage({
         action: "select_player",
         player_id: null
@@ -448,12 +354,6 @@ const GameMenu = () => {
     })
   }
 
-  const handleRevealDealer = () => {
-    sendWebSocketMessage({
-      action: "reveal_dealer"
-    })
-  }
-
   const handleStandDealer = () => {
     sendWebSocketMessage({
       action: "stand_dealer"
@@ -487,54 +387,61 @@ const GameMenu = () => {
     setTimeout(() => setShowPopup(false), 3000);
   };
 
-  const handleHitDealer = () => {
-    if (!selectedCard || !selectedSuit) {
-      setPopupMessage("⚠️ Please select a card first")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
-    }
 
-    const cardCode = selectedCard + selectedSuit
+  const assignCard = () => {
+    if (gameState?.game_phase === "dealer" && selectedCard && selectedSuit) {
+      // Allow dealing card to dealer
+      const cardCode = selectedCard + selectedSuit;
     sendWebSocketMessage({
       action: "hit_dealer",
       card: cardCode
-    })
-
-    // Clear selections after sending
-    setSelectedCard(null)
-    setSelectedSuit(null)
-    setIsDealerSelected(false)
-  }
-
-  const assignCard = () => {
-    if (!gameState?.selected_player || !selectedCard || !selectedSuit) {
-      setPopupMessage("⚠️ Please select player, card, and suit")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      });
+      setSelectedCard(null);
+      setSelectedSuit(null);
+      setIsDealerSelected(false);
+      return;
     }
-
+    if (!gameState?.selected_hand?.player_id || !selectedCard || !selectedSuit) {
+      setPopupMessage("⚠️ Please select player, card, and suit");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
+    }
     // Ensure player is active
-    if (!gameState?.players[gameState.selected_player]?.status) {
-      setPopupMessage("⚠️ Player must be active to add cards")
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+    if (!gameState?.players[gameState.selected_hand.player_id]?.status) {
+      setPopupMessage("⚠️ Player must be active to add cards");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
-
-    const cardCode = selectedCard + selectedSuit
+    const cardCode = selectedCard + selectedSuit;
     sendWebSocketMessage({
       action: "hit_player",
-      player_id: gameState.selected_player,
-      hand_index: 0,
+      player_id: gameState.selected_hand.player_id,
+      hand_index: gameState.selected_hand.hand_index,
       card: cardCode
-    })
+    });
+    setSelectedCard(null);
+    setSelectedSuit(null);
+  };
 
-    // Clear selections after sending
-    setSelectedCard(null)
-    setSelectedSuit(null)
-  }
+  const handleInsurance = (playerId: string, handIndex: number, splitLevel: number = 0) => {
+    sendWebSocketMessage({
+      action: "handle_insurance",
+      player_id: playerId,
+      hand_index: handIndex,
+      split_level: splitLevel
+    });
+    setInsuranceState((prev) => ({ ...prev, [`${playerId}_${handIndex}_${splitLevel}`]: true }));
+  };
+
+  const clearInsuranceForHand = (playerId: string, handIndex: number, splitLevel: number = 0) => {
+    setInsuranceState((prev) => {
+      const newState = { ...prev };
+      delete newState[`${playerId}_${handIndex}_${splitLevel}`];
+      return newState;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
@@ -559,15 +466,13 @@ const GameMenu = () => {
                 <div className="flex items-center space-x-4 mt-2">
                   <p className="text-gray-200">Table FT{gameState?.table_number || 1234}</p>
                   <div
-                    className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${
-                      isConnected
+                    className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${isConnected
                         ? "bg-green-500/20 text-green-400 border border-green-500/30"
                         : "bg-red-500/20 text-red-400 border border-red-500/30"
                     }`}
                   >
                     <div
-                      className={`w-2 h-2 rounded-full ${
-                        isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
+                      className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
                       }`}
                     ></div>
                     <span className="capitalize">{isConnected ? "connected" : "disconnected"}</span>
@@ -579,8 +484,7 @@ const GameMenu = () => {
               <button
                 onClick={isPlaying ? stopGameLoop : startGameLoop}
                 disabled={!isConnected || (isPlaying && !isRoundFinished)}
-                className={`h-12 w-full bg-gradient-to-r ${
-                  isConnected && (!isPlaying || isRoundFinished)
+                className={`h-12 w-full bg-gradient-to-r ${isConnected && (!isPlaying || isRoundFinished)
                     ? "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                     : "from-gray-500 to-gray-600 cursor-not-allowed"
                 } text-white rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold`}
@@ -607,31 +511,22 @@ const GameMenu = () => {
                   e.stopPropagation()
                   if (isPlaying) {
                     stopGameLoop()
-                  } else if (gameState?.dealer?.hidden_card) {
-                    sendWebSocketMessage({ action: "reveal_dealer" })
                   }
                 }}
-                className={`h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold ${
-                  !isPlaying && !gameState?.dealer?.hidden_card ? 'opacity-50 cursor-not-allowed' : ''
+                className={`h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold ${!isPlaying ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                disabled={!isPlaying && !gameState?.dealer?.hidden_card}
+                disabled={!isPlaying}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {isPlaying ? (
-                    <>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-                    </>
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  )}
                 </svg>
-                <span>{isPlaying ? "Stop Round" : "Reveal Card"}</span>
+                <span>Stop Round</span>
               </button>
 
               <button
                 onClick={() => sendWebSocketMessage({ action: "reset_game" })}
-                className="h-12 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold"
+                className="h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -650,17 +545,15 @@ const GameMenu = () => {
           {/* Dealer Window */}
           <div className="flex justify-center">
             <div 
-              className={`w-[80%] rounded-2xl p-4 shadow-2xl transition-all duration-300 ${
-                gameState?.current_turn === "dealer"
-                  ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400" 
-                  : "bg-gradient-to-br from-blue-600/80 to-blue-500/80 backdrop-blur-xl border border-blue-400"
+              className={`w-[80%] rounded-2xl p-4 shadow-2xl transition-all duration-300 ${gameState?.game_phase === "dealer"
+                  ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                  : "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white backdrop-blur-xl border border-blue-400"
               }`}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className={`text-xl font-bold flex items-center ${
-                  gameState?.current_turn === "dealer" ? "text-gray-900" : "text-white"
+                <h2 className={`text-xl font-bold flex items-center ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-white"
                 }`}>
-                  <svg className={`w-5 h-5 mr-2 ${gameState?.current_turn === "dealer" ? "text-gray-900" : "text-blue-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`w-5 h-5 mr-2 ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-blue-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -672,8 +565,7 @@ const GameMenu = () => {
                 </h2>
                 <div className="flex items-center space-x-3">
                   <div
-                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
-                      gameState?.dealer?.status === "playing"
+                    className={`px-3 py-1 rounded-lg text-sm font-medium ${gameState?.dealer?.status === "playing"
                         ? "bg-green-500/20 text-green-400 border border-green-500/30"
                         : gameState?.dealer?.status === "bust"
                           ? "bg-red-500/20 text-red-400 border border-red-500/30"
@@ -682,7 +574,7 @@ const GameMenu = () => {
                   >
                     {gameState?.dealer?.status || "waiting"}
                   </div>
-                  <div className={`text-sm ${gameState?.current_turn === "dealer" ? "text-gray-900" : "text-gray-400"}`}>
+                  <div className={`text-sm ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-gray-400"}`}>
                     Cards: {gameState?.deck_count || 0}
                   </div>
                 </div>
@@ -692,7 +584,7 @@ const GameMenu = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-base font-medium text-white">Dealer's Cards</div>
                   <div className="text-xl font-bold">
-                    Total:{" "}
+                    Total: {" "}
                     <span
                       className={`
                       ${dealerTotal > 21
@@ -707,27 +599,13 @@ const GameMenu = () => {
                 <div className="flex justify-center space-x-3 mb-4">
                   {gameState?.dealer?.cards?.map((card: string, index: number) => (
                     <div key={index} className="w-14 h-20 transform hover:scale-110 transition-transform duration-200">
-                      {index === 0 && !gameState?.dealer?.revealed ? (
-                        <img src="/cards/BR.png" alt="Back of card" className="w-full h-full object-contain drop-shadow-xl" />
-                      ) : (
                         <img src={`/cards/${card}.png`} alt={card} className="w-full h-full object-contain drop-shadow-xl" />
-                      )}
                     </div>
                   ))}
-                  {gameState?.dealer?.hidden_card && !gameState?.dealer?.revealed && (
-                    <div className="w-14 h-20 transform hover:scale-110 transition-transform duration-200">
-                      <img src="/cards/BR.png" alt="Hidden card" className="w-full h-full object-contain drop-shadow-xl" />
-                    </div>
-                  )}
-                  {gameState?.dealer?.hidden_card && gameState?.dealer?.revealed && (
-                    <div className="w-14 h-20 transform hover:scale-110 transition-transform duration-200">
-                      <img src={`/cards/${gameState.dealer.hidden_card}.png`} alt={gameState.dealer.hidden_card} className="w-full h-full object-contain drop-shadow-xl" />
-                    </div>
-                  )}
                   {/* Empty card slots */}
                   {[
                     ...Array(
-                      Math.max(0, 2 - (gameState?.dealer?.cards?.length || 0) - (gameState?.dealer?.hidden_card ? 1 : 0)),
+                      Math.max(0, 2 - (gameState?.dealer?.cards?.length || 0))
                     ),
                   ].map((_, index) => (
                     <div
@@ -739,37 +617,37 @@ const GameMenu = () => {
                   ))}
         </div>
 
-                {/* Dealer Controls */}
-                <div className="flex items-center justify-center space-x-3">
-                  {gameState?.current_turn === "dealer" && (
-                    <>
+                {/* Dealer Controls: Show all when dealer phase */}
+                {gameState?.game_phase === "dealer" && (
+                  <div className="flex items-center justify-center space-x-3 mt-4">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleStandDealer()
-                        }}
-                        className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <span>Stand</span>
+                  onClick={() => {
+                    if (gameState?.current_turn === "dealer") {
+                    sendWebSocketMessage({ action: "hit_player" })
+                  } else if (gameState?.selected_hand?.player_id) {
+                    sendWebSocketMessage({
+                      action: "hit_player",
+                      player_id: gameState.selected_hand.player_id,
+                      hand_index: gameState.selected_hand.hand_index
+                    })
+                    } else {
+                      setPopupMessage("⚠️ Please select a player or dealer first")
+                      setShowPopup(true)
+                      setTimeout(() => setShowPopup(false), 3000)
+                    }
+                  }}
+                className="px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                >
+                  Hit
                 </button>
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleNextTurn()
-                        }}
-                        className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                        </svg>
-                        <span>Next</span>
+                      onClick={() => sendWebSocketMessage({ action: "next_turn" })}
+                      className="px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                    >
+                      Next
                       </button>
-                    </>
+                  </div>
                   )}
-                </div>
               </div>
             </div>
           </div>
@@ -777,13 +655,23 @@ const GameMenu = () => {
           {/* Players Grid - 2 per row */}
           <div className="grid grid-cols-2 gap-6">
             {Object.entries(gameState?.players || {}).map(([playerId, playerData]) => {
-              const isCurrentPlayer = gameState?.current_player === playerId && gameState?.current_turn === "player"
+              const isCurrentHand = gameState?.selected_hand?.player_id === playerId &&
+                gameState?.selected_hand?.hand_index === 0 &&
+                gameState?.selected_hand?.split_level === 0;
+
+              const isCurrentSplit1Hand = gameState?.selected_hand?.player_id === playerId &&
+                gameState?.selected_hand?.hand_index === 0 &&
+                gameState?.selected_hand?.split_level === 1;
+
+              const isCurrentSplit2Hand = gameState?.selected_hand?.player_id === playerId &&
+                gameState?.selected_hand?.hand_index === 0 &&
+                gameState?.selected_hand?.split_level === 2;
+
               const isActive = playerData.status === 1
               return (
                 <div
                   key={playerId}
-                  className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                    isCurrentPlayer
+                  className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${isCurrentHand
                       ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
                       : isActive
                         ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
@@ -800,20 +688,19 @@ const GameMenu = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div
-                          className={`w-4 h-4 rounded-full shadow-lg ${
-                            isCurrentPlayer 
-                              ? "bg-blue-400 animate-pulse" 
+                          className={`w-4 h-4 rounded-full shadow-lg ${isCurrentHand
+                              ? "bg-blue-400 animate-pulse"
                               : isActive 
                                 ? "bg-green-400 animate-pulse" 
                                 : "bg-gray-400"
                           }`}
                         />
                         <div>
-                          <div className={`text-lg font-bold ${isCurrentPlayer ? "text-gray-900" : "text-white"}`}>
+                          <div className={`text-lg font-bold ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
                             {playerId.replace("player", "Player ")}
                           </div>
-                          <div className={`text-sm ${isCurrentPlayer ? "text-gray-700" : "opacity-75"}`}>
-                            {isCurrentPlayer ? "Current Turn" : isActive ? "Active" : "Inactive"}
+                          <div className={`text-sm ${isCurrentHand ? "text-gray-700" : "opacity-75"}`}>
+                            {isCurrentHand ? "Current Hand" : isActive ? "Active" : "Inactive"}
                           </div>
                         </div>
                       </div>
@@ -836,8 +723,7 @@ const GameMenu = () => {
                             e.stopPropagation()
                             deactivatePlayer(playerId)
                           }}
-                          className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm font-medium ${
-                            isCurrentPlayer
+                          className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm font-medium ${isCurrentHand
                               ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
                               : "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
                           }`}
@@ -854,12 +740,12 @@ const GameMenu = () => {
                       <div className="space-y-4">
                         {/* Cards Display */}
                         <div className={`rounded-lg p-3 ${
-                          isCurrentPlayer 
-                            ? "bg-blue-500/20" 
+                          isHandSelected(gameState, playerId, 0, 0) && gameState?.current_player === playerId
+                            ? "bg-yellow-300 border-2 border-yellow-500"
                             : "bg-black/20"
                         }`}>
                           <div className="flex items-center justify-between mb-2">
-                            <div className={`text-sm font-medium ${isCurrentPlayer ? "text-gray-900" : "text-white"}`}>
+                            <div className={`text-sm font-medium ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
                               Cards:
                         </div>
                           </div>
@@ -883,9 +769,8 @@ const GameMenu = () => {
                             ].map((_, index) => (
                               <div
                                 key={`empty-${index}`}
-                                className={`w-12 h-16 border-2 border-dashed rounded-lg ${
-                                  isCurrentPlayer 
-                                    ? "border-blue-400/50 bg-blue-500/10" 
+                                className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentHand
+                                    ? "border-yellow-400/50 bg-yellow-500/10" 
                                     : "border-gray-400 bg-gray-800/50"
                                 }`}
                               />
@@ -893,35 +778,78 @@ const GameMenu = () => {
                               </div>
                           <div className="mt-2 flex items-center justify-between">
                             <span
-                              className={`text-lg font-bold ${
-                                (gameState?.players?.[playerId]?.hands?.[0]?.total ?? 0) > 21
+                              className={`text-lg font-bold ${(gameState?.players?.[playerId]?.hands?.[0]?.total ?? 0) > 21
                                   ? "text-red-500"
-                                  : isCurrentPlayer
+                                  : isCurrentHand
                                     ? "text-gray-900"
                                     : "text-blue-400"
                               }`}
                             >
                               {gameState?.players?.[playerId]?.hands?.[0]?.total ?? 0}
                             </span>
-                            {gameState?.players?.[playerId]?.hands?.[0]?.cards?.length === 2 && 
-                             gameState?.players?.[playerId]?.hands?.[0]?.cards?.[0]?.[0] === gameState?.players?.[playerId]?.hands?.[0]?.cards?.[1]?.[0] && 
-                             gameState?.players?.[playerId]?.hands?.[0]?.status === "playing" && (
+                            <div className="flex space-x-2">
+                              {isHandSelected(gameState, playerId, 0, 0) && gameState?.current_player === playerId && (
+                                <>
+                                  {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
+                                  {gameState?.dealer?.cards?.[0]?.[0] === "A" && !insuranceState[`${playerId}_0_0`] && !gameState.players[playerId].hands[0].insurence && (
+                                    <button
+                                      onClick={() => handleInsurance(playerId, 0, 0)}
+                                      className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+                                    >
+                                      Insurance
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => { sendWebSocketMessage({ action: "hit_player", player_id: playerId, hand_index: 0 }); clearInsuranceForHand(playerId, 0, 0); }}
+                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                  >
+                                    Hit
+                                  </button>
+                                  <button
+                                    onClick={() => { sendWebSocketMessage({ action: "double_player", player_id: playerId, hand_index: 0 }); clearInsuranceForHand(playerId, 0, 0); }}
+                                    className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                  >
+                                    Double
+                                  </button>
+                                  <button
+                                    onClick={() => { sendWebSocketMessage({ action: "next_turn", player_id: playerId, hand_index: 0 }); clearInsuranceForHand(playerId, 0, 0); }}
+                                    className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                  >
+                                    Stand
+                                  </button>
+                                </>
+                              )}
+                              {/* Main hand split button */}
+                            {isHandSelected(gameState, playerId, 0, 0) && gameState?.current_player === playerId &&
+                              gameState?.players?.[playerId]?.hands?.[0]?.cards?.length === 2 &&
+                              canSplit(gameState.players[playerId].hands[0].cards) &&
+                              gameState.players[playerId].hands[0].status === "playing" && (
                               <button
-                                onClick={() => sendWebSocketMessage({ action: "split_player", player_id: playerId })}
+                                onClick={() => sendWebSocketMessage({ action: "split_player_manual", player_id: playerId })}
                                 className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                               >
                                 Split
                               </button>
                             )}
+                            </div>
                           </div>
                         </div>
 
                         {/* Split1 Hands Display */}
                         {gameState?.players?.[playerId]?.split1?.[0]?.cards?.length > 0 && (
-                          <div className="mt-4 border-t border-gray-300 pt-3">
-                            <div className="text-sm font-medium text-gray-400 mb-2">Split 1:</div>
+                          <div className="mt-4">
+                            <div className={`rounded-lg p-3 ${
+                              isHandSelected(gameState, playerId, 0, 1) && gameState?.current_player === playerId
+                                ? "bg-yellow-300 border-2 border-yellow-500"
+                                : "bg-black/20"
+                            }`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className={`text-sm font-medium ${isCurrentSplit1Hand ? "text-gray-900" : "text-white"}`}>
+                                  Cards:
+                                </div>
+                              </div>
                             <div className="flex space-x-2 mb-2">
-                              {gameState?.players?.[playerId]?.split1?.[0]?.cards?.map((card: string, index: number) => (
+                                {gameState.players[playerId].split1[0].cards.map((card, index) => (
                                 <div key={index} className="relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group">
                                   <img
                                     src={`/cards/${card}.png`}
@@ -934,37 +862,155 @@ const GameMenu = () => {
                                   />
                                 </div>
                               ))}
-                              {/* Empty card slots for split1 */}
-                              {[
-                                ...Array(Math.max(0, 2 - (gameState?.players?.[playerId]?.split1?.[0]?.cards?.length ?? 0))),
-                              ].map((_, index) => (
+                                {/* Empty card slots */}
+                                {[...Array(Math.max(0, 2 - (gameState.players[playerId].split1[0].cards.length ?? 0)))].map((_, index) => (
                                 <div
-                                  key={`split1-empty-${index}`}
-                                  className="w-12 h-16 border-2 border-dashed rounded-lg border-gray-400 bg-gray-800/50"
+                                    key={`empty-${index}`}
+                                    className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit1Hand
+                                        ? "border-yellow-400/50 bg-yellow-500/10"
+                                        : "border-gray-400 bg-gray-800/50"
+                                      }`}
                                 />
                               ))}
                             </div>
                             <div className="mt-2 flex items-center justify-between">
                               <span
-                                className={`text-lg font-bold ${
-                                  (gameState?.players?.[playerId]?.split1?.[0]?.total ?? 0) > 21
+                                  className={`text-lg font-bold ${(gameState.players[playerId].split1[0].total ?? 0) > 21
                                     ? "text-red-500"
+                                      : isCurrentSplit1Hand
+                                        ? "text-gray-900"
                                     : "text-blue-400"
                                 }`}
                               >
-                                {gameState?.players?.[playerId]?.split1?.[0]?.total ?? 0}
+                                  {gameState.players[playerId].split1[0].total ?? 0}
                               </span>
-                              {/* Split button for split1 if conditions are met */}
-                              {gameState?.players?.[playerId]?.split1?.[0]?.cards?.length === 2 && 
-                               gameState?.players?.[playerId]?.split1?.[0]?.cards?.[0]?.[0] === gameState?.players?.[playerId]?.split1?.[0]?.cards?.[1]?.[0] && 
-                               gameState?.players?.[playerId]?.split1?.[0]?.status === "playing" && (
+                                <div className="flex space-x-2">
+                                  {isHandSelected(gameState, playerId, 0, 1) && gameState?.current_player === playerId && (
+                                    <>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "hit_player", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                      >
+                                        Hit
+                                      </button>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "double_player", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                      >
+                                        Double
+                                      </button>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "next_turn", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                      >
+                                        Stand
+                                      </button>
+                                    </>
+                                  )}
+                                  {/* Split1 split button */}
+                              {isHandSelected(gameState, playerId, 0, 1) && gameState?.current_player === playerId &&
+                                gameState?.players?.[playerId]?.split1?.[0]?.cards?.length === 2 &&
+                                canSplit(gameState.players[playerId].split1[0].cards) &&
+                                gameState.players[playerId].split1[0].status === "playing" && (
                                 <button
-                                  onClick={() => sendWebSocketMessage({ action: "split_player", player_id: playerId })}
+                                        onClick={() => sendWebSocketMessage({ action: "split_player_manual", player_id: playerId })}
                                   className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                 >
                                   Split
-                                </button>
-                              )}
+                              </button>
+                            )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Split2 Hands Display */}
+                        {gameState?.players?.[playerId]?.split2?.[0]?.cards?.length > 0 && (
+                          <div className="mt-4">
+                            <div className={`rounded-lg p-3 ${
+                              isHandSelected(gameState, playerId, 0, 2) && gameState?.current_player === playerId
+                                ? "bg-yellow-300 border-2 border-yellow-500"
+                                : "bg-black/20"
+                            }`}>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className={`text-sm font-medium ${isCurrentSplit2Hand ? "text-gray-900" : "text-white"}`}>
+                                  Cards:
+                                </div>
+                              </div>
+                              <div className="flex space-x-2 mb-2">
+                                {gameState.players[playerId].split2[0].cards.map((card, index) => (
+                                  <div key={index} className="relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group">
+                                    <img
+                                      src={`/cards/${card}.png`}
+                                      alt={card}
+                                      className="w-full h-full object-contain"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.src = "/cards/back.png"
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                                {/* Empty card slots */}
+                                {[...Array(Math.max(0, 2 - (gameState.players[playerId].split2[0].cards.length ?? 0)))].map((_, index) => (
+                                  <div
+                                    key={`empty-${index}`}
+                                    className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit2Hand
+                                        ? "border-yellow-400/50 bg-yellow-500/10"
+                                        : "border-gray-400 bg-gray-800/50"
+                                      }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="mt-2 flex items-center justify-between">
+                                <span
+                                  className={`text-lg font-bold ${(gameState.players[playerId].split2[0].total ?? 0) > 21
+                                      ? "text-red-500"
+                                      : isCurrentSplit2Hand
+                                        ? "text-gray-900"
+                                        : "text-blue-400"
+                                    }`}
+                                >
+                                  {gameState.players[playerId].split2[0].total ?? 0}
+                                </span>
+                                <div className="flex space-x-2">
+                                  {isHandSelected(gameState, playerId, 0, 2) && gameState?.current_player === playerId && (
+                                    <>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "hit_player", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                      >
+                                        Hit
+                                      </button>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "double_player", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                      >
+                                        Double
+                                      </button>
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "next_turn", player_id: playerId, hand_index: 0 })}
+                                        className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                      >
+                                        Stand
+                                      </button>
+                                    </>
+                                  )}
+                                  {/* Split2 split button */}
+                                  {isHandSelected(gameState, playerId, 0, 2) && gameState?.current_player === playerId &&
+                                    gameState?.players?.[playerId]?.split2?.[0]?.cards?.length === 2 &&
+                                    canSplit(gameState.players[playerId].split2[0].cards) &&
+                                    gameState.players[playerId].split2[0].status === "playing" && (
+                                      <button
+                                        onClick={() => sendWebSocketMessage({ action: "split_player_manual", player_id: playerId })}
+                                        className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                                      >
+                                        Split
+                                      </button>
+                                    )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -973,7 +1019,7 @@ const GameMenu = () => {
                   </div>
 
                   {/* Next Button - Show for current player */}
-                  {isActive && isCurrentPlayer && (
+                  {isActive && gameState?.current_turn === "player" && (
                     <div className="mt-4 flex justify-end">
                       <button
                         onClick={(e) => {
@@ -997,6 +1043,55 @@ const GameMenu = () => {
 
         {/* Right Section - 30% width for Card Selection */}
         <div className="w-[30%]">
+          {/* Game Actions Section */}
+          <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600 mb-6">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+              <svg className="w-6 h-6 mr-3 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Game Actions
+            </h2>
+            <div className="flex flex-col gap-4">
+                <button
+                  onClick={() => sendWebSocketMessage({ action: "undo_last" })}
+                  className="h-12 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  <span>Undo Last Action</span>
+                </button>
+                <button
+                  onClick={() => sendWebSocketMessage({ action: "reshuffle" })}
+                  className="h-12 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Reshuffle</span>
+                </button>
+                <button
+                  onClick={() => sendWebSocketMessage({ action: "reset_round" })}
+                  className="h-12 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Reset Round</span>
+                </button>
+                <button
+                  onClick={() => sendWebSocketMessage({ action: "distribute_cards" })}
+                  className="h-12 px-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Distribute Cards</span>
+                </button>
+              </div>
+            </div>
+
+          {/* Deal Card Section (existing, now only for dealing cards) */}
           <div className="bg-gradient-to-br from-red-800/80 to-red-700/80 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-red-600 sticky top-6">
             <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
               <svg className="w-6 h-6 mr-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1011,50 +1106,7 @@ const GameMenu = () => {
             </h2>
 
             {/* Game Controls */}
-            <div className="mb-8 flex justify-center items-center">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Global Undo Button */}
-                <button
-                  onClick={() => sendWebSocketMessage({ action: "undo_last" })}
-                  className="h-12 px-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                  </svg>
-                  <span>Undo Last Action</span>
-                </button>
 
-                <button
-                  onClick={() => sendWebSocketMessage({ action: "reshuffle" })}
-                  className="h-12 px-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Reshuffle</span>
-                </button>
-
-                <button
-                  onClick={() => sendWebSocketMessage({ action: "reset_round" })}
-                  className="h-12 px-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Reset Round</span>
-                </button>
-
-                <button
-                  onClick={() => sendWebSocketMessage({ action: "reset_game" })}
-                  className="h-12 px-4 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Reset Game</span>
-                </button>
-              </div>
-            </div>
 
             {/* Card Values */}
             <div className="mb-6">
@@ -1063,8 +1115,7 @@ const GameMenu = () => {
                 {cardValues.map((value) => (
                                 <button
                     key={value}
-                    className={`p-2 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
-                      selectedCard === value
+                    className={`p-2 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${selectedCard === value
                         ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
                         : "bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg"
                     }`}
@@ -1083,8 +1134,7 @@ const GameMenu = () => {
                               {suits.map((suit) => (
                                 <button
                                   key={suit.value}
-                    className={`p-3 rounded-xl text-3xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 ${
-                      selectedSuit === suit.value
+                    className={`p-3 rounded-xl text-3xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 ${selectedSuit === suit.value
                         ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
                         : `bg-gradient-to-br from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600 shadow-lg`
                                     }`}
@@ -1098,8 +1148,9 @@ const GameMenu = () => {
                             </div>
 
             {/* Preview and Assign Button */}
-            {selectedCard && selectedSuit && (
               <div className="flex flex-col items-center gap-4 mt-6">
+              {selectedCard && selectedSuit && (
+                <>
                 <div className="relative">
                   <div className="w-24 h-36 transform hover:scale-110 transition-transform duration-300">
                     <img
@@ -1120,18 +1171,10 @@ const GameMenu = () => {
                 </div>
 
                 <button
-                  onClick={() => {
-                    if (gameState?.current_turn === "dealer") {
-                      handleHitDealer()
-                    } else if (gameState?.selected_player) {
-                      assignCard()
-                    } else {
-                      setPopupMessage("⚠️ Please select a player or dealer first")
-                      setShowPopup(true)
-                      setTimeout(() => setShowPopup(false), 3000)
-                    }
-                  }}
-                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-2 text-lg"
+                  onClick={assignCard}
+                  className={`w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-2 text-lg mb-3
+    ${selectedCard && selectedSuit && (gameState?.game_phase === "dealer" || gameState?.selected_hand?.player_id) ? '' : 'opacity-50 cursor-not-allowed'}`}
+                  disabled={!(selectedCard && selectedSuit && (gameState?.game_phase === "dealer" || gameState?.selected_hand?.player_id))}
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
@@ -1143,8 +1186,38 @@ const GameMenu = () => {
                   </svg>
                   <span>Deal Card</span>
                 </button>
+                </>
+              )}
+
+                <button
+                  onClick={() => {
+                    if (gameState?.current_turn === "dealer") {
+                    sendWebSocketMessage({ action: "hit_player" })
+                  } else if (gameState?.selected_hand?.player_id) {
+                    sendWebSocketMessage({
+                      action: "hit_player",
+                      player_id: gameState.selected_hand.player_id,
+                      hand_index: gameState.selected_hand.hand_index
+                    })
+                    } else {
+                      setPopupMessage("⚠️ Please select a player or dealer first")
+                      setShowPopup(true)
+                      setTimeout(() => setShowPopup(false), 3000)
+                    }
+                  }}
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-2xl flex items-center justify-center space-x-2 text-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                    />
+                  </svg>
+                <span>Pull from Top of Stack</span>
+                </button>
               </div>
-            )}
           </div>
         </div>
       </div>
