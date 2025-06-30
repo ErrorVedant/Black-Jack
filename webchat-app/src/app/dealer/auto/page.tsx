@@ -208,6 +208,17 @@ const GameMenu = () => {
 
   useEffect(() => {
     if (
+      gameState?.mode === "" &&
+      gameState?.round_number === 0 &&
+      gameState?.selected_hand?.player_id === "dealer" &&
+      gameState?.manual_distribution_count === 1
+    ) {
+      sendWebSocketMessage({ action: "next_turn" });
+    }
+  }, [gameState, socket]);
+
+  useEffect(() => {
+    if (
       gameState?.mode === "auto" &&
       gameState?.round_number === 1 &&
       gameState?.selected_hand?.player_id === "dealer" &&

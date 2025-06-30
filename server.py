@@ -253,6 +253,7 @@ async def handle_connection(websocket):
         "reshuffle": lambda d: handle_reshuffle(),
         "activate_player": lambda d: handle_activate_player(d.get("player_id")),
         "remove_player": lambda d: handle_remove_player(d.get("player_id")),
+        "double_player": lambda d: handle_hit_player(d.get("player_id"), d.get("hand_index", 0), d.get("card")),
         "hit_player": lambda d: handle_hit_player(d.get("player_id"), d.get("hand_index", 0), d.get("card")),
         "hit_dealer": lambda d: handle_hit_player("dealer", 0, d.get("card")),
         "stand_player": lambda d: handle_next_turn(),
@@ -406,7 +407,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     print("\n=== HANDLE HIT PLAYER STARTED ===")
     print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
     try:
-        if (game_state["mode"] == "manual" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0) or game_state["round_number"] == 1:
+        if ((game_state["mode"] == "manual" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0) or game_state["round_number"] == 1):
             game_state["next_manual_counter"] = 1
             if player_id == "dealer":
                 hand = game_state["dealer"]
@@ -425,9 +426,12 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                         await broadcast({"action": "error", "message": "Deck is empty"})
                         return
                     card = game_state["deck"].pop()
-                
+
                 hand["cards"].append(card)
                 hand["total"] = calculate_hand_value(hand["cards"])
+                if game_state["round_number"] == 0:
+                    game_state["manual_distribution_count"] = game_state["manual_distribution_count"] + 1
+
                 if is_bust(hand["cards"]):
                     hand["status"] = "bust"
                     hand["result"] = "fail"
@@ -527,6 +531,8 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             hand["cards"].append(card)
             print(f"Cards after adding: {hand['cards']}")
             hand["total"] = calculate_hand_value(hand["cards"])
+            if game_state["round_number"] == 0:
+                game_state["manual_distribution_count"] = game_state["manual_distribution_count"] + 1
             print(f"New total: {hand['total']}")
             
             if hand["status"] == "waiting":
@@ -931,6 +937,7 @@ async def handle_reset_round():
         "selected_hand": None,  # Clear selected hand on round reset
         "evaluate_game": False  # Reset evaluate_game flag
     })
+    game_state["manual_distribution_count"] = 0  # Reset manual distribution count
 
     await broadcast({"action": "round_reset", "game_state": serialize_game_state()})
     log_game_state()
@@ -1014,6 +1021,7 @@ async def handle_reset_game():
         "table_number": 1,
         "evaluate_game": False  # Reset evaluate_game flag
     })
+    game_state["manual_distribution_count"] = 0  # Reset manual distribution count
     
     # Broadcast the complete reset to all clients
     await broadcast({
@@ -1079,8 +1087,33 @@ def get_all_player_hands():
 async def handle_next_turn():
     """Handle moving to the next turn"""
     try:
-        if (game_state["mode"] == "manual" and game_state["next_manual_counter"] == 1 and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["next_manual_counter"] == 1 and game_state["round_number"] == 0) or (game_state["round_number"] == 1) :
-            if game_state["mode"] == "manual" and game_state["round_number"] == 0:
+        if (
+    (
+        game_state["mode"] == "manual" and
+        game_state["next_manual_counter"] == 1 and
+        game_state["round_number"] == 0 and
+        (
+            (game_state["manual_distribution_count"] == 2 and game_state["current_player"] != "dealer") or
+            (game_state["manual_distribution_count"] == 1 and game_state["current_player"] == "dealer")
+        )
+    )
+    or
+    (
+        game_state["mode"] == "auto" and
+        game_state["next_manual_counter"] == 1 and
+        game_state["round_number"] == 0 and
+        (
+            (game_state["manual_distribution_count"] == 2 and game_state["current_player"] != "dealer") or
+            (game_state["manual_distribution_count"] == 1 and game_state["current_player"] == "dealer")
+        )
+    )
+    or
+    (
+        game_state["round_number"] == 1
+    )
+):
+
+            if (game_state["mode"] == "manual" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0):
                 game_state["next_manual_counter"] = 0
             log_function_call("handle_next_turn")
             import copy
@@ -1181,6 +1214,8 @@ async def handle_next_turn():
             print(f"New Current Player: {game_state['current_player']}")
             print(f"Selected Hand: {game_state['selected_hand']}")
             print(f"Game Phase: {game_state['game_phase']}")
+            if (game_state['round_number'] == 0):
+                game_state['manual_distribution_count'] = 0
             # Broadcast turn update
             await broadcast({
                 "action": "turn_updated",
@@ -1193,6 +1228,44 @@ async def handle_next_turn():
     except Exception as e:
         print(f"Error in handle_next_turn: {str(e)}")
         await broadcast({"action": "error", "message": f"Error in next turn: {str(e)}"})
+
+async def handle_start_game():
+    """Start the game and set initial turn"""
+    try:
+        log_function_call("handle_start_game")
+        active_players = get_active_players()
+        active_hands = get_active_hands()
+
+        print("\n=== STARTING GAME ===")
+
+        print(f"Active Players: {active_players}")
+        
+        if not active_players:
+            await broadcast({"action": "error", "message": "No active players"})
+            return
+        
+        # Reset game state for new round
+        game_state["round_number"] = 0
+        game_state["game_phase"] = "player"
+        game_state["current_player"] = active_players[0]
+        game_state["selected_hand"] = {
+            "player_id": active_players[0],
+            "hand_index": 0,
+            "split_level": 0
+        }
+        
+        # Broadcast game start
+        await broadcast({
+            "action": "game_started",
+            "current_player": game_state["current_player"],
+            "selected_hand": game_state["selected_hand"],
+            "game_state": serialize_game_state()
+        })
+        print("=== GAME STARTED ===\n")
+        log_game_state()
+    except Exception as e:
+        print(f"Error in handle_start_game: {str(e)}")
+        await broadcast({"action": "error", "message": f"Error starting game: {str(e)}"})
 
 async def handle_start_game():
     """Start the game and set initial turn"""
@@ -1294,7 +1367,7 @@ async def handle_distribute_cards_auto():
                 await asyncio.sleep(2.0)
         await handle_hit_player("dealer", 0)
         await handle_next_turn()
-        await handle_start_game()
+
         await broadcast({
             "action": "update_game_state",
             "game_state": serialize_game_state()
@@ -1398,15 +1471,6 @@ async def handle_insurence(player_id, hand_index=0, split_level=0):
         })
     else:
         await broadcast({"action": "error", "message": "Invalid hand index or split level for insurance"})
-
-async def handle_set_manual_distribution_count(value):
-    """Set the manual_distribution_count in the game state and broadcast the update."""
-    game_state["manual_distribution_count"] = value if value is not None else 0
-    await broadcast({
-        "action": "manual_distribution_count_updated",
-        "manual_distribution_count": game_state["manual_distribution_count"],
-        "game_state": serialize_game_state()
-    })
 
 async def main():
     log_function_call("main")

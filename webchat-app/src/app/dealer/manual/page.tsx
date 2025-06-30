@@ -94,6 +94,7 @@ const GameMenu = () => {
   const lastPlayerTotalRef = useRef<{ [key: string]: number }>({})
   const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({})
   const [waitingForServer, setWaitingForServer] = useState(false)
+  const lastAutoTurnRef = useRef<{ playerId: string | null, round: number, count: number }>({ playerId: null, round: -1, count: -1 });
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -156,11 +157,6 @@ const GameMenu = () => {
             break;
           case "turn_updated":
             setIsDealerSelected(data.current_turn === "dealer");
-            // Reset manual distribution counter when turn changes in round 0
-            if (gameState?.round_number === 0) {
-              sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
-              console.log("Manual distribution counter reset to 0 (turn updated)");
-            }
             break;
           case "game_started":
             setIsPlaying(true);
@@ -168,7 +164,6 @@ const GameMenu = () => {
             setIsRoundFinished(false);
             setShowNextButton(true);
             setIsDealerSelected(data.current_turn === "dealer");
-            sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
             setLastPlayerTotal({}); // Reset player totals
             lastDealerTotalRef.current = 0; // Reset dealer ref
             lastPlayerTotalRef.current = {}; // Reset player ref
@@ -181,7 +176,6 @@ const GameMenu = () => {
             setIsDealerSelected(false);
             setShowNextButton(false);
             setIsRoundFinished(true);
-            sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
             setLastPlayerTotal({}); // Reset player totals
             lastDealerTotalRef.current = 0; // Reset dealer ref
             lastPlayerTotalRef.current = {}; // Reset player ref
@@ -197,7 +191,6 @@ const GameMenu = () => {
             setIsDealerSelected(false);
             setSelectedCard(null);
             setSelectedSuit(null);
-            sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
             setLastPlayerTotal({}); // Reset player totals
             lastDealerTotalRef.current = 0; // Reset dealer ref
             lastPlayerTotalRef.current = {}; // Reset player ref
@@ -237,6 +230,17 @@ const GameMenu = () => {
   useEffect(() => {
     if (
       gameState?.mode === "manual" &&
+      gameState?.round_number === 0 &&
+      gameState?.selected_hand?.player_id === "dealer" &&
+      gameState?.manual_distribution_count === 1
+    ) {
+      sendWebSocketMessage({ action: "next_turn" });
+    }
+  }, [gameState, socket]);
+
+  useEffect(() => {
+    if (
+      gameState?.mode === "manual" &&
       gameState?.round_number === 1 &&
       gameState?.selected_hand?.player_id === "dealer" &&
       gameState?.dealer.total >= 17 &&
@@ -249,98 +253,8 @@ const GameMenu = () => {
   }, [gameState, socket]);
 
   // Monitor player total changes for manual distribution tracking
-  useEffect(() => {
-    if (gameState?.round_number === 0 && gameState?.selected_hand?.player_id) {
-      const playerId = gameState.selected_hand.player_id;
-      const currentTotal = gameState.players[playerId]?.hands?.[0]?.total || 0;
-      const previousTotal = lastPlayerTotalRef.current[playerId] || 0;
-      
-      // If total increased, it means a card was successfully assigned
-      if (currentTotal > previousTotal) {
-        const newCount = gameState.manual_distribution_count + 1;
-        console.log(`Manual distribution: ${gameState.manual_distribution_count} -> ${newCount} for player ${playerId} (total: ${previousTotal} -> ${currentTotal})`);
-        sendWebSocketMessage({ action: "set_manual_distribution_count", value: newCount });
-        
-        // If this is the second card for this player, call next turn and reset counter
-        if (newCount === 2 && !nextTurnCalledRef.current[playerId]) {
-          console.log(`Second card dealt to ${playerId}, calling next_turn and resetting counter`);
-          
-          // Mark that next_turn has been called for this player
-          nextTurnCalledRef.current[playerId] = true;
-          
-          // Call next turn and reset counter
-          setTimeout(() => {
-            sendWebSocketMessage({ action: "next_turn" });
-            sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
-            setLastPlayerTotal({}); // Reset all player totals when moving to next player
-            lastPlayerTotalRef.current = {}; // Reset ref as well
-            console.log("Manual distribution counter reset to 0 and player totals reset");
-          }, 10);
-        }
-      }
-      
-      // Update the ref with current total
-      lastPlayerTotalRef.current[playerId] = currentTotal;
-    }
-  }, [gameState?.selected_hand?.player_id, gameState?.round_number, gameState?.players, socket]);
-
-  // Monitor dealer total changes for manual distribution tracking in round 0
-  useEffect(() => {
-    if (gameState?.round_number === 0 && gameState?.game_phase === "dealer") {
-      const currentTotal = gameState.dealer?.total || 0;
-      const previousTotal = lastDealerTotalRef.current;
-      
-      // If total increased, it means a card was successfully assigned
-      if (currentTotal > previousTotal) {
-        const newCount = gameState.manual_distribution_count + 1;
-        console.log(`Manual distribution: ${gameState.manual_distribution_count} -> ${newCount} for dealer (total: ${previousTotal} -> ${currentTotal})`);
-        sendWebSocketMessage({ action: "set_manual_distribution_count", value: newCount });
-        
-        // If this is the first card for dealer, call next turn and reset counter
-        if (newCount === 1) {
-          console.log(`First card dealt to dealer, calling next_turn and resetting counter`);
-          
-          // Call next turn and reset counter
-          setTimeout(() => {
-            sendWebSocketMessage({ action: "next_turn" });
-            sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
-            setLastPlayerTotal({}); // Reset all player totals when moving to next player
-            console.log("Manual distribution counter reset to 0 and player totals reset");
-          }, 10);
-        }
-      }
-      
-      // Update the ref with current total
-      lastDealerTotalRef.current = currentTotal;
-    }
-  }, [gameState?.dealer?.total, gameState?.round_number, gameState?.game_phase, socket]);
-
+ 
   // Reset manual distribution counter when switching to a new player in round 0
-  useEffect(() => {
-    if (gameState?.round_number === 0 && gameState?.selected_hand?.player_id) {
-      const playerId = gameState.selected_hand.player_id;
-      const currentTotal = gameState.players[playerId]?.hands?.[0]?.total || 0;
-      
-      // If this is a new player (no previous total recorded), reset the counter
-      if (!(playerId in lastPlayerTotal)) {
-        console.log(`New player ${playerId} selected, resetting manual distribution counter to 0`);
-        sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
-        nextTurnCalledRef.current[playerId] = false; // Reset next turn called for this player
-      }
-    }
-  }, [gameState?.selected_hand?.player_id, gameState?.round_number, lastPlayerTotal]);
-
-  // Reset manual distribution counter when round number changes to 0
-  useEffect(() => {
-    if (gameState?.round_number === 0) {
-      console.log("Round 0 started, resetting manual distribution counter to 0");
-      sendWebSocketMessage({ action: "set_manual_distribution_count", value: 0 });
-      setLastPlayerTotal({});
-      lastDealerTotalRef.current = 0; // Reset dealer ref
-      lastPlayerTotalRef.current = {}; // Reset player ref
-      nextTurnCalledRef.current = {}; // Reset next turn called ref
-    }
-  }, [gameState?.round_number]);
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -600,6 +514,30 @@ const GameMenu = () => {
     if (result === "tie") return "bg-purple-500 border-2 border-purple-700 text-white";
     return "bg-black/20";
   };
+
+  // --- Auto next_turn for manual distribution ---
+  useEffect(() => {
+    if (
+      gameState?.mode === "manual" &&
+      gameState?.round_number === 0 &&
+      gameState?.selected_hand?.player_id &&
+      gameState.selected_hand.player_id !== "dealer" &&
+      (gameState.manual_distribution_count === 1 || gameState.manual_distribution_count === 2)
+    ) {
+      const playerId = gameState.selected_hand.player_id;
+      const round = gameState.round_number;
+      const count = gameState.manual_distribution_count;
+      // Prevent duplicate next_turn for the same player/count/round
+      if (
+        lastAutoTurnRef.current.playerId !== playerId ||
+        lastAutoTurnRef.current.round !== round ||
+        lastAutoTurnRef.current.count !== count
+      ) {
+        sendWebSocketMessage({ action: "next_turn" });
+        lastAutoTurnRef.current = { playerId, round, count };
+      }
+    }
+  }, [gameState?.manual_distribution_count, gameState?.selected_hand?.player_id, gameState?.round_number]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
