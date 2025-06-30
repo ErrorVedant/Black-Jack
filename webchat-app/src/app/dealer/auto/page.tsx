@@ -88,6 +88,7 @@ const GameMenu = () => {
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
   const [insuranceState, setInsuranceState] = useState<{ [key: string]: boolean }>({});
   const [dealerAutoPlayed, setDealerAutoPlayed] = useState(false);
+  const [waitingForServer, setWaitingForServer] = useState(false);
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -182,6 +183,10 @@ const GameMenu = () => {
             setPopupMessage(data.message);
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "player_hit":
+          case "dealer_hit":
+            setWaitingForServer(false);
             break;
         }
       };
@@ -410,9 +415,12 @@ const GameMenu = () => {
 
 
   const assignCard = () => {
+    if (waitingForServer) return; // Prevent double send
+
     if (gameState?.game_phase === "dealer" && selectedCard && selectedSuit) {
       // Allow dealing card to dealer
       const cardCode = selectedCard + selectedSuit;
+      setWaitingForServer(true);
       sendWebSocketMessage({
         action: "hit_dealer",
         card: cardCode
@@ -436,6 +444,7 @@ const GameMenu = () => {
       return;
     }
     const cardCode = selectedCard + selectedSuit;
+    setWaitingForServer(true);
     sendWebSocketMessage({
       action: "hit_player",
       player_id: gameState.selected_hand.player_id,
