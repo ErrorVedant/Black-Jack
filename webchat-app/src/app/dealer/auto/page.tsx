@@ -43,6 +43,8 @@ interface GameState {
   current_player?: string
   mode: string
   round_number: number
+  manual_distribution_count: number
+  next_manual_counter: number
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -208,12 +210,13 @@ const GameMenu = () => {
 
   useEffect(() => {
     if (
-      gameState?.mode === "" &&
+      gameState?.mode === "auto" &&
       gameState?.round_number === 0 &&
       gameState?.selected_hand?.player_id === "dealer" &&
       gameState?.manual_distribution_count === 1
     ) {
-      sendWebSocketMessage({ action: "next_turn" });
+      console.log("next_turn is happening automatically")
+      // sendWebSocketMessage({ action: "next_turn" });
     }
   }, [gameState, socket]);
 
@@ -511,7 +514,7 @@ const GameMenu = () => {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  Dealer Control Panel
+                  Dealer Control Panel (AUTOMATIC)
                 </h1>
                 <div className="flex items-center space-x-4 mt-2">
                   <p className="text-gray-200">Table FT{gameState?.table_number || 1234}</p>

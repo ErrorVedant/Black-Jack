@@ -42,6 +42,7 @@ interface GameState {
     split_level: number
   }
   current_player?: string
+  evaluate_game: boolean
 }
 
 const isHandSelected = (gameState: GameState | null, playerId: string, handIndex: number, splitLevel: number): boolean => {
@@ -74,6 +75,8 @@ const GameMenu = () => {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null);
   const [insuranceState, setInsuranceState] = useState<{ [key: string]: boolean }>({});
+  const [showResultPopup, setShowResultPopup] = useState(false);
+  const [playerResult, setPlayerResult] = useState<string>("");
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -140,6 +143,8 @@ const GameMenu = () => {
             setIsRoundFinished(false);
             setShowNextButton(true);
             setIsDealerSelected(data.current_turn === "dealer");
+            setShowResultPopup(false);
+            setPlayerResult("");
             break;
           case "round_reset":
             setIsPlaying(false);
@@ -147,6 +152,8 @@ const GameMenu = () => {
             setIsDealerSelected(false);
             setShowNextButton(false);
             setIsRoundFinished(true);
+            setShowResultPopup(false);
+            setPlayerResult("");
             break;
           case "game_reset":
             setIsPlaying(false);
@@ -156,9 +163,31 @@ const GameMenu = () => {
             setIsDealerSelected(false);
             setSelectedCard(null);
             setSelectedSuit(null);
+            setShowResultPopup(false);
+            setPlayerResult("");
             setPopupMessage(data.message);
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 3000);
+            break;
+          case "game_evaluated":
+            setShowResultPopup(true);
+            // Get player1's result
+            const player1Data = data.game_state?.players?.player1;
+            if (player1Data) {
+              const mainHandResult = player1Data.hands?.[0]?.result;
+              const split1Result = player1Data.split1?.[0]?.result;
+              const split2Result = player1Data.split2?.[0]?.result;
+              
+              // Determine overall result (prioritize wins, then ties, then losses)
+              let overallResult = "lose";
+              if (mainHandResult === "win" || split1Result === "win" || split2Result === "win") {
+                overallResult = "win";
+              } else if (mainHandResult === "tie" || split1Result === "tie" || split2Result === "tie") {
+                overallResult = "tie";
+              }
+              
+              setPlayerResult(overallResult);
+            }
             break;
           case "error":
             setPopupMessage(data.message);
@@ -1050,7 +1079,36 @@ const GameMenu = () => {
             </div>
           )}
 
-          
+          {/* Result Popup */}
+          {showResultPopup && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-gradient-to-br from-gray-800 to-gray-900 border-2 border-gray-600 text-white p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 backdrop-blur-xl">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">
+                    {playerResult === "win" && "🎉"}
+                    {playerResult === "lose" && "😔"}
+                    {playerResult === "tie" && "🤝"}
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">
+                    {playerResult === "win" && "YOU WIN!"}
+                    {playerResult === "lose" && "YOU LOSE"}
+                    {playerResult === "tie" && "IT'S A TIE"}
+                  </h2>
+                  <p className="text-gray-300 mb-6">
+                    {playerResult === "win" && "Congratulations! You beat the dealer!"}
+                    {playerResult === "lose" && "Better luck next time!"}
+                    {playerResult === "tie" && "A fair game - no winner this round."}
+                  </p>
+                  <button
+                    onClick={() => setShowResultPopup(false)}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="fixed inset-0 w-screen h-screen flex justify-center items-center z-50">

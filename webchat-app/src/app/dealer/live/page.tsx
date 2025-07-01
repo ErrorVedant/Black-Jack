@@ -230,7 +230,7 @@ const GameMenu = () => {
 
   useEffect(() => {
     if (
-      gameState?.mode === "manual" &&
+      gameState?.mode === "live" &&
       gameState?.round_number === 1 &&
       gameState?.selected_hand?.player_id === "dealer" &&
       gameState?.dealer.total >= 17 &&
@@ -505,10 +505,10 @@ const GameMenu = () => {
     return "bg-black/20";
   };
 
-  // --- Auto next_turn for manual distribution ---
+  // --- Auto next_turn for live distribution ---
   useEffect(() => {
     if (
-      gameState?.mode === "manual" &&
+      gameState?.mode === "live" &&
       gameState?.round_number === 0 &&
       gameState?.selected_hand?.player_id &&
       gameState.selected_hand.player_id !== "dealer" &&
@@ -527,16 +527,19 @@ const GameMenu = () => {
         lastAutoTurnRef.current = { playerId, round, count };
       }
     }
-    else if (
-      gameState?.mode === "manual" &&
-      gameState?.round_number === 0 &&
-      gameState?.selected_hand?.player_id === "dealer" &&
-      gameState?.manual_distribution_count === 1
-    ) {
-      console.log("next_turn is happening automatically")
-      // sendWebSocketMessage({ action: "next_turn" });
-    }
   }, [gameState?.manual_distribution_count, gameState?.selected_hand?.player_id, gameState?.round_number]);
+
+  useEffect(() => {
+    if (
+        gameState?.mode === "live" &&
+        gameState?.round_number === 0 &&
+        gameState?.selected_hand?.player_id === "dealer" &&
+        gameState?.manual_distribution_count === 1
+      ) {
+        console.log("next_turn is happening automatically")
+        sendWebSocketMessage({ action: "next_turn" });
+      }
+  }, [gameState, socket]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
@@ -556,7 +559,7 @@ const GameMenu = () => {
               </div>
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  Dealer Control Panel (MANUAL)
+                  Dealer Control Panel (LIVE)
                 </h1>
                 <div className="flex items-center space-x-4 mt-2">
                   <p className="text-gray-200">Table FT{gameState?.table_number || 1234}</p>
@@ -577,13 +580,13 @@ const GameMenu = () => {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => sendWebSocketMessage({ action: "manual_start" })}
+                onClick={() => sendWebSocketMessage({ action: "live_start" })}
                 className="h-12 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Manual Start</span>
+                <span>Live Start</span>
               </button>
 
               <button
