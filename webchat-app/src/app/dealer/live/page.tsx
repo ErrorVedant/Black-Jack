@@ -537,7 +537,7 @@ const GameMenu = () => {
         gameState?.manual_distribution_count === 1
       ) {
         console.log("next_turn is happening automatically")
-        sendWebSocketMessage({ action: "next_turn" });
+        // sendWebSocketMessage({ action: "next_turn" });
       }
   }, [gameState, socket]);
 

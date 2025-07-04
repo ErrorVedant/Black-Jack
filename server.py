@@ -269,7 +269,14 @@ async def handle_connection(websocket):
         "insurence": lambda d: handle_insurence(d.get("player_id"), d.get("hand_index", 0), d.get("split_level", 0)),
         "dealer_auto_play": lambda d: handle_dealer_value_less_then_17(),
         "evaluate_game": lambda d: evaluate_game(),
-        "set_manual_distribution_count": lambda d: handle_set_manual_distribution_count(d.get("value")),
+        "activate_split1": lambda d: handle_activate_split1(d.get("player_id")),
+        "activate_split2": lambda d: handle_activate_split2(d.get("player_id")),
+        "deactivate_split1": lambda d: handle_deactivate_split1(d.get("player_id")),
+        "deactivate_split2": lambda d: handle_deactivate_split2(d.get("player_id")),
+        "manual_make_win": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "win"),
+        "manual_make_lose": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "lose"),
+        "manual_make_tie": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "tie"),
+        "manual_start":  lambda d: handle_manual_start()
     }
 
     try:
@@ -1174,53 +1181,26 @@ async def handle_start_game():
         print(f"Error in handle_start_game: {str(e)}")
         await broadcast({"action": "error", "message": f"Error starting game: {str(e)}"})
 
-async def handle_start_game():
-    """Start the game and set initial turn"""
-    try:
-        log_function_call("handle_start_game")
-        active_players = get_active_players()
-        active_hands = get_active_hands()
 
-        print("\n=== STARTING GAME ===")
-
-        print(f"Active Players: {active_players}")
-        
-        if not active_players:
-            await broadcast({"action": "error", "message": "No active players"})
-            return
-        
-        # Reset game state for new round
-        game_state["round_number"] = 0
-        game_state["game_phase"] = "player"
-        game_state["current_player"] = active_players[0]
-        game_state["selected_hand"] = {
-            "player_id": active_players[0],
-            "hand_index": 0,
-            "split_level": 0
-        }
-        
-        # Broadcast game start
-        await broadcast({
-            "action": "game_started",
-            "current_player": game_state["current_player"],
-            "selected_hand": game_state["selected_hand"],
-            "game_state": serialize_game_state()
-        })
-        print("=== GAME STARTED ===\n")
-        log_game_state()
-    except Exception as e:
-        print(f"Error in handle_start_game: {str(e)}")
-        await broadcast({"action": "error", "message": f"Error starting game: {str(e)}"})
-
-async def handle_live_start():
+async def handle_manual_start():
     """Start the game in manual mode"""
     log_function_call("handle_manual_start")
     print("\n=== STARTING MANUAL GAME ===")
     # Set game mode to manual
+    game_state["mode"] = "manual"
+    await broadcast({
+        "action": "manual_mode_started",
+        "game_state": serialize_game_state()
+    })
+
+async def handle_live_start():
+    """Start the game in live mode"""
+    log_function_call("handle_live_start")
+    print("\n=== STARTING LIVE GAME ===")
+    # Set game mode to manual
     game_state["mode"] = "live"
     await handle_start_game()  # Call handle_start_game at the start
 
-       
 def get_active_players():
     """Get list of active player IDs"""
     active_players = [pid for pid, pdata in game_state["players"].items() if pdata["status"] == 1]
@@ -1378,6 +1358,126 @@ async def handle_insurence(player_id, hand_index=0, split_level=0):
         })
     else:
         await broadcast({"action": "error", "message": "Invalid hand index or split level for insurance"})
+
+async def handle_activate_split1(player_id):
+    """Activate split1 for a player"""
+    log_function_call("handle_activate_split1", player_id=player_id)
+    
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    
+    player_data = game_state["players"][player_id]
+    
+    if player_data["split1_status"] == 1:
+        await broadcast({"action": "error", "message": "Split1 is already active"})
+        return
+    
+    # Create a new split1 hand
+    player_data["split1"] = [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
+    player_data["split1_status"] = 1
+    
+    await broadcast({
+        "action": "split1_activated",
+        "player_id": player_id,
+        "message": f"Split1 activated for {player_id}",
+        "game_state": serialize_game_state()
+    })
+    log_game_state()
+
+async def handle_activate_split2(player_id):
+    """Activate split2 for a player"""
+    log_function_call("handle_activate_split2", player_id=player_id)
+    
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    
+    player_data = game_state["players"][player_id]
+    
+    if player_data["split2_status"] == 1:
+        await broadcast({"action": "error", "message": "Split2 is already active"})
+        return
+    
+    # Create a new split2 hand
+    player_data["split2"] = [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
+    player_data["split2_status"] = 1
+    
+    await broadcast({
+        "action": "split2_activated",
+        "player_id": player_id,
+        "message": f"Split2 activated for {player_id}",
+        "game_state": serialize_game_state()
+    })
+    log_game_state()
+
+async def handle_deactivate_split1(player_id):
+    log_function_call("handle_deactivate_split1", player_id=player_id)
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    player_data = game_state["players"][player_id]
+    player_data["split1"] = [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
+    player_data["split1_status"] = 0
+    await broadcast({
+        "action": "split1_deactivated",
+        "player_id": player_id,
+        "message": f"Split1 deactivated for {player_id}",
+        "game_state": serialize_game_state()
+    })
+    log_game_state()
+
+async def handle_deactivate_split2(player_id):
+    log_function_call("handle_deactivate_split2", player_id=player_id)
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    player_data = game_state["players"][player_id]
+    player_data["split2"] = [{"cards": [], "total": 0, "status": "waiting", "result": ""}]
+    player_data["split2_status"] = 0
+    await broadcast({
+        "action": "split2_deactivated",
+        "player_id": player_id,
+        "message": f"Split2 deactivated for {player_id}",
+        "game_state": serialize_game_state()
+    })
+    log_game_state()
+
+async def handle_manual_make_result(player_id, split_level, hand_index, result):
+    log_function_call("handle_manual_make_result", player_id=player_id, split_level=split_level, hand_index=hand_index, result=result)
+    if not player_id or player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": "Invalid player ID"})
+        return
+    player_data = game_state["players"][player_id]
+    hand = None
+    if split_level == 1:
+        if player_data["split1_status"] == 1:
+            hand = player_data["split1"][hand_index]
+        else:
+            await broadcast({"action": "error", "message": "Split1 is not active for this player"})
+            return
+    elif split_level == 2:
+        if player_data["split2_status"] == 1:
+            hand = player_data["split2"][hand_index]
+        else:
+            await broadcast({"action": "error", "message": "Split2 is not active for this player"})
+            return
+    else:
+        hand = player_data["hands"][hand_index]
+    print(f"hand: {hand}")
+    if hand is not None:
+        hand["result"] = result
+        await broadcast({
+            "action": f"manual_make_{result}",
+            "player_id": player_id,
+            "split_level": split_level,
+            "hand_index": hand_index,
+            "result": result,
+            "game_state": serialize_game_state()
+        })
+        log_game_state()
+    else:
+        await broadcast({"action": "error", "message": "Invalid hand index or split level for manual result"})
 
 async def main():
     log_function_call("main")

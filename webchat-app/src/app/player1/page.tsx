@@ -1060,15 +1060,6 @@ const GameMenu = () => {
             </div>
           </div>
 
-          {/* DebugPanel at the end */}
-          <DebugPanel gameState={gameState} />
-
-          {/* Display the entire gameState as formatted JSON for debugging */}
-          <div className="mt-8 p-4 bg-black/80 text-green-300 rounded-xl overflow-x-auto text-xs max-w-full">
-            <h3 className="font-bold text-yellow-400 mb-2">Game State (Debug)</h3>
-            <pre className="whitespace-pre-wrap break-all">{JSON.stringify(gameState, null, 2)}</pre>
-          </div>
-
           {/* Enhanced Popup Message */}
           {showPopup && (
             <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
@@ -1109,6 +1100,12 @@ const GameMenu = () => {
               </div>
             </div>
           )}
+
+          {/* Debug: Show full game state at the end */}
+          <div className="mt-10 p-4 bg-black/80 text-green-300 rounded-xl overflow-x-auto text-xs">
+            <h2 className="font-bold text-yellow-300 mb-2">Game State Debug</h2>
+            <pre>{JSON.stringify(gameState, null, 2)}</pre>
+          </div>
         </div>
       ) : (
         <div className="fixed inset-0 w-screen h-screen flex justify-center items-center z-50">
