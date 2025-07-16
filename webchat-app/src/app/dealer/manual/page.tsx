@@ -1,5 +1,5 @@
-"use client"
-import { useState, useEffect, useRef } from "react"
+'use client'
+import { useState, useEffect, useRef } from 'react'
 
 interface Hand {
   cards: string[]
@@ -49,32 +49,37 @@ interface GameState {
 }
 
 // Add these helper functions at the top of the file, after the interfaces
-const isHandSelected = (gameState: GameState | null, playerId: string, handIndex: number, splitLevel: number): boolean => {
-  return gameState?.selected_hand?.player_id === playerId &&
+const isHandSelected = (
+  gameState: GameState | null,
+  playerId: string,
+  handIndex: number,
+  splitLevel: number
+): boolean => {
+  return (
+    gameState?.selected_hand?.player_id === playerId &&
     gameState?.selected_hand?.hand_index === handIndex &&
-    gameState?.selected_hand?.split_level === splitLevel;
-};
+    gameState?.selected_hand?.split_level === splitLevel
+  )
+}
 
 const canSplit = (cards: string[]): boolean => {
-  if (cards.length !== 2) return false;
+  if (cards.length !== 2) return false
   // Only compare the rank (first character)
-  return cards[0][0] === cards[1][0];
-};
+  return cards[0][0] === cards[1][0]
+}
 
 const DebugPanel = ({ gameState }: { gameState: GameState | null }) => {
-  if (!gameState) return null;
+  if (!gameState) return null
 
   // Group players into rows of 3
-  const playerEntries = Object.entries(gameState.players);
-  const playerRows = [];
+  const playerEntries = Object.entries(gameState.players)
+  const playerRows = []
   for (let i = 0; i < playerEntries.length; i += 3) {
-    playerRows.push(playerEntries.slice(i, i + 3));
+    playerRows.push(playerEntries.slice(i, i + 3))
   }
 
-  return (
-    <></>
-  );
-};
+  return <></>
+}
 
 const GameMenu = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null)
@@ -85,159 +90,168 @@ const GameMenu = () => {
   const [isRoundFinished, setIsRoundFinished] = useState(false)
   const [showNextButton, setShowNextButton] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
-  const [popupMessage, setPopupMessage] = useState("")
+  const [popupMessage, setPopupMessage] = useState('')
   const [isDealerSelected, setIsDealerSelected] = useState(false)
   const [selectedCard, setSelectedCard] = useState<string | null>(null)
   const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
-  const [insuranceState, setInsuranceState] = useState<{ [key: string]: boolean }>({})
-  const [lastPlayerTotal, setLastPlayerTotal] = useState<{ [key: string]: number }>({})
+  const [insuranceState, setInsuranceState] = useState<{
+    [key: string]: boolean
+  }>({})
+  const [lastPlayerTotal, setLastPlayerTotal] = useState<{
+    [key: string]: number
+  }>({})
   const lastDealerTotalRef = useRef(0)
   const lastPlayerTotalRef = useRef<{ [key: string]: number }>({})
   const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({})
   const [waitingForServer, setWaitingForServer] = useState(false)
-  const lastAutoTurnRef = useRef<{ playerId: string | null, round: number, count: number }>({ playerId: null, round: -1, count: -1 });
+  const lastAutoTurnRef = useRef<{
+    playerId: string | null
+    round: number
+    count: number
+  }>({ playerId: null, round: -1, count: -1 })
 
   useEffect(() => {
-    let ws: WebSocket | null = null;
-    let reconnectTimeout: NodeJS.Timeout;
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    const RECONNECT_DELAY = 3000;
+    let ws: WebSocket | null = null
+    let reconnectTimeout: NodeJS.Timeout
+    let reconnectAttempts = 0
+    const MAX_RECONNECT_ATTEMPTS = 5
+    const RECONNECT_DELAY = 3000
 
     const connect = () => {
-      ws = new WebSocket("ws://localhost:6790");
+      ws = new WebSocket('ws://localhost:6790')
 
       ws.onopen = () => {
-        console.log("Connected to server");
-        setIsConnected(true);
-        reconnectAttempts = 0;
-      };
+        console.log('Connected to server')
+        setIsConnected(true)
+        reconnectAttempts = 0
+      }
 
       ws.onclose = () => {
-        console.log("Disconnected from server");
-        setIsConnected(false);
+        console.log('Disconnected from server')
+        setIsConnected(false)
 
         // Attempt to reconnect
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttempts++;
-          console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
-          reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
+          reconnectAttempts++
+          console.log(
+            `Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
+          )
+          reconnectTimeout = setTimeout(connect, RECONNECT_DELAY)
         } else {
-          console.log("Max reconnection attempts reached");
-          setPopupMessage("⚠️ Connection lost. Please refresh the page.");
-          setShowPopup(true);
+          console.log('Max reconnection attempts reached')
+          setPopupMessage('⚠️ Connection lost. Please refresh the page.')
+          setShowPopup(true)
         }
-      };
+      }
 
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        setPopupMessage("⚠️ Connection error occurred");
-        setShowPopup(true);
-      };
+      ws.onerror = error => {
+        console.error('WebSocket error:', error)
+        setPopupMessage('⚠️ Connection error occurred')
+        setShowPopup(true)
+      }
 
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("Received:", data);
+      ws.onmessage = event => {
+        const data = JSON.parse(event.data)
+        console.log('Received:', data)
 
         // Update game state for all relevant actions
         if (data.game_state) {
-          setGameState(data.game_state);
+          setGameState(data.game_state)
         }
 
         // Handle specific actions
         switch (data.action) {
-          case "player_activated":
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 1000);
-            break;
-          case "player_removed":
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 1000);
-            break;
-          case "turn_updated":
-            setIsDealerSelected(data.current_turn === "dealer");
-            break;
-          case "game_started":
-            setIsPlaying(true);
-            setIsGameStarted(true);
-            setIsRoundFinished(false);
-            setShowNextButton(true);
-            setIsDealerSelected(data.current_turn === "dealer");
-            setLastPlayerTotal({}); // Reset player totals
-            lastDealerTotalRef.current = 0; // Reset dealer ref
-            lastPlayerTotalRef.current = {}; // Reset player ref
-            nextTurnCalledRef.current = {}; // Reset next turn called ref
-            console.log("Manual distribution counter reset to 0 (game started)");
-            break;
-          case "round_reset":
-            setIsPlaying(false);
-            setIsGameStarted(false);
-            setIsDealerSelected(false);
-            setShowNextButton(false);
-            setIsRoundFinished(true);
-            setLastPlayerTotal({}); // Reset player totals
-            lastDealerTotalRef.current = 0; // Reset dealer ref
-            lastPlayerTotalRef.current = {}; // Reset player ref
-            nextTurnCalledRef.current = {}; // Reset next turn called ref
-            console.log("Manual distribution counter reset to 0 (round reset)");
-            break;
-          case "game_reset":
+          case 'player_activated':
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 1000)
+            break
+          case 'player_removed':
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 1000)
+            break
+          case 'turn_updated':
+            setIsDealerSelected(data.current_turn === 'dealer')
+            break
+          case 'game_started':
+            setIsPlaying(true)
+            setIsGameStarted(true)
+            setIsRoundFinished(false)
+            setShowNextButton(true)
+            setIsDealerSelected(data.current_turn === 'dealer')
+            setLastPlayerTotal({}) // Reset player totals
+            lastDealerTotalRef.current = 0 // Reset dealer ref
+            lastPlayerTotalRef.current = {} // Reset player ref
+            nextTurnCalledRef.current = {} // Reset next turn called ref
+            console.log('Manual distribution counter reset to 0 (game started)')
+            break
+          case 'round_reset':
+            setIsPlaying(false)
+            setIsGameStarted(false)
+            setIsDealerSelected(false)
+            setShowNextButton(false)
+            setIsRoundFinished(true)
+            setLastPlayerTotal({}) // Reset player totals
+            lastDealerTotalRef.current = 0 // Reset dealer ref
+            lastPlayerTotalRef.current = {} // Reset player ref
+            nextTurnCalledRef.current = {} // Reset next turn called ref
+            console.log('Manual distribution counter reset to 0 (round reset)')
+            break
+          case 'game_reset':
             // Reset all local state
-            setIsPlaying(false);
-            setIsGameStarted(false);
-            setIsRoundFinished(false);
-            setShowNextButton(false);
-            setIsDealerSelected(false);
-            setSelectedCard(null);
-            setSelectedSuit(null);
-            setLastPlayerTotal({}); // Reset player totals
-            lastDealerTotalRef.current = 0; // Reset dealer ref
-            lastPlayerTotalRef.current = {}; // Reset player ref
-            nextTurnCalledRef.current = {}; // Reset next turn called ref
-            console.log("Manual distribution counter reset to 0 (game reset)");
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 3000);
-            break;
-          case "error":
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 1000);
-            break;
-          case "split1_activated":
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 1000);
-            break;
-          case "split2_activated":
-            setPopupMessage(data.message);
-            setShowPopup(true);
-            setTimeout(() => setShowPopup(false), 1000);
-            break;
-          case "player_hit":
-          case "dealer_hit":
-            setWaitingForServer(false);
-            break;
+            setIsPlaying(false)
+            setIsGameStarted(false)
+            setIsRoundFinished(false)
+            setShowNextButton(false)
+            setIsDealerSelected(false)
+            setSelectedCard(null)
+            setSelectedSuit(null)
+            setLastPlayerTotal({}) // Reset player totals
+            lastDealerTotalRef.current = 0 // Reset dealer ref
+            lastPlayerTotalRef.current = {} // Reset player ref
+            nextTurnCalledRef.current = {} // Reset next turn called ref
+            console.log('Manual distribution counter reset to 0 (game reset)')
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 3000)
+            break
+          case 'error':
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 1000)
+            break
+          case 'split1_activated':
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 1000)
+            break
+          case 'split2_activated':
+            setPopupMessage(data.message)
+            setShowPopup(true)
+            setTimeout(() => setShowPopup(false), 1000)
+            break
+          case 'player_hit':
+          case 'dealer_hit':
+            setWaitingForServer(false)
+            break
         }
-      };
+      }
 
-      setSocket(ws);
-    };
+      setSocket(ws)
+    }
 
-    connect();
+    connect()
 
     return () => {
       if (ws) {
-        ws.close();
+        ws.close()
       }
       if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
+        clearTimeout(reconnectTimeout)
       }
-    };
-  }, []);
-
+    }
+  }, [])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -248,7 +262,7 @@ const GameMenu = () => {
 
   const activatePlayer = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+      setPopupMessage('⚠️ Not connected to server')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
@@ -256,20 +270,20 @@ const GameMenu = () => {
 
     // Send selection to backend first
     sendWebSocketMessage({
-      action: "select_player",
+      action: 'select_player',
       player_id: playerId
     })
 
     // Then activate the player
     sendWebSocketMessage({
-      action: "activate_player",
+      action: 'activate_player',
       player_id: playerId
     })
   }
 
   const deactivatePlayer = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+      setPopupMessage('⚠️ Not connected to server')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
@@ -278,20 +292,20 @@ const GameMenu = () => {
     // Clear selection if deactivating selected player
     if (gameState?.selected_hand?.player_id === playerId) {
       sendWebSocketMessage({
-        action: "select_player",
+        action: 'select_player',
         player_id: null
       })
     }
 
     sendWebSocketMessage({
-      action: "remove_player",
+      action: 'remove_player',
       player_id: playerId
     })
   }
 
   const handlePlayerClick = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+      setPopupMessage('⚠️ Not connected to server')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
@@ -299,14 +313,14 @@ const GameMenu = () => {
 
     // Send selection to backend
     sendWebSocketMessage({
-      action: "select_player",
+      action: 'select_player',
       player_id: playerId
     })
   }
 
   const startGameLoop = () => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+      setPopupMessage('⚠️ Not connected to server')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
@@ -315,7 +329,7 @@ const GameMenu = () => {
     // Check if there are any active players
     const activePlayers = getActivePlayers()
     if (activePlayers.length === 0) {
-      setPopupMessage("⚠️ No active players")
+      setPopupMessage('⚠️ No active players')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
@@ -323,7 +337,7 @@ const GameMenu = () => {
 
     // Send start game message
     sendWebSocketMessage({
-      action: "start_game"
+      action: 'start_game'
     })
 
     // Update UI states
@@ -331,15 +345,15 @@ const GameMenu = () => {
     setIsGameStarted(true)
     setIsRoundFinished(false)
     setShowNextButton(true)
-    setPopupMessage("🎮 Game started!")
+    setPopupMessage('🎮 Game started!')
     setShowPopup(true)
     setTimeout(() => setShowPopup(false), 3000)
   }
 
   const stopGameLoop = () => {
-    if (gameState?.game_phase === "playing") {
+    if (gameState?.game_phase === 'playing') {
       sendWebSocketMessage({
-        action: "reset_round"
+        action: 'reset_round'
       })
     }
     setIsPlaying(false)
@@ -347,21 +361,21 @@ const GameMenu = () => {
     setIsDealerSelected(false)
     setShowNextButton(false)
     setIsRoundFinished(true)
-    setPopupMessage("🛑 Game stopped")
+    setPopupMessage('🛑 Game stopped')
     setShowPopup(true)
     setTimeout(() => setShowPopup(false), 3000)
   }
 
   const sendWebSocketMessage = (message: any) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
-      console.log("Sending message to server:", message);
-      socket.send(JSON.stringify(message));
+      console.log('Sending message to server:', message)
+      socket.send(JSON.stringify(message))
     } else {
-      setPopupMessage("⚠️ Not connected to server");
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 3000);
+      setPopupMessage('⚠️ Not connected to server')
+      setShowPopup(true)
+      setTimeout(() => setShowPopup(false), 3000)
     }
-  };
+  }
 
   // Add this new function to get active players
   const getActivePlayers = () => {
@@ -371,12 +385,26 @@ const GameMenu = () => {
       .map(([id]) => id)
   }
 
-  const cardValues = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"]
+  const cardValues = [
+    'A',
+    '2',
+    '3',
+    '4',
+    '5',
+    '6',
+    '7',
+    '8',
+    '9',
+    'T',
+    'J',
+    'Q',
+    'K'
+  ]
   const suits = [
-    { symbol: "♠", value: "S", color: "text-gray-800", name: "Spades" },
-    { symbol: "♦", value: "D", color: "text-red-500", name: "Diamonds" },
-    { symbol: "♣", value: "C", color: "text-gray-800", name: "Clubs" },
-    { symbol: "♥", value: "H", color: "text-red-500", name: "Hearts" }
+    { symbol: '♠', value: 'S', color: 'text-gray-800', name: 'Spades' },
+    { symbol: '♦', value: 'D', color: 'text-red-500', name: 'Diamonds' },
+    { symbol: '♣', value: 'C', color: 'text-gray-800', name: 'Clubs' },
+    { symbol: '♥', value: 'H', color: 'text-red-500', name: 'Hearts' }
   ]
 
   // Update the dealer total check
@@ -384,480 +412,565 @@ const GameMenu = () => {
 
   const handleNextTurn = () => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server")
+      setPopupMessage('⚠️ Not connected to server')
       setShowPopup(true)
       setTimeout(() => setShowPopup(false), 3000)
       return
     }
 
     sendWebSocketMessage({
-      action: "next_turn"
+      action: 'next_turn'
     })
   }
 
   const handleStandDealer = () => {
     sendWebSocketMessage({
-      action: "stand_dealer"
+      action: 'stand_dealer'
     })
   }
 
   const resetGame = () => {
     if (!socket || !isConnected) {
-      setPopupMessage("⚠️ Not connected to server");
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 3000);
-      return;
+      setPopupMessage('⚠️ Not connected to server')
+      setShowPopup(true)
+      setTimeout(() => setShowPopup(false), 3000)
+      return
     }
 
     // Reset all local state
-    setIsPlaying(false);
-    setIsGameStarted(false);
-    setIsRoundFinished(false);
-    setShowNextButton(false);
-    setIsDealerSelected(false);
-    setSelectedCard(null);
-    setSelectedSuit(null);
+    setIsPlaying(false)
+    setIsGameStarted(false)
+    setIsRoundFinished(false)
+    setShowNextButton(false)
+    setIsDealerSelected(false)
+    setSelectedCard(null)
+    setSelectedSuit(null)
 
     // Send reset game message to server
     sendWebSocketMessage({
-      action: "reset_game"
-    });
+      action: 'reset_game'
+    })
 
-    setPopupMessage("🔄 Game has been reset");
-    setShowPopup(true);
-    setTimeout(() => setShowPopup(false), 3000);
-  };
-
+    setPopupMessage('🔄 Game has been reset')
+    setShowPopup(true)
+    setTimeout(() => setShowPopup(false), 3000)
+  }
 
   const assignCard = () => {
-    if (waitingForServer) return; // Prevent double send
+    if (waitingForServer) return // Prevent double send
 
-    if (gameState?.game_phase === "dealer" && selectedCard && selectedSuit) {
+    if (gameState?.game_phase === 'dealer' && selectedCard && selectedSuit) {
       // Allow dealing card to dealer
-      const cardCode = selectedCard + selectedSuit;
-      setWaitingForServer(true);
+      const cardCode = selectedCard + selectedSuit
+      setWaitingForServer(true)
       sendWebSocketMessage({
-        action: "hit_dealer",
+        action: 'hit_dealer',
         card: cardCode
-      });
-      setSelectedCard(null);
-      setSelectedSuit(null);
-      setIsDealerSelected(false);
-      return;
+      })
+      setSelectedCard(null)
+      setSelectedSuit(null)
+      setIsDealerSelected(false)
+      return
     }
-    if (!gameState?.selected_hand?.player_id || !selectedCard || !selectedSuit) {
-      setPopupMessage("⚠️ Please select player, card, and suit");
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 3000);
-      return;
+    if (
+      !gameState?.selected_hand?.player_id ||
+      !selectedCard ||
+      !selectedSuit
+    ) {
+      setPopupMessage('⚠️ Please select player, card, and suit')
+      setShowPopup(true)
+      setTimeout(() => setShowPopup(false), 3000)
+      return
     }
     // Ensure player is active
     if (!gameState?.players[gameState.selected_hand.player_id]?.status) {
-      setPopupMessage("⚠️ Player must be active to add cards");
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 3000);
-      return;
+      setPopupMessage('⚠️ Player must be active to add cards')
+      setShowPopup(true)
+      setTimeout(() => setShowPopup(false), 3000)
+      return
     }
-    const cardCode = selectedCard + selectedSuit;
-    setWaitingForServer(true);
+    const cardCode = selectedCard + selectedSuit
+    setWaitingForServer(true)
     // Send the hit_player action
     sendWebSocketMessage({
-      action: "hit_player",
+      action: 'hit_player',
       player_id: gameState.selected_hand.player_id,
       hand_index: gameState.selected_hand.hand_index,
       card: cardCode
-    });
-    setSelectedCard(null);
-    setSelectedSuit(null);
-  };
+    })
+    setSelectedCard(null)
+    setSelectedSuit(null)
+  }
 
-  const handleInsurance = (playerId: string, handIndex: number, splitLevel: number = 0) => {
+  const handleInsurance = (
+    playerId: string,
+    handIndex: number,
+    splitLevel: number = 0
+  ) => {
     sendWebSocketMessage({
-      action: "handle_insurance",
+      action: 'handle_insurance',
       player_id: playerId,
       hand_index: handIndex,
       split_level: splitLevel
-    });
-    setInsuranceState((prev) => ({ ...prev, [`${playerId}_${handIndex}_${splitLevel}`]: true }));
-  };
+    })
+    setInsuranceState(prev => ({
+      ...prev,
+      [`${playerId}_${handIndex}_${splitLevel}`]: true
+    }))
+  }
 
-  const clearInsuranceForHand = (playerId: string, handIndex: number, splitLevel: number = 0) => {
-    setInsuranceState((prev) => {
-      const newState = { ...prev };
-      delete newState[`${playerId}_${handIndex}_${splitLevel}`];
-      return newState;
-    });
-  };
+  const clearInsuranceForHand = (
+    playerId: string,
+    handIndex: number,
+    splitLevel: number = 0
+  ) => {
+    setInsuranceState(prev => {
+      const newState = { ...prev }
+      delete newState[`${playerId}_${handIndex}_${splitLevel}`]
+      return newState
+    })
+  }
 
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
-    if (selected) return "bg-yellow-300 border-2 border-yellow-500";
-    if (result === "fail") return "bg-red-500 border-2 border-red-700 text-white";
-    if (result === "win") return "bg-green-500 border-2 border-green-700 text-white";
-    if (result === "tie") return "bg-purple-500 border-2 border-purple-700 text-white";
-    return "bg-black/20";
-  };  
-  
+    if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
+    if (result === 'fail')
+      return 'bg-red-500 border-2 border-red-700 text-white'
+    if (result === 'win')
+      return 'bg-green-500 border-2 border-green-700 text-white'
+    if (result === 'tie')
+      return 'bg-purple-500 border-2 border-purple-700 text-white'
+    return 'bg-black/20'
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
-      {/* Animated Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-4 -left-4 w-72 h-72 bg-gradient-to-br from-red-600/10 to-red-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <div className='min-h-screen bg-[#450A03] text-white p-8'>
+      {/* Main Content Area */}
+      <div className=' flex flex-col p-4'>
+        <div className='flex-1 border-4 border-yellow-600 bg-[#911606] p-4 '>
+          <div className='h-full flex flex-col'>
+            <div className='flex items-start gap-4 mb-4'>
+              {/* Dealer Area */}
+              <div className='flex-1 border-2 border-dashed border-yellow-600 rounded-lg p-4 bg-red-800/50 flex-shrink-0'>
+                <div className='flex items-start justify-between mb-4'>
+                  <h2 className='text-lg font-bold text-yellow-300'>
+                    Dealer's Cards
+                  </h2>
+                  <div className='flex flex-col gap-1 items-end space-x-4'>
+                    <span className='bg-black/10 px-3 py-1 rounded-2xl text-sm border border-red-200'>
+                      Total: {dealerTotal}
+                    </span>
+                    <button
+                      onClick={() =>
+                        sendWebSocketMessage({ action: 'manual_start' })
+                      }
+                      className='bg-yellow-600 hover:bg-yellow-700 text-red-900 px-4 py-2 rounded font-light text-sm'
+                    >
+                      Manual Start
+                    </button>
+                    <button
+                      onClick={() =>
+                        sendWebSocketMessage({ action: 'reset_game' })
+                      }
+                      className='bg-white hover:bg-gray-100 text-red-900 px-4 py-2 rounded font-light text-sm border'
+                    >
+                      New Game
+                    </button>
+                  </div>
+                </div>
 
-      {/* Header Section */}
-      <div className="max-w-7xl mx-auto mb-8 relative z-10">
-        <div className="bg-gradient-to-r from-red-800 to-red-700 rounded-2xl p-6 shadow-2xl border border-red-600 backdrop-blur-xl">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl font-bold text-white">🎰</span>
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  Dealer Control Panel (MANUAL)
-                </h1>
-                <div className="flex items-center space-x-4 mt-2">
-                  <p className="text-gray-200">Table FT{gameState?.table_number || 1234}</p>
-                  <div
-                    className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${isConnected
-                      ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                      : "bg-red-500/20 text-red-400 border border-red-500/30"
-                      }`}
-                  >
+                {/* <div className='flex justify-center space-x-4 mb-4'> */}
+                {/* {gameState?.dealer?.cards?.map(
+                    (card: string, index: number) => (
+                      <div key={index} className='w-16 h-24'>
+                        <img
+                          src={`/cards/${card}.png`}
+                          alt={card}
+                          className='w-full h-full object-contain'
+                        />
+                      </div>
+                    )
+                  )} */}
+                {/* Empty card slots */}
+                {/* {[
+                    ...Array(
+                      Math.max(0, 2 - (gameState?.dealer?.cards?.length || 0))
+                    )
+                  ].map((_, index) => (
                     <div
-                      className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-400 animate-pulse" : "bg-red-400"
-                        }`}
-                    ></div>
-                    <span className="capitalize">{isConnected ? "connected" : "disconnected"}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => sendWebSocketMessage({ action: "manual_start" })}
-                className="h-12 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Manual Start</span>
-              </button>
-
-              <button
-                onClick={() => sendWebSocketMessage({ action: "reset_game" })}
-                className="h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3 font-semibold"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>New Game</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area - Full width */}
-      <div className="max-w-7xl mx-auto relative z-10">
-        {/* Dealer Window */}
-        <div className="flex justify-center mb-6">
-          <div
-            className={`w-[80%] rounded-2xl p-4 shadow-2xl transition-all duration-300 ${gameState?.game_phase === "dealer"
-              ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
-              : "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white backdrop-blur-xl border border-blue-400"
-              }`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className={`text-xl font-bold flex items-center ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-white"
-                }`}>
-                <svg className={`w-5 h-5 mr-2 ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-blue-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
-                  />
-                </svg>
-                Dealer Status
-              </h2>
-              <div className="flex items-center space-x-3">
-                <div
-                  className={`px-3 py-1 rounded-lg text-sm font-medium ${gameState?.dealer?.status === "playing"
-                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                    : gameState?.dealer?.status === "bust"
-                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                      : "bg-gray-500/20 text-gray-400 border border-gray-500/30"
-                    }`}
-                >
-                  {gameState?.dealer?.status || "waiting"}
-                </div>
-                <div className={`text-sm ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-gray-400"}`}>
-                  Cards: {gameState?.deck_count || 0}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-black/20 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-base font-medium text-white">Dealer's Cards</div>
-                
-              </div>
-              
-            </div>
-          </div>
-        </div>
-
-        {/* Players Grid - 2 per row */}
-        <div className="grid grid-cols-2 gap-6">
-          {Object.entries(gameState?.players || {}).map(([playerId, playerData]) => {
-            const isCurrentHand = gameState?.selected_hand?.player_id === playerId &&
-              gameState?.selected_hand?.hand_index === 0 &&
-              gameState?.selected_hand?.split_level === 0;
-
-            const isCurrentSplit1Hand = gameState?.selected_hand?.player_id === playerId &&
-              gameState?.selected_hand?.hand_index === 0 &&
-              gameState?.selected_hand?.split_level === 1;
-
-            const isCurrentSplit2Hand = gameState?.selected_hand?.player_id === playerId &&
-              gameState?.selected_hand?.hand_index === 0 &&
-              gameState?.selected_hand?.split_level === 2;
-
-            const isActive = playerData.status === 1
-            return (
-              <div
-                key={playerId}
-                className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${isCurrentHand
-                  ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
-                  : isActive
-                    ? "bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30"
-                    : "bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30"
-                  }`}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  if (isActive) {
-                    handlePlayerClick(playerId)
-                  }
-                }}
-              >
-                <div className="flex flex-col space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div
-                        className={`w-4 h-4 rounded-full shadow-lg ${isCurrentHand
-                          ? "bg-blue-400 animate-pulse"
-                          : isActive
-                            ? "bg-green-400 animate-pulse"
-                            : "bg-gray-400"
-                          }`}
-                      />
-                      <div>
-                        <div className={`text-lg font-bold ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
-                          {playerId.replace("player", "Player ")}
-                        </div>
-                        <div className={`text-sm ${isCurrentHand ? "text-gray-700" : "opacity-75"}`}>
-                          {isCurrentHand ? "Current Hand" : isActive ? "Active" : "Inactive"}
-                        </div>
-                      </div>
+                      key={`empty-${index}`}
+                      className='w-16 h-24 border border-dashed border-gray-400 rounded flex items-center justify-center bg-red-900/50'
+                    >
+                      <span className='text-2xl text-gray-500'>+</span>
                     </div>
-                    {!isActive ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          activatePlayer(playerId)
-                        }}
-                        className="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm font-medium"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Activate</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deactivatePlayer(playerId)
-                        }}
-                        className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm font-medium ${isCurrentHand
-                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800"
-                          : "bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
-                          }`}
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        <span>Deactivate</span>
-                      </button>
-                    )}
-                  </div>
+                  ))} */}
+                {/* </div> */}
+              </div>
 
-                  {isActive && (
-                    <div className="space-y-4">
-                      {/* Main Hand */}
-                      <div className={`rounded-lg p-3 ${getHandBoxColor(isHandSelected(gameState, playerId, 0, 0) && gameState?.current_player === playerId, gameState?.players?.[playerId]?.hands?.[0]?.result)}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className={`text-sm font-medium ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
-                            Main Hand:
-                          </div>
-                        </div>
-                        
-                        <div className="flex space-x-2">
+              {/* Mode Selection Buttons */}
+              <div className='flex space-x-2 flex-shrink-0'>
+                <button className='px-4 py-2 bg-white text-black rounded-lg text-sm font-semibold hover:bg-gray-100 border border-gray-300'>
+                  Live
+                </button>
+                <button className='px-4 py-2 bg-white text-black rounded-lg text-sm font-semibold hover:bg-gray-100 border-t border-b border-gray-300'>
+                  Automatic
+                </button>
+                <button className='px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 border border-red-600'>
+                  Manual
+                </button>
+              </div>
+            </div>
+
+            {/* Players Grid - 2x3 layout */}
+            <div className='flex-1 grid grid-cols-3 gap-2 overflow-hidden'>
+              {Object.entries(gameState?.players || {})
+                .slice(0, 6)
+                .map(([playerId, playerData], index) => {
+                  const isCurrentHand =
+                    gameState?.selected_hand?.player_id === playerId
+                  const isActive = playerData.status === 1
+
+                  return (
+                    <div
+                      key={playerId}
+                      className='border-2 border-dashed border-yellow-600 rounded-lg p-2 bg-red-800/50 flex flex-col'
+                      onClick={e => {
+                        e.stopPropagation()
+                        if (isActive) {
+                          handlePlayerClick(playerId)
+                        }
+                      }}
+                    >
+                      <div className='flex items-center justify-between mb-2'>
+                        <h3 className='text-xs font-bold text-yellow-300'>
+                          Player {index + 1}
+                        </h3>
+                        {!isActive ? (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation()
+                              activatePlayer(playerId)
+                            }}
+                            className='bg-green-600 hover:bg-green-700 text-white px-2 py-0.5 rounded text-xs font-semibold'
+                          >
+                            Activate
+                          </button>
+                        ) : (
+                          <button
+                            onClick={e => {
+                              e.stopPropagation()
+                              deactivatePlayer(playerId)
+                            }}
+                            className='bg-transparent border border-white/50 hover:bg-white/10 text-white px-2 py-0.5 rounded text-xs font-semibold backdrop-blur-sm'
+                          >
+                            Deactivate
+                          </button>
+                        )}
+                      </div>
+
+                      {isActive && (
+                        <>
+                          {/* Check if any split is active to determine layout */}
+                          {gameState?.players?.[playerId]?.split1_status === 1 || 
+                           gameState?.players?.[playerId]?.split2_status === 1 ? (
+                            /* Vertical layout when splits are active */
+                            <div className='flex space-y-2'>
+                              {/* Main Hand */}
+                              <div className='flex justify-center items-center w-fit mx-auto'>
+                                <div className='bg-black/10 border border-yellow-600 rounded-lg p-2 w-full'>
+                                  <div className='text-xs text-white mb-1 text-center font-semibold'>
+                                    Main Hand
+                                  </div>
+                                  <div className='flex flex-col space-y-1'>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-green-500 text-white border border-white rounded hover:bg-green-600 transition-colors text-xs font-semibold'
+                                    >
+                                      WIN
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-red-500 text-white border border-white rounded hover:bg-red-600 transition-colors text-xs font-semibold'
+                                    >
+                                      LOSE
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-purple-500 text-white border border-white rounded hover:bg-purple-600 transition-colors text-xs font-semibold'
+                                    >
+                                      TIE
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Split1 Hand */}
+                              {gameState?.players?.[playerId]?.split1_status === 1 && (
+                                <div className='flex justify-center items-center w-fit mx-auto'>
+                                  <div className='bg-black/10 border border-yellow-600 rounded-lg p-2 w-full'>
+                                    <div className='text-xs text-white mb-1 text-center font-semibold flex items-center justify-between'>
+                                      <span>Split 1</span>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'deactivate_split1',
+                                            player_id: playerId
+                                          })
+                                        }
+                                        className='px-1.5 py-0.5 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-xs'
+                                      >
+                                        Deactivate
+                                      </button>
+                                    </div>
+                                    <div className='flex flex-col space-y-1'>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-green-500 text-white border border-white rounded hover:bg-green-600 transition-colors text-xs font-semibold'
+                                      >
+                                        WIN
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-red-500 text-white border border-white rounded hover:bg-red-600 transition-colors text-xs font-semibold'
+                                      >
+                                        LOSE
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-purple-500 text-white border border-white rounded hover:bg-purple-600 transition-colors text-xs font-semibold'
+                                      >
+                                        TIE
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Split2 Hand */}
+                              {gameState?.players?.[playerId]?.split2_status === 1 && (
+                                <div className='flex justify-center items-center w-fit mx-auto'>
+                                  <div className='bg-black/10 border border-yellow-600 rounded-lg p-2 w-full'>
+                                    <div className='text-xs text-white mb-1 text-center font-semibold flex items-center justify-between'>
+                                      <span>Split 2</span>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'deactivate_split2',
+                                            player_id: playerId
+                                          })
+                                        }
+                                        className='px-1.5 py-0.5 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-xs'
+                                      >
+                                        Deactivate
+                                      </button>
+                                    </div>
+                                    <div className='flex flex-col space-y-1'>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-green-500 text-white border border-white rounded hover:bg-green-600 transition-colors text-xs font-semibold'
+                                      >
+                                        WIN
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-red-500 text-white border border-white rounded hover:bg-red-600 transition-colors text-xs font-semibold'
+                                      >
+                                        LOSE
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'manual_handle_result'
+                                          })
+                                        }
+                                        className='px-2 py-1 bg-purple-500 text-white border border-white rounded hover:bg-purple-600 transition-colors text-xs font-semibold'
+                                      >
+                                        TIE
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Activate buttons for inactive splits */}
+                              {gameState?.players?.[playerId]?.split1_status !== 1 && (
+                                <div className='flex justify-center'>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation()
+                                      sendWebSocketMessage({
+                                        action: 'activate_split1',
+                                        player_id: playerId
+                                      })
+                                    }}
+                                    className='px-3 py-1 bg-black/40 border border-yellow-400 text-yellow-400 rounded hover:bg-black/60 transition-colors text-xs font-semibold'
+                                  >
+                                    Activate Split 1
+                                  </button>
+                                </div>
+                              )}
+
+                              {gameState?.players?.[playerId]?.split2_status !== 1 && (
+                                <div className='flex justify-center'>
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation()
+                                      sendWebSocketMessage({
+                                        action: 'activate_split2',
+                                        player_id: playerId
+                                      })
+                                    }}
+                                    className='px-3 py-1 bg-black/40 border border-yellow-400 text-yellow-400 rounded hover:bg-black/60 transition-colors text-xs font-semibold'
+                                  >
+                                    Activate Split 2
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            /* Original layout when no splits are active */
                             <>
-                              <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                              >
-                                MAKE WIN
-                              </button>
-                              <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                              >
-                                MAKE LOSE
-                              </button>
-                              <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                              >
-                                MAKE TIE
-                              </button>
+                              {/* Main Hand - Centered with background */}
+                              <div className='mb-2 flex justify-center items-center w-fit mx-auto'>
+                                <div className='bg-black/10 border border-yellow-600 rounded-lg p-2 w-full'>
+                                  <div className='text-xs text-white mb-1 text-center font-semibold'>
+                                    Main Hand
+                                  </div>
+                                  <div className='flex justify-center space-x-1'>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-green-500 text-white border border-white rounded hover:bg-green-600 transition-colors text-xs font-semibold'
+                                    >
+                                      WIN
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-red-500 text-white border border-white rounded hover:bg-red-600 transition-colors text-xs font-semibold'
+                                    >
+                                      LOSE
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        sendWebSocketMessage({
+                                          action: 'manual_handle_result'
+                                        })
+                                      }
+                                      className='px-2 py-1 bg-purple-500 text-white border border-white rounded hover:bg-purple-600 transition-colors text-xs font-semibold'
+                                    >
+                                      TIE
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Activate Split 1 Button */}
+                              <div className='mb-2 flex justify-center'>
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    sendWebSocketMessage({
+                                      action: 'activate_split1',
+                                      player_id: playerId
+                                    })
+                                  }}
+                                  className='px-3 py-1 bg-black/40 border border-yellow-400 text-yellow-400 rounded hover:bg-black/60 transition-colors text-xs font-semibold'
+                                >
+                                  Activate Split 1
+                                </button>
+                              </div>
+
+                              {/* Activate Split 2 Button */}
+                              <div className='mb-2 flex justify-center'>
+                                <button
+                                  onClick={e => {
+                                    e.stopPropagation()
+                                    sendWebSocketMessage({
+                                      action: 'activate_split2',
+                                      player_id: playerId
+                                    })
+                                  }}
+                                  className='px-3 py-1 bg-black/40 border border-yellow-400 text-yellow-400 rounded hover:bg-black/60 transition-colors text-xs font-semibold'
+                                >
+                                  Activate Split 2
+                                </button>
+                              </div>
                             </>
-                        </div>
-                      </div>
-
-                      {/* Split1 Hand */}
-                      {gameState?.players?.[playerId]?.split1_status === 1 ? (
-                        <div className="mt-4">
-                          <div className={`rounded-lg p-3 ${getHandBoxColor(isHandSelected(gameState, playerId, 0, 1) && gameState?.current_player === playerId, gameState.players[playerId].split1[0].result)}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className={`text-sm font-medium ${isCurrentSplit1Hand ? "text-gray-900" : "text-white"}`}>
-                                Split 1:
-                              </div>
-                            </div>
-                            <div className="flex space-x-2">
-                                <>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                  >
-                                    MAKE WIN
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                  >
-                                    MAKE LOSE
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                                  >
-                                    MAKE TIE
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "deactivate_split1", player_id: playerId })}
-                                    className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                                  >
-                                    Deactivate Split
-                                  </button>
-                                </>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              sendWebSocketMessage({ action: "activate_split1", player_id: playerId })
-                            }}
-                            className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                          >
-                            Activate Split1
-                          </button>
-                        </div>
+                          )}
+                        </>
                       )}
 
-                      {/* Split2 Hand */}
-                      {gameState?.players?.[playerId]?.split2_status === 1 ? (
-                        <div className="mt-4">
-                          <div className={`rounded-lg p-3 ${getHandBoxColor(isHandSelected(gameState, playerId, 0, 2) && gameState?.current_player === playerId, gameState.players[playerId].split2[0].result)}`}>
-                            <div className="flex items-center justify-between mb-2">
-                              <div className={`text-sm font-medium ${isCurrentSplit2Hand ? "text-gray-900" : "text-white"}`}>
-                                Split 2:
-                              </div>
-                            </div>
-
-                            <div className="flex space-x-2">
-                                <>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                  >
-                                    MAKE WIN
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                                  >
-                                    MAKE LOSE
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
-                                    className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                                  >
-                                    MAKE TIE
-                                  </button>
-                                  <button
-                                    onClick={() => sendWebSocketMessage({ action: "deactivate_split2", player_id: playerId })}
-                                    className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
-                                  >
-                                    Deactivate Split
-                                  </button>
-                                </>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-4">
+                      {/* Next Button - Show for current player */}
+                      {isActive && gameState?.current_turn === 'player' && (
+                        <div className='mt-auto flex justify-end'>
                           <button
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation()
-                              sendWebSocketMessage({ action: "activate_split2", player_id: playerId })
+                              handleNextTurn()
                             }}
-                            className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                            className='px-2 py-1 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-1 text-xs'
                           >
-                            Activate Split2
+                            <svg
+                              className='w-3 h-3'
+                              fill='none'
+                              viewBox='0 0 24 24'
+                              stroke='currentColor'
+                            >
+                              <path
+                                strokeLinecap='round'
+                                strokeLinejoin='round'
+                                strokeWidth={2}
+                                d='M13 5l7 7-7 7M5 5l7 7-7 7'
+                              />
+                            </svg>
+                            <span>Next</span>
                           </button>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Next Button - Show for current player */}
-                  {isActive && gameState?.current_turn === "player" && (
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleNextTurn()
-                        }}
-                        className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                        </svg>
-                        <span>Next</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+                  )
+                })}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -866,10 +979,10 @@ const GameMenu = () => {
 
       {/* Enhanced Popup Message */}
       {showPopup && (
-        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-gradient-to-r from-red-800 to-red-700 border border-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-xl">
-            <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse"></div>
-            <span className="font-medium text-lg">{popupMessage}</span>
+        <div className='fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-bounce'>
+          <div className='bg-gradient-to-r from-red-800 to-red-700 border border-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-xl'>
+            <div className='w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse'></div>
+            <span className='font-medium text-lg'>{popupMessage}</span>
           </div>
         </div>
       )}
@@ -878,4 +991,3 @@ const GameMenu = () => {
 }
 
 export default GameMenu
-
