@@ -530,6 +530,26 @@ const GameMenu = () => {
   }, [gameState?.manual_distribution_count, gameState?.selected_hand?.player_id, gameState?.round_number]);
 
   useEffect(() => {
+    // Auto next_turn for dealer in live mode, round 0, after first card
+    if (
+      gameState?.mode === "live" &&
+      gameState?.round_number === 0 &&
+      gameState?.selected_hand?.player_id === "dealer" &&
+      gameState?.manual_distribution_count === 1
+    ) {
+      // Prevent duplicate next_turn for the same round and count
+      if (
+        lastAutoTurnRef.current.playerId !== "dealer" ||
+        lastAutoTurnRef.current.round !== 0 ||
+        lastAutoTurnRef.current.count !== 1
+      ) {
+        sendWebSocketMessage({ action: "next_turn" });
+        lastAutoTurnRef.current = { playerId: "dealer", round: 0, count: 1 };
+      }
+    }
+  }, [gameState?.manual_distribution_count, gameState?.selected_hand?.player_id, gameState?.round_number, gameState?.mode]);
+
+  useEffect(() => {
     if (
         gameState?.mode === "live" &&
         gameState?.round_number === 0 &&

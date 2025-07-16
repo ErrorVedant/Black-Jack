@@ -1,10 +1,8 @@
-import WinsList from "@/components/WinsList";
-import GameMenu from "@/components/GameMenu_dealer";
-import BlackjackInterface from "@/components/hi";
+import GameStatePage from "./gameState/page";
 export default function Home() {
   return (
     <>
-    <GameMenu /> 
+    <GameStatePage /> 
     </>
   );
 }
