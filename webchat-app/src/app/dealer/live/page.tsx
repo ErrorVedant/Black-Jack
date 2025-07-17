@@ -17,6 +17,7 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  insurence: number
 }
 
 interface Players {
@@ -46,6 +47,9 @@ interface GameState {
   evaluate_game: boolean
   manual_distribution_count: number
   next_manual_counter: number
+  split_call_live_previous_counter: number
+  split_current_pointer: number
+  split_fire_state: number
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -95,7 +99,8 @@ const GameMenu = () => {
   const lastPlayerTotalRef = useRef<{ [key: string]: number }>({})
   const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({})
   const [waitingForServer, setWaitingForServer] = useState(false)
-  const lastAutoTurnRef = useRef<{ playerId: string | null, round: number, count: number }>({ playerId: null, round: -1, count: -1 });
+  const previousTurnSentRef = useRef(false);
+  const [showInsuranceButton, setShowInsuranceButton] = useState(false);
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -396,7 +401,7 @@ const GameMenu = () => {
       setTimeout(() => setShowPopup(false), 3000)
       return
     }
-
+    console.log("fiat")
     sendWebSocketMessage({
       action: "next_turn"
     })
@@ -478,14 +483,12 @@ const GameMenu = () => {
     setSelectedSuit(null);
   };
 
-  const handleInsurance = (playerId: string, handIndex: number, splitLevel: number = 0) => {
+  const handleInsurance = (playerId: string) => {
     sendWebSocketMessage({
-      action: "handle_insurance",
-      player_id: playerId,
-      hand_index: handIndex,
-      split_level: splitLevel
+      action: "handle_insurence",
+      player_id: playerId
     });
-    setInsuranceState((prev) => ({ ...prev, [`${playerId}_${handIndex}_${splitLevel}`]: true }));
+    setInsuranceState((prev) => ({ ...prev, [playerId]: true }));
   };
 
   const clearInsuranceForHand = (playerId: string, handIndex: number, splitLevel: number = 0) => {
@@ -514,39 +517,98 @@ const GameMenu = () => {
       gameState.selected_hand.player_id !== "dealer" &&
       (gameState.manual_distribution_count === 1 || gameState.manual_distribution_count === 2)
     ) {
-      const playerId = gameState.selected_hand.player_id;
-      const round = gameState.round_number;
-      const count = gameState.manual_distribution_count;
-      // Prevent duplicate next_turn for the same player/count/round
-      if (
-        lastAutoTurnRef.current.playerId !== playerId ||
-        lastAutoTurnRef.current.round !== round ||
-        lastAutoTurnRef.current.count !== count
-      ) {
-        sendWebSocketMessage({ action: "next_turn" });
-        lastAutoTurnRef.current = { playerId, round, count };
-      }
+      console.log("toto")
+      sendWebSocketMessage({ action: "next_turn" });
     }
+    // No timeout to clean up
   }, [gameState?.manual_distribution_count, gameState?.selected_hand?.player_id, gameState?.round_number]);
 
   useEffect(() => {
     if (
-        gameState?.mode === "live" &&
-        gameState?.round_number === 0 &&
-        gameState?.selected_hand?.player_id === "dealer" &&
-        gameState?.manual_distribution_count === 1
-      ) {
-        // Prevent duplicate next_turn for the same dealer/count/round
-        if (
-          lastAutoTurnRef.current.playerId !== "dealer" ||
-          lastAutoTurnRef.current.round !== gameState.round_number ||
-          lastAutoTurnRef.current.count !== gameState.manual_distribution_count
-        ) {
-          sendWebSocketMessage({ action: "next_turn" });
-          lastAutoTurnRef.current = { playerId: "dealer", round: gameState.round_number, count: gameState.manual_distribution_count };
-        }
-      }
+      gameState?.mode === "live" &&
+      gameState?.round_number === 0 &&
+      gameState?.selected_hand?.player_id === "dealer" &&
+      gameState?.manual_distribution_count === 1
+    ) {
+      console.log("dealer->player")
+      sendWebSocketMessage({ action: "next_turn" });
+    }
+    // No timeout to clean up
   }, [gameState, socket]);
+
+  useEffect(() => {
+    if (
+      gameState?.selected_hand?.player_id &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.hands?.[0]?.cards?.length === 2 &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split1_status === 1 &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]?.cards?.length === 1 &&
+      gameState?.split_call_live_previous_counter === 1 &&
+      gameState?.split_fire_state === 0
+    ) {
+      sendWebSocketMessage({ action: "next_turn" });
+      console.log("split_call_live_previous_counter");
+    }
+    // No timeout to clean up
+  }, [gameState]);
+
+  useEffect(() => {
+    if (
+      gameState?.selected_hand?.player_id &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]?.cards?.length === 2 &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split2_status === 1 &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split2?.[0]?.cards?.length === 1 &&
+      gameState?.split_call_live_previous_counter === 2 &&
+      gameState?.split_fire_state === 0
+    ) {
+      sendWebSocketMessage({ action: "next_turn" });
+      console.log("split_call_live_previous_counter");
+    }
+    // No timeout to clean up
+  }, [gameState]);
+
+  useEffect(() => {
+    if (
+      gameState?.split_current_pointer === 1 &&
+      gameState?.split_call_live_previous_counter === 1 &&
+      gameState?.split_fire_state == 1 &&
+      gameState?.selected_hand?.player_id &&
+      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]?.cards?.length === 2 &&
+      !previousTurnSentRef.current
+    ) {
+      previousTurnSentRef.current = true;
+      sendWebSocketMessage({ action: "previous_turn" });
+    }
+    // Reset the lock if the condition is no longer true
+    if (
+      previousTurnSentRef.current &&
+      (
+        gameState?.split_current_pointer !== 1 ||
+        gameState?.split_call_live_previous_counter !== 1 ||
+        gameState?.split_fire_state !== 1
+      )
+    ) {
+      previousTurnSentRef.current = false;
+    }
+    // No timeout to clean up
+  }, [gameState]);
+
+  useEffect(() => {
+    if (!gameState || !gameState.selected_hand?.player_id) {
+      setShowInsuranceButton(false);
+      return;
+    }
+    const playerId = gameState.selected_hand.player_id;
+    const player = gameState.players?.[playerId];
+    const dealerFirstCardA = gameState.dealer?.cards?.[0]?.[0] === "A";
+    const split1Status = player?.split1_status === 0;
+    const split2Status = player?.split2_status === 0;
+    const mainHandHas2Cards = player?.hands?.[0]?.cards?.length === 2;
+    if (dealerFirstCardA && split1Status && split2Status && mainHandHas2Cards) {
+      setShowInsuranceButton(true);
+    } else {
+      setShowInsuranceButton(false);
+    }
+  }, [gameState]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
@@ -689,37 +751,7 @@ const GameMenu = () => {
                   ))}
                 </div>
 
-                {/* Dealer Controls: Show all when dealer phase */}
-                {gameState?.game_phase === "dealer" && (
-                  <div className="flex items-center justify-center space-x-3 mt-4">
-                    <button
-                      onClick={() => {
-                        if (gameState?.current_turn === "dealer") {
-                          sendWebSocketMessage({ action: "hit_player" })
-                        } else if (gameState?.selected_hand?.player_id) {
-                          sendWebSocketMessage({
-                            action: "hit_player",
-                            player_id: gameState.selected_hand.player_id,
-                            hand_index: gameState.selected_hand.hand_index
-                          })
-                        } else {
-                          setPopupMessage("⚠️ Please select a player or dealer first")
-                          setShowPopup(true)
-                          setTimeout(() => setShowPopup(false), 3000)
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                    >
-                      Hit
-                    </button>
-                    <button
-                      onClick={() => sendWebSocketMessage({ action: "next_turn" })}
-                      className="px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
+               \
               </div>
             </div>
           </div>
@@ -770,6 +802,9 @@ const GameMenu = () => {
                         <div>
                           <div className={`text-lg font-bold ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
                             {playerId.replace("player", "Player ")}
+                            {gameState?.players?.[playerId]?.insurence === 1 && (
+                              <span className="ml-2 text-yellow-400 font-semibold text-base">Insured</span>
+                            )}
                           </div>
                           <div className={`text-sm ${isCurrentHand ? "text-gray-700" : "opacity-75"}`}>
                             {isCurrentHand ? "Current Hand" : isActive ? "Active" : "Inactive"}
@@ -854,9 +889,9 @@ const GameMenu = () => {
                               {isHandSelected(gameState, playerId, 0, 0) && gameState?.current_player === playerId && (
                                 <>
                                   {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                  {gameState?.dealer?.cards?.[0]?.[0] === "A" && !insuranceState[`${playerId}_0_0`] && !gameState.players[playerId].hands[0].insurence && (
+                                  {showInsuranceButton && !insuranceState[playerId] && !gameState.players[playerId].hands[0].insurence && (
                                     <button
-                                      onClick={() => handleInsurance(playerId, 0, 0)}
+                                      onClick={() => handleInsurance(playerId)}
                                       className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                                     >
                                       Insurance
@@ -888,7 +923,7 @@ const GameMenu = () => {
                                 canSplit(gameState.players[playerId].hands[0].cards) &&
                                 gameState.players[playerId].hands[0].status === "playing" && (
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "split_player_auto", player_id: playerId })}
+                                    onClick={() => sendWebSocketMessage({ action: "split_player_live", player_id: playerId })}
                                     className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                   >
                                     Split
@@ -967,7 +1002,7 @@ const GameMenu = () => {
                                     canSplit(gameState.players[playerId].split1[0].cards) &&
                                     gameState.players[playerId].split1[0].status === "playing" && (
                                       <button
-                                        onClick={() => sendWebSocketMessage({ action: "split_player_auto", player_id: playerId })}
+                                        onClick={() => sendWebSocketMessage({ action: "split_player_live", player_id: playerId })}
                                         className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                       >
                                         Split
@@ -1048,7 +1083,7 @@ const GameMenu = () => {
                                     canSplit(gameState.players[playerId].split2[0].cards) &&
                                     gameState.players[playerId].split2[0].status === "playing" && (
                                       <button
-                                        onClick={() => sendWebSocketMessage({ action: "split_player_auto", player_id: playerId })}
+                                        onClick={() => sendWebSocketMessage({ action: "split_player_live", player_id: playerId })}
                                         className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                       >
                                         Split
@@ -1114,6 +1149,15 @@ const GameMenu = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <span>Reshuffle</span>
+              </button>
+              <button
+                onClick={() => sendWebSocketMessage({ action: "previous_turn" })}
+                className="h-12 px-4 bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-700 hover:to-yellow-800 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2 mb-2"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M5 12h14" />
+                </svg>
+                <span>Previous Hand</span>
               </button>
               <button
                 onClick={() => sendWebSocketMessage({ action: "reset_round" })}
