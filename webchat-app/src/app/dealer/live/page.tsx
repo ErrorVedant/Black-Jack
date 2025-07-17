@@ -536,8 +536,15 @@ const GameMenu = () => {
         gameState?.selected_hand?.player_id === "dealer" &&
         gameState?.manual_distribution_count === 1
       ) {
-        console.log("next_turn is happening automatically")
-        // sendWebSocketMessage({ action: "next_turn" });
+        // Prevent duplicate next_turn for the same dealer/count/round
+        if (
+          lastAutoTurnRef.current.playerId !== "dealer" ||
+          lastAutoTurnRef.current.round !== gameState.round_number ||
+          lastAutoTurnRef.current.count !== gameState.manual_distribution_count
+        ) {
+          sendWebSocketMessage({ action: "next_turn" });
+          lastAutoTurnRef.current = { playerId: "dealer", round: gameState.round_number, count: gameState.manual_distribution_count };
+        }
       }
   }, [gameState, socket]);
 
