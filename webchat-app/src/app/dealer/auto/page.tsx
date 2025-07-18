@@ -888,7 +888,7 @@ const GameMenu = () => {
                     <div
                       key={playerId}
                       className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                        ' bg-[#C1351D] text-gray-200 border border-red-500/30'
+                        'bg-[#C1351D] text-gray-200 border border-red-500/30'
                         // isCurrentHand
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : isActive
@@ -1593,8 +1593,9 @@ const GameMenu = () => {
               ))}
             </div>
 
-            {/* Preview and Assign Button */}
+            {/* Assign Button */}
             <div className='flex space-x-2 flex-shrink-0 mt-4'>
+              {selectedCard && selectedSuit && (
               <button
                 onClick={assignCard}
                 className='flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm'
@@ -1609,6 +1610,7 @@ const GameMenu = () => {
               >
                 Deal Card
               </button>
+                              )}
               <button
                 onClick={() => {
                   if (gameState?.current_turn === 'dealer') {
