@@ -17,6 +17,7 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  insurence?: number
 }
 
 interface Players {
@@ -213,6 +214,13 @@ const GameMenu = () => {
             break;
           case "split2_activated":
             setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "manual_make_win":
+          case "manual_make_lose":
+          case "manual_make_tie":
+            setPopupMessage(`Hand set to ${data.result}`);
             setShowPopup(true);
             setTimeout(() => setShowPopup(false), 1000);
             break;
@@ -661,6 +669,24 @@ const GameMenu = () => {
                           {isCurrentHand ? "Current Hand" : isActive ? "Active" : "Inactive"}
                         </div>
                       </div>
+                      {isActive && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            sendWebSocketMessage({ 
+                              action: "handle_manual_insurance", 
+                              player_id: playerId 
+                            })
+                          }}
+                          className={`px-3 py-1 rounded transition-colors text-sm ${
+                            gameState?.players?.[playerId]?.insurence === 1
+                              ? "bg-gray-500 text-white hover:bg-gray-600"
+                              : "bg-yellow-500 text-white hover:bg-yellow-600"
+                          }`}
+                        >
+                          {gameState?.players?.[playerId]?.insurence === 1 ? "Cancel Insurance" : "Insurance"}
+                        </button>
+                      )}
                     </div>
                     {!isActive ? (
                       <button
@@ -707,22 +733,48 @@ const GameMenu = () => {
                         <div className="flex space-x-2">
                             <>
                               <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                onClick={() => sendWebSocketMessage({ 
+                                  action: "manual_make_win", 
+                                  player_id: playerId, 
+                                  split_level: 0, 
+                                  hand_index: 0 
+                                })}
                                 className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                               >
                                 MAKE WIN
                               </button>
                               <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                onClick={() => sendWebSocketMessage({ 
+                                  action: "manual_make_lose", 
+                                  player_id: playerId, 
+                                  split_level: 0, 
+                                  hand_index: 0 
+                                })}
                                 className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                               >
                                 MAKE LOSE
                               </button>
                               <button
-                                onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                onClick={() => sendWebSocketMessage({ 
+                                  action: "manual_make_tie", 
+                                  player_id: playerId, 
+                                  split_level: 0, 
+                                  hand_index: 0 
+                                })}
                                 className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                               >
                                 MAKE TIE
+                              </button>
+                              <button
+                                onClick={() => sendWebSocketMessage({ 
+                                  action: "manual_make_default", 
+                                  player_id: playerId, 
+                                  split_level: 0, 
+                                  hand_index: 0 
+                                })}
+                                className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                              >
+                                Default
                               </button>
                             </>
                         </div>
@@ -740,22 +792,48 @@ const GameMenu = () => {
                             <div className="flex space-x-2">
                                 <>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_win", 
+                                      player_id: playerId, 
+                                      split_level: 1, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                                   >
                                     MAKE WIN
                                   </button>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_lose", 
+                                      player_id: playerId, 
+                                      split_level: 1, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                   >
                                     MAKE LOSE
                                   </button>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_tie", 
+                                      player_id: playerId, 
+                                      split_level: 1, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                   >
                                     MAKE TIE
+                                  </button>
+                                  <button
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_default", 
+                                      player_id: playerId, 
+                                      split_level: 1, 
+                                      hand_index: 0 
+                                    })}
+                                    className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                                  >
+                                    Default
                                   </button>
                                   <button
                                     onClick={() => sendWebSocketMessage({ action: "deactivate_split1", player_id: playerId })}
@@ -794,22 +872,48 @@ const GameMenu = () => {
                             <div className="flex space-x-2">
                                 <>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_win", 
+                                      player_id: playerId, 
+                                      split_level: 2, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                                   >
                                     MAKE WIN
                                   </button>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_lose", 
+                                      player_id: playerId, 
+                                      split_level: 2, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
                                   >
                                     MAKE LOSE
                                   </button>
                                   <button
-                                    onClick={() => sendWebSocketMessage({ action: "manual_handle_result" })}
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_tie", 
+                                      player_id: playerId, 
+                                      split_level: 2, 
+                                      hand_index: 0 
+                                    })}
                                     className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
                                   >
                                     MAKE TIE
+                                  </button>
+                                  <button
+                                    onClick={() => sendWebSocketMessage({ 
+                                      action: "manual_make_default", 
+                                      player_id: playerId, 
+                                      split_level: 2, 
+                                      hand_index: 0 
+                                    })}
+                                    className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                                  >
+                                    Default
                                   </button>
                                   <button
                                     onClick={() => sendWebSocketMessage({ action: "deactivate_split2", player_id: playerId })}
@@ -878,4 +982,3 @@ const GameMenu = () => {
 }
 
 export default GameMenu
-
