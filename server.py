@@ -281,8 +281,10 @@ async def handle_connection(websocket):
         "deactivate_split1": lambda d: handle_deactivate_split1(d.get("player_id")),
         "deactivate_split2": lambda d: handle_deactivate_split2(d.get("player_id")),
         "manual_make_win": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "win"),
-        "manual_make_lose": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "lose"),
+        "manual_make_lose": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "fail"),
         "manual_make_tie": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), "tie"),
+        "manual_make_default": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), ""),
+        "handle_manual_insurance": lambda d: handle_manual_insurance(d.get("player_id")),
         "manual_start":  lambda d: handle_manual_start(),
         "previous_turn": lambda d: handle_previous_turn()
     }
@@ -1413,6 +1415,7 @@ async def handle_start_game():
 async def handle_manual_start():
     """Start the game in manual mode"""
     log_function_call("handle_manual_start")
+    
     print("\n=== STARTING MANUAL GAME ===")
     # Set game mode to manual
     game_state["mode"] = "manual"
@@ -1575,6 +1578,11 @@ async def handle_activate_split1(player_id):
     """Activate split1 for a player"""
     log_function_call("handle_activate_split1", player_id=player_id)
     
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
         return
@@ -1601,6 +1609,11 @@ async def handle_activate_split2(player_id):
     """Activate split2 for a player"""
     log_function_call("handle_activate_split2", player_id=player_id)
     
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
         return
@@ -1625,6 +1638,12 @@ async def handle_activate_split2(player_id):
 
 async def handle_deactivate_split1(player_id):
     log_function_call("handle_deactivate_split1", player_id=player_id)
+    
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
         return
@@ -1641,6 +1660,12 @@ async def handle_deactivate_split1(player_id):
 
 async def handle_deactivate_split2(player_id):
     log_function_call("handle_deactivate_split2", player_id=player_id)
+    
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
         return
@@ -1657,11 +1682,27 @@ async def handle_deactivate_split2(player_id):
 
 async def handle_manual_make_result(player_id, split_level, hand_index, result):
     log_function_call("handle_manual_make_result", player_id=player_id, split_level=split_level, hand_index=hand_index, result=result)
+    
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
+    # If player_id is not provided, get it from selected_hand
+    if not player_id:
+        selected_hand = game_state.get("selected_hand")
+        if not selected_hand:
+            await broadcast({"action": "error", "message": "No player selected"})
+            return
+        player_id = selected_hand["player_id"]
+    
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
         return
+    
     player_data = game_state["players"][player_id]
     hand = None
+    
     if split_level == 1:
         if player_data["split1_status"] == 1:
             hand = player_data["split1"][hand_index]
@@ -1676,7 +1717,8 @@ async def handle_manual_make_result(player_id, split_level, hand_index, result):
             return
     else:
         hand = player_data["hands"][hand_index]
-    print(f"hand: {hand}")
+    
+    print(f"Setting hand result: {result} for player {player_id}, split_level {split_level}, hand_index {hand_index}")
     if hand is not None:
         hand["result"] = result
         await broadcast({
@@ -1690,6 +1732,37 @@ async def handle_manual_make_result(player_id, split_level, hand_index, result):
         log_game_state()
     else:
         await broadcast({"action": "error", "message": "Invalid hand index or split level for manual result"})
+
+async def handle_manual_insurance(player_id):
+    """Handle manual insurance for a player"""
+    log_function_call("handle_manual_insurance", player_id=player_id)
+    
+    # Check if mode is manual
+    if game_state["mode"] != "manual":
+        await broadcast({"action": "error", "message": "This action is only available in manual mode"})
+        return
+    
+    if player_id not in game_state["players"]:
+        await broadcast({"action": "error", "message": f"Invalid player ID: {player_id}"})
+        return
+    
+    player_data = game_state["players"][player_id]
+    
+    # Toggle insurance value: if 1, set to 0; if 0, set to 1
+    current_insurance = player_data.get("insurence", 0)
+    new_insurance = 0 if current_insurance == 1 else 1
+    
+    # Save action to history
+    await save_action_history("manual_insurance", {"player_id": player_id, "insurance_value": new_insurance})
+    
+    player_data["insurence"] = new_insurance
+    await broadcast({
+        "action": "insurance_taken",
+        "player_id": player_id,
+        "insurance_value": new_insurance,
+        "game_state": serialize_game_state()
+    })
+    log_game_state()
 
 async def main():
     log_function_call("main")
