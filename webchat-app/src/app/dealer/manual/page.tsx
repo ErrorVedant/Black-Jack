@@ -994,6 +994,17 @@ const GameMenu = () => {
                                   >
                                     Split 1:
                                   </div>
+                                  <button
+                                    onClick={() =>
+                                      sendWebSocketMessage({
+                                        action: 'deactivate_split1',
+                                        player_id: playerId
+                                      })
+                                    }
+                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                  >
+                                    Deactivate Split
+                                  </button>
                                 </div>
                                 <div className='flex flex-wrap justify-center items-center gap-1'>
                                   <>
@@ -1048,17 +1059,6 @@ const GameMenu = () => {
                                       className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
                                     >
                                       Default
-                                    </button>
-                                    <button
-                                      onClick={() =>
-                                        sendWebSocketMessage({
-                                          action: 'deactivate_split1',
-                                          player_id: playerId
-                                        })
-                                      }
-                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
-                                    >
-                                      Deactivate Split
                                     </button>
                                   </>
                                 </div>
@@ -1102,6 +1102,17 @@ const GameMenu = () => {
                                   >
                                     Split 2:
                                   </div>
+                                  <button
+                                    onClick={() =>
+                                      sendWebSocketMessage({
+                                        action: 'deactivate_split2',
+                                        player_id: playerId
+                                      })
+                                    }
+                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                  >
+                                    Deactivate Split
+                                  </button>
                                 </div>
 
                                 <div className='flex flex-wrap justify-center items-center gap-1'>
@@ -1158,7 +1169,7 @@ const GameMenu = () => {
                                     >
                                       Default
                                     </button>
-                                    <button
+                                    {/* <button
                                       onClick={() =>
                                         sendWebSocketMessage({
                                           action: 'deactivate_split2',
@@ -1168,7 +1179,7 @@ const GameMenu = () => {
                                       className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
                                     >
                                       Deactivate Split
-                                    </button>
+                                    </button> */}
                                   </>
                                 </div>
                               </div>
