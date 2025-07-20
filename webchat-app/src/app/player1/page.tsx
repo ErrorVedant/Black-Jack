@@ -18,6 +18,7 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  insurence?: number
 }
 
 interface Players {
@@ -604,8 +605,11 @@ const GameMenu = () => {
                             }`}
                         />
                         <div>
-                          <div className={`text-2xl font-bold ${isHandSelected(gameState, "player1", 0, 0) ? "text-gray-900" : "text-white"}`}>
+                          <div className={`text-2xl font-bold ${isHandSelected(gameState, "player1", 0, 0) ? "text-gray-900" : "text-white"}`}> 
                             Player 1
+                            {gameState.players.player1.insurence === 1 && (
+                              <span className="ml-3 text-yellow-400 text-base font-semibold">Insured</span>
+                            )}
                           </div>
                           <div className={`text-base ${isHandSelected(gameState, "player1", 0, 0) ? "text-gray-700" : "opacity-75"}`}>
                             {isHandSelected(gameState, "player1", 0, 0) ? "Current Hand" : gameState.players.player1.status === 1 ? "Active" : "Inactive"}
@@ -814,8 +818,11 @@ const GameMenu = () => {
                                 }`}
                             />
                             <div>
-                              <div className={`text-base font-bold ${isCurrentHand ? "text-gray-900" : "text-white"}`}>
+                              <div className={`text-base font-bold ${isCurrentHand ? "text-gray-900" : "text-white"}`}> 
                                 {playerId.replace("player", "Player ")}
+                                {gameState?.players?.[playerId]?.insurence === 1 && (
+                                  <span className="ml-2 text-yellow-400 text-xs font-semibold">Insured</span>
+                                )}
                               </div>
                               <div className={`text-xs ${isCurrentHand ? "text-gray-700" : "opacity-75"}`}>
                                 {isCurrentHand ? "Current Hand" : isActive ? "Active" : "Inactive"}
