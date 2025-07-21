@@ -552,12 +552,12 @@ const GameMenu = () => {
   }
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8'>
+    <div className='min-h-screen bg-[#450A03] text-white px-4'>
       {/* Animated Background Elements */}
-      <div className='fixed inset-0 overflow-hidden pointer-events-none'>
+      {/* <div className='fixed inset-0 overflow-hidden pointer-events-none'>
         <div className='absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse'></div>
         <div className='absolute -bottom-4 -left-4 w-72 h-72 bg-gradient-to-br from-red-600/10 to-red-500/10 rounded-full blur-3xl animate-pulse delay-1000'></div>
-      </div>
+      </div> */}
 
       {/* Header Section */}
       {/* <div className="max-w-7xl mx-auto mb-8 relative z-10">
@@ -700,7 +700,7 @@ const GameMenu = () => {
       </nav>
 
       {/* Main Content Area - Full width */}
-      <div className='pt-[14vh] p-8'>
+      <div className='pt-[14vh]'>
         <div className='border-2 border-yellow-500 bg-[#911606] mx-auto flex flex-col gap-6 p-4 relative z-10'>
           {/* Dealer Window */}
           <div className='flex justify-center'>

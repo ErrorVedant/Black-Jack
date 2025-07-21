@@ -109,6 +109,7 @@ game_state = {
     "split_current_pointer": 0, # FOR LIVE MODE ONLY
     "split_call_live_previous_counter": 0, # FOR LIVE MODE ONLY 0: not split, 1: split, 2: split and next turn
     "evaluate_game": False,  # Track whether game has been evaluated
+    "final_game_states": [],
     "next_manual_counter": 0,  # no 2 next_turn occur during round 0
     "manual_distribution_count": 0,  # each player gets 2 cards only in round 0
 }
@@ -1032,7 +1033,8 @@ async def handle_reset_game():
             "split1_status": 0,
             "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
             "split2_status": 0,
-            "status": 0
+            "status": 0,
+            "insurence": 0
         })
     
     # Reset dealer to original state

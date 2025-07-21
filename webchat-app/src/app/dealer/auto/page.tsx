@@ -18,6 +18,7 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  insurence?: number
 }
 
 interface Players {
@@ -99,6 +100,7 @@ const GameMenu = () => {
   }>({})
   const [dealerAutoPlayed, setDealerAutoPlayed] = useState(false)
   const [waitingForServer, setWaitingForServer] = useState(false)
+  const [showInsuranceButton, setShowInsuranceButton] = useState(false)
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -247,6 +249,24 @@ const GameMenu = () => {
       setDealerAutoPlayed(false)
     }
   }, [gameState, socket, dealerAutoPlayed])
+
+  useEffect(() => {
+    if (!gameState || !gameState.selected_hand?.player_id) {
+      setShowInsuranceButton(false)
+      return
+    }
+    const playerId = gameState.selected_hand.player_id
+    const player = gameState.players?.[playerId]
+    const dealerFirstCardA = gameState.dealer?.cards?.[0]?.[0] === 'A'
+    const split1Status = player?.split1_status === 0
+    const split2Status = player?.split2_status === 0
+    const mainHandHas2Cards = player?.hands?.[0]?.cards?.length === 2
+    if (dealerFirstCardA && split1Status && split2Status && mainHandHas2Cards) {
+      setShowInsuranceButton(true)
+    } else {
+      setShowInsuranceButton(false)
+    }
+  }, [gameState])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -496,21 +516,12 @@ const GameMenu = () => {
     setSelectedSuit(null)
   }
 
-  const handleInsurance = (
-    playerId: string,
-    handIndex: number,
-    splitLevel: number = 0
-  ) => {
+  const handleInsurance = (playerId: string) => {
     sendWebSocketMessage({
-      action: 'handle_insurance',
-      player_id: playerId,
-      hand_index: handIndex,
-      split_level: splitLevel
+      action: 'handle_insurence',
+      player_id: playerId
     })
-    setInsuranceState(prev => ({
-      ...prev,
-      [`${playerId}_${handIndex}_${splitLevel}`]: true
-    }))
+    setInsuranceState(prev => ({ ...prev, [playerId]: true }))
   }
 
   const clearInsuranceForHand = (
@@ -921,6 +932,12 @@ const GameMenu = () => {
                                 }`}
                               >
                                 {playerId.replace('player', 'Player ')}
+                                {gameState?.players?.[playerId]?.insurence ===
+                                  1 && (
+                                  <span className='ml-2 text-yellow-400 font-semibold text-base'>
+                                    Insured
+                                  </span>
+                                )}
                               </div>
                               {/* <div
                               className={`text-sm ${
@@ -1038,18 +1055,17 @@ const GameMenu = () => {
                                     gameState?.current_player === playerId && (
                                       <>
                                         {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                        {gameState?.dealer?.cards?.[0]?.[0] ===
-                                          'A' &&
-                                          !insuranceState[`${playerId}_0_0`] &&
-                                          !gameState.players[playerId].hands[0]
+                                        {showInsuranceButton &&
+                                          !insuranceState[playerId] &&
+                                          !gameState.players[playerId]
                                             .insurence && (
                                             <button
                                               onClick={() =>
-                                                handleInsurance(playerId, 0, 0)
+                                                handleInsurance(playerId)
                                               }
-                                              className='px-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
+                                              className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
                                             >
-                                              Insurance
+                                              Insurance 
                                             </button>
                                           )}
                                         <button
@@ -1596,21 +1612,21 @@ const GameMenu = () => {
             {/* Assign Button */}
             <div className='flex space-x-2 flex-shrink-0 mt-4'>
               {selectedCard && selectedSuit && (
-              <button
-                onClick={assignCard}
-                className='flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm'
-                disabled={
-                  !(
-                    selectedCard &&
-                    selectedSuit &&
-                    (gameState?.game_phase === 'dealer' ||
-                      gameState?.selected_hand?.player_id)
-                  )
-                }
-              >
-                Deal Card
-              </button>
-                              )}
+                <button
+                  onClick={assignCard}
+                  className='flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm'
+                  disabled={
+                    !(
+                      selectedCard &&
+                      selectedSuit &&
+                      (gameState?.game_phase === 'dealer' ||
+                        gameState?.selected_hand?.player_id)
+                    )
+                  }
+                >
+                  Deal Card
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (gameState?.current_turn === 'dealer') {
