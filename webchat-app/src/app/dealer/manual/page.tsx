@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import DealerNavbar from '@/components/DealerNavbar'
 interface Hand {
   cards: string[]
   total: number
@@ -612,7 +613,15 @@ const GameMenu = () => {
           </div>
         </div>
       </div> */}
-      <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
+
+      <DealerNavbar 
+        gameState={gameState} 
+        activatePlayer={activatePlayer} 
+        deactivatePlayer={deactivatePlayer}
+        currentMode="manual" 
+      />
+
+      {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
         <img
           src='/assets/wood.png'
           alt='Wood Background'
@@ -620,7 +629,7 @@ const GameMenu = () => {
         />
         <div className='relative h-full'>
           <div className='flex items-center justify-between h-full px-2 xs:px-4 sm:px-6 md:px-8 lg:px-12'>
-            {/* Left Logo - Optimized for 1112x800 */}
+            Left Logo - Optimized for 1112x800
             <div
               className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
               aria-label='Open Bet/Table Menu'
@@ -640,9 +649,9 @@ const GameMenu = () => {
               </span>
             </div>
 
-            {/* Center Hats - Optimized for 1112x800 */}
+            Center Hats - Optimized for 1112x800
             <div className='flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4'>
-              {/* Generate 6 hat slots for players */}
+              Generate 6 hat slots for players
               {Array.from({ length: 6 }, (_, index) => {
                 const playerId = `player${index + 1}`
                 const playerData = gameState?.players?.[playerId]
@@ -679,7 +688,7 @@ const GameMenu = () => {
               })}
             </div>
 
-            {/* Right Logo - Optimized for 1112x800 */}
+            Right Logo - Optimized for 1112x800
             <div
               className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
               aria-label='Open Game Menu'
@@ -697,7 +706,7 @@ const GameMenu = () => {
             </div>
           </div>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Main Content Area - Full width */}
       <div className='pt-[14vh]'>
