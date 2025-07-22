@@ -137,11 +137,11 @@ const GameMenu = () => {
         }
       }
 
-      ws.onerror = error => {
-        console.error('WebSocket error:', error)
-        setPopupMessage('⚠️ Connection error occurred')
-        setShowPopup(true)
-      }
+      // ws.onerror = error => {
+      //   console.error('WebSocket error:', error)
+      //   setPopupMessage('⚠️ Connection error occurred')
+      //   setShowPopup(true)
+      // }
 
       ws.onmessage = event => {
         const data = JSON.parse(event.data)
