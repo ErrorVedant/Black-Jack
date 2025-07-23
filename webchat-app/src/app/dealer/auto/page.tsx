@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import DealerNavbar from '@/components/DealerNavbar'
+import BetTableModal from '@/components/BetTableModal'
 
 interface Hand {
   cards: string[]
@@ -102,19 +103,23 @@ const GameMenu = () => {
   const [dealerAutoPlayed, setDealerAutoPlayed] = useState(false)
   const [waitingForServer, setWaitingForServer] = useState(false)
   const [showInsuranceButton, setShowInsuranceButton] = useState(false)
+  const [betMenuOpen, setBetMenuOpen] = useState(false)
+  const [pendingTableNumber, setPendingTableNumber] = useState(0)
+  const [pendingMinBet, setPendingMinBet] = useState(0)
+  const [pendingMaxBet, setPendingMaxBet] = useState(0)
 
   // Set game mode helper
   const setGameMode = (mode: string) => {
     sendWebSocketMessage({
       action: 'set_game_mode',
-      mode,
-    });
-  };
+      mode
+    })
+  }
 
   useEffect(() => {
-    setGameMode('auto');
+    setGameMode('auto')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [])
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -283,24 +288,28 @@ const GameMenu = () => {
   }, [gameState])
 
   useEffect(() => {
-    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+    if (
+      isConnected &&
+      showPopup &&
+      popupMessage === '⚠️ Not connected to server'
+    ) {
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [isConnected, showPopup, popupMessage]);
+  }, [isConnected, showPopup, popupMessage])
 
-  const prevIsConnectedRef = useRef(isConnected);
+  const prevIsConnectedRef = useRef(isConnected)
 
   useEffect(() => {
     // Show connected popup only on reconnection (not initial mount)
     if (prevIsConnectedRef.current === false && isConnected) {
-      setPopupMessage('✅ Connected to server');
-      setShowPopup(true);
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+      setPopupMessage('✅ Connected to server')
+      setShowPopup(true)
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-    prevIsConnectedRef.current = isConnected;
-  }, [isConnected]);
+    prevIsConnectedRef.current = isConnected
+  }, [isConnected])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -570,6 +579,21 @@ const GameMenu = () => {
     })
   }
 
+  const handleSave = () => {
+    // Uncomment and implement your WebSocket calls here
+    // sendWebSocketMessage({
+    //   action: 'change_bets',
+    //   min_bet: pendingMinBet,
+    //   max_bet: pendingMaxBet
+    // })
+    // sendWebSocketMessage({
+    //   action: 'change_table',
+    //   table_number: pendingTableNumber
+    // })
+
+    console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
+  }
+
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
@@ -644,11 +668,25 @@ const GameMenu = () => {
         </div>
       </div> */}
 
-      <DealerNavbar 
-        gameState={gameState} 
-        activatePlayer={activatePlayer} 
-        deactivatePlayer={deactivatePlayer} 
-        currentMode="auto"
+      <DealerNavbar
+        gameState={gameState}
+        activatePlayer={activatePlayer}
+        deactivatePlayer={deactivatePlayer}
+        currentMode='auto'
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+      />
+
+      <BetTableModal
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+        pendingTableNumber={pendingTableNumber}
+        setPendingTableNumber={setPendingTableNumber}
+        pendingMinBet={pendingMinBet}
+        setPendingMinBet={setPendingMinBet}
+        pendingMaxBet={pendingMaxBet}
+        setPendingMaxBet={setPendingMaxBet}
+        onSave={handleSave}
       />
 
       {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
@@ -868,11 +906,11 @@ const GameMenu = () => {
 
                       <button
                         onClick={() =>
-                          sendWebSocketMessage({ action: 'reset_game' })
+                          sendWebSocketMessage({ action: 'reset_round' })
                         }
                         className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
                       >
-                        <span>New Game</span>
+                        New Game
                       </button>
                     </div>
                   </div>
@@ -1106,7 +1144,7 @@ const GameMenu = () => {
                                               }
                                               className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
                                             >
-                                              Insurance 
+                                              Insurance
                                             </button>
                                           )}
                                         <button
@@ -1592,10 +1630,10 @@ const GameMenu = () => {
                 Reshuffle
               </button>
               <button
-                onClick={() => sendWebSocketMessage({ action: 'reset_round' })}
+                onClick={() => sendWebSocketMessage({ action: 'reset_game' })}
                 className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
               >
-                Reset Round
+                <span>Delete all wins</span>
               </button>
             </div>
 

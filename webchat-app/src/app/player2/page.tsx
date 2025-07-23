@@ -518,65 +518,60 @@ const GameMenu = () => {
       {player2Active ? (
         <div className='min-h-screen bg-[#450A03] text-white p-8'>
           <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
-            <img
-              src='/assets/wood.png'
-              alt='Wood Background'
-              className='absolute inset-0 object-cover w-full h-full'
-            />
-            <div className='relative h-full'>
-              <div className='flex items-center justify-between h-full px-2 xs:px-4 sm:px-6 md:px-8 lg:px-12'>
-                {/* Left Logo */}
-                <div
-                  className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
-                  aria-label='Open Bet/Table Menu'
-                >
-                  <div className='relative w-12 h-12 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16'>
-                    <Image
-                      src='/assets/logo.png'
-                      alt='Casino Wars Logo'
-                      fill
-                      className='object-contain'
-                      sizes='(max-width: 640px) 32px, (max-width: 768px) 40px, (max-width: 1024px) 48px, (max-width: 1280px) 64px, 64px'
-                      priority
-                    />
-                  </div>
-                  <span className='text-yellow-300 text-xs sm:text-sm lg:text-base -mt-1'>
-                    Table: {gameState?.table_number}
-                  </span>
-                </div>
-
-                <div className='flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4'>
-                  <div className='relative w-20 h-20 cursor-pointer hover:scale-110 transition-transform duration-200'>
-                    <Image
-                      src='/assets/ocean7.png'
-                      alt={`Logo`}
-                      fill
-                      className='object-contain drop-shadow-lg'
-                      sizes='(max-width: 640px) 24px, (max-width: 768px) 32px, (max-width: 1024px) 40px, (max-width: 1280px) 48px, 48px'
-                      priority
-                    />
-                  </div>
-                </div>
-
-                {/* Right Logo */}
-                <div
-                  className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
-                  aria-label='Open Game Menu'
-                >
-                  <div className='relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16'>
-                    <Image
-                      src='/assets/menu.png'
-                      alt='Menu Icon'
-                      fill
-                      className='object-contain'
-                      sizes='(max-width: 640px) 32px, (max-width: 768px) 40px, (max-width: 1024px) 48px, (max-width: 1280px) 64px, 64px'
-                      priority
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </nav>
+                      <img
+                        src='/assets/wood.png'
+                        alt='Wood Background'
+                        className='absolute inset-0 object-cover w-full h-full'
+                      />
+                      <div className='relative h-full'>
+                        <div className='flex items-center justify-between h-full px-2 xs:px-4 sm:px-6 md:px-8 lg:px-12'>
+                          {/* Left Logo - Optimized for 1112x800 */}
+                          <div
+                            className='w-16 h-16 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform'
+                            aria-label='Open Bet/Table Menu'
+                          >
+                            <div className='relative w-24 h-24'>
+                              <Image
+                                src='/assets/logo.png'
+                                alt='Casino Wars Logo'
+                                fill
+                                className='object-contain'
+                                sizes='(max-width: 640px) 32px, (max-width: 768px) 40px, (max-width: 1024px) 48px, (max-width: 1280px) 64px, 64px'
+                                priority
+                              />
+                            </div>
+                            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base -mt-1'>
+                              Table: {gameState?.table_number}
+                            </span>
+                          </div>
+          
+                          <div className='flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4'>
+                            <div className='relative w-20 h-20 cursor-pointer hover:scale-110 transition-transform duration-200'>
+                              <Image
+                                src='/assets/ocean7.png'
+                                alt={`Logo`}
+                                fill
+                                className='object-contain drop-shadow-lg'
+                                sizes='(max-width: 640px) 24px, (max-width: 768px) 32px, (max-width: 1024px) 40px, (max-width: 1280px) 48px, 48px'
+                                priority
+                              />
+                            </div>
+                          </div>
+          
+                          {/* Right Logo - Optimized for 1112x800 */}
+                          <div
+                            className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden mr-4'
+                            aria-label='Open Game Menu'
+                          >
+                            <div className='flex flex-col items-end justify-center w-full h-full'>
+                              <h1 className='text-yellow-500'>Bets: </h1>
+                              <span className='text-yellow-500'>min: 0</span>
+                              <span className='text-yellow-500'>max: 0</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </nav>
 
           {/* Main Content Area */}
           <div className='pt-[8vh]'>

@@ -16,13 +16,17 @@ interface DealerNavbarProps {
   activatePlayer?: (playerId: string) => void
   deactivatePlayer?: (playerId: string) => void
   currentMode?: 'live' | 'auto' | 'manual'
+  betMenuOpen?: boolean
+  setBetMenuOpen?: (open: boolean) => void
 }
 
 const DealerNavbar = ({ 
   gameState, 
   activatePlayer, 
   deactivatePlayer, 
-  currentMode 
+  currentMode,
+  betMenuOpen,
+  setBetMenuOpen
 }: DealerNavbarProps) => {
   const router = useRouter()
 
@@ -38,7 +42,13 @@ const DealerNavbar = ({
         router.push('/dealer/manual')
         break
       default:
-        router.push('/dealer')
+        router.push('/dealer/live')
+    }
+  }
+
+  const handleLogoClick = () => {
+    if (setBetMenuOpen) {
+      setBetMenuOpen(!betMenuOpen)
     }
   }
 
@@ -55,7 +65,7 @@ const DealerNavbar = ({
           <div
             className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
             aria-label='Open Bet/Table Menu'
-            onClick={() => router.push('/dealer')}
+            onClick={handleLogoClick}
           >
             <div className='relative w-12 h-12 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16'>
               <Image

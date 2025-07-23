@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import DealerNavbar from '@/components/DealerNavbar'
+import BetTableModal from '@/components/BetTableModal'
+
 interface Hand {
   cards: string[]
   total: number
@@ -111,19 +113,23 @@ const GameMenu = () => {
     round: number
     count: number
   }>({ playerId: null, round: -1, count: -1 })
+  const [betMenuOpen, setBetMenuOpen] = useState(false)
+  const [pendingTableNumber, setPendingTableNumber] = useState(0)
+  const [pendingMinBet, setPendingMinBet] = useState(0)
+  const [pendingMaxBet, setPendingMaxBet] = useState(0)
 
   // Set game mode helper
   const setGameMode = (mode: string) => {
     sendWebSocketMessage({
       action: 'set_game_mode',
-      mode,
-    });
-  };
+      mode
+    })
+  }
 
   useEffect(() => {
-    setGameMode('manual');
+    setGameMode('manual')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [])
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -275,25 +281,29 @@ const GameMenu = () => {
     }
   }, [])
 
-  const prevIsConnectedRef = useRef(isConnected);
+  const prevIsConnectedRef = useRef(isConnected)
 
   useEffect(() => {
     // Show connected popup only on reconnection (not initial mount)
     if (prevIsConnectedRef.current === false && isConnected) {
-      setPopupMessage('✅ Connected to server');
-      setShowPopup(true);
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+      setPopupMessage('✅ Connected to server')
+      setShowPopup(true)
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-    prevIsConnectedRef.current = isConnected;
-  }, [isConnected]);
+    prevIsConnectedRef.current = isConnected
+  }, [isConnected])
 
   useEffect(() => {
-    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+    if (
+      isConnected &&
+      showPopup &&
+      popupMessage === '⚠️ Not connected to server'
+    ) {
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [isConnected, showPopup, popupMessage]);
+  }, [isConnected, showPopup, popupMessage])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -573,6 +583,21 @@ const GameMenu = () => {
     })
   }
 
+  const handleSave = () => {
+    // Uncomment and implement your WebSocket calls here
+    // sendWebSocketMessage({
+    //   action: 'change_bets',
+    //   min_bet: pendingMinBet,
+    //   max_bet: pendingMaxBet
+    // })
+    // sendWebSocketMessage({
+    //   action: 'change_table',
+    //   table_number: pendingTableNumber
+    // })
+    
+    console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
+  }
+
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
@@ -647,11 +672,25 @@ const GameMenu = () => {
         </div>
       </div> */}
 
-      <DealerNavbar 
-        gameState={gameState} 
-        activatePlayer={activatePlayer} 
+      <DealerNavbar
+        gameState={gameState}
+        activatePlayer={activatePlayer}
         deactivatePlayer={deactivatePlayer}
-        currentMode="manual" 
+        currentMode='manual'
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+      />
+
+      <BetTableModal
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+        pendingTableNumber={pendingTableNumber}
+        setPendingTableNumber={setPendingTableNumber}
+        pendingMinBet={pendingMinBet}
+        setPendingMinBet={setPendingMinBet}
+        pendingMaxBet={pendingMaxBet}
+        setPendingMaxBet={setPendingMaxBet}
+        onSave={handleSave}
       />
 
       {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
@@ -802,13 +841,13 @@ const GameMenu = () => {
                     </button>
 
                     <button
-                      onClick={() =>
-                        sendWebSocketMessage({ action: 'reset_game' })
-                      }
-                      className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
-                    >
-                      <span>New Game</span>
-                    </button>
+                        onClick={() =>
+                          sendWebSocketMessage({ action: 'reset_round' })
+                        }
+                        className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
+                      >
+                        New Game
+                      </button>
 
                     <button
                       // onClick={() =>
@@ -848,13 +887,13 @@ const GameMenu = () => {
                   <div
                     key={playerId}
                     className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                        'bg-[#C1351D] text-gray-200 border border-red-500/30'
-                        // isCurrentHand
-                        //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
-                        //   : isActive
-                        //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
-                        //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
-                      }`}
+                      'bg-[#C1351D] text-gray-200 border border-red-500/30'
+                      // isCurrentHand
+                      //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
+                      //   : isActive
+                      //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
+                      //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
+                    }`}
                     onClick={e => {
                       e.stopPropagation()
                       if (isActive) {

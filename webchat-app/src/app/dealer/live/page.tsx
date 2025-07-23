@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import DealerNavbar from "@/components/DealerNavbar"
+import DealerNavbar from '@/components/DealerNavbar'
+import BetTableModal from '@/components/BetTableModal'
 
 interface Hand {
   cards: string[]
@@ -112,7 +113,11 @@ const GameMenu = () => {
   const [waitingForServer, setWaitingForServer] = useState(false)
   const previousTurnSentRef = useRef(false)
   const [showInsuranceButton, setShowInsuranceButton] = useState(false)
-  const prevIsConnectedRef = useRef(isConnected);
+  const prevIsConnectedRef = useRef(isConnected)
+  const [betMenuOpen, setBetMenuOpen] = useState(false)
+  const [pendingTableNumber, setPendingTableNumber] = useState(0)
+  const [pendingMinBet, setPendingMinBet] = useState(0)
+  const [pendingMaxBet, setPendingMaxBet] = useState(0)
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -401,14 +406,14 @@ const GameMenu = () => {
   const setGameMode = (mode: string) => {
     sendWebSocketMessage({
       action: 'set_game_mode',
-      mode,
-    });
-  };
+      mode
+    })
+  }
 
   useEffect(() => {
-    setGameMode('live');
+    setGameMode('live')
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [])
 
   const cardValues = [
     'A',
@@ -547,6 +552,21 @@ const GameMenu = () => {
     })
   }
 
+  const handleSave = () => {
+    // Uncomment and implement your WebSocket calls here
+    // sendWebSocketMessage({
+    //   action: 'change_bets',
+    //   min_bet: pendingMinBet,
+    //   max_bet: pendingMaxBet
+    // })
+    // sendWebSocketMessage({
+    //   action: 'change_table',
+    //   table_number: pendingTableNumber
+    // })
+
+    console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
+  }
+
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
@@ -672,22 +692,26 @@ const GameMenu = () => {
   }, [gameState])
 
   useEffect(() => {
-    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+    if (
+      isConnected &&
+      showPopup &&
+      popupMessage === '⚠️ Not connected to server'
+    ) {
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-  }, [isConnected, showPopup, popupMessage]);
+  }, [isConnected, showPopup, popupMessage])
 
   useEffect(() => {
     // Show connected popup only on reconnection (not initial mount)
     if (prevIsConnectedRef.current === false && isConnected) {
-      setPopupMessage('✅ Connected to server');
-      setShowPopup(true);
-      const timer = setTimeout(() => setShowPopup(false), 1000);
-      return () => clearTimeout(timer);
+      setPopupMessage('✅ Connected to server')
+      setShowPopup(true)
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
     }
-    prevIsConnectedRef.current = isConnected;
-  }, [isConnected]);
+    prevIsConnectedRef.current = isConnected
+  }, [isConnected])
 
   return (
     <div className='min-h-screen bg-[#450A03] text-white'>
@@ -750,11 +774,25 @@ const GameMenu = () => {
           </div>
         </div>
       </div> */}
-      <DealerNavbar 
-        gameState={gameState} 
-        activatePlayer={activatePlayer} 
+      <DealerNavbar
+        gameState={gameState}
+        activatePlayer={activatePlayer}
         deactivatePlayer={deactivatePlayer}
-        currentMode="live" 
+        currentMode='live'
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+      />
+
+      <BetTableModal
+        betMenuOpen={betMenuOpen}
+        setBetMenuOpen={setBetMenuOpen}
+        pendingTableNumber={pendingTableNumber}
+        setPendingTableNumber={setPendingTableNumber}
+        pendingMinBet={pendingMinBet}
+        setPendingMinBet={setPendingMinBet}
+        pendingMaxBet={pendingMaxBet}
+        setPendingMaxBet={setPendingMaxBet}
+        onSave={handleSave}
       />
 
       {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
@@ -987,24 +1025,11 @@ const GameMenu = () => {
 
                       <button
                         onClick={() =>
-                          sendWebSocketMessage({ action: 'reset_game' })
+                          sendWebSocketMessage({ action: 'reset_round' })
                         }
                         className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
                       >
-                        {/* <svg
-                          className='w-5 h-5'
-                          fill='none'
-                          viewBox='0 0 24 24'
-                          stroke='currentColor'
-                        >
-                          <path
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth={2}
-                            d='M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15'
-                          />
-                        </svg> */}
-                        <span>New Game</span>
+                        New Game
                       </button>
                     </div>
                   </div>
@@ -1088,12 +1113,11 @@ const GameMenu = () => {
                                   : 'Inactive'}
                               </div> */}
 
-                              <span
-                                  className={'text-sm'}
-                                >
-                                  Total: {' '}{gameState?.players?.[playerId]?.hands?.[0]
-                                    ?.total ?? 0}
-                                </span>
+                              <span className={'text-sm'}>
+                                Total:{' '}
+                                {gameState?.players?.[playerId]?.hands?.[0]
+                                  ?.total ?? 0}
+                              </span>
                             </div>
                           </div>
                           {!isActive ? (
@@ -1528,7 +1552,7 @@ const GameMenu = () => {
                                       >
                                         Cards:
                                       </div> */}
-                                       <div
+                                      <div
                                         className={`text-sm font-medium ${
                                           isCurrentSplit1Hand
                                             ? 'text-gray-900'
@@ -1722,7 +1746,7 @@ const GameMenu = () => {
           {/* Right Section - 30% width for Card Selection */}
           <div className='w-[30%] flex flex-col h-full justify-between'>
             {/* Game Actions Section */}
-              {/* <h2 className='text-2xl font-bold text-white mb-6 flex items-center'>
+            {/* <h2 className='text-2xl font-bold text-white mb-6 flex items-center'>
                 <svg
                   className='w-6 h-6 mr-3 text-yellow-400'
                   fill='none'
@@ -1738,20 +1762,20 @@ const GameMenu = () => {
                 </svg>
                 Game Actions
               </h2> */}
-              <div className='space-y-2 flex-shrink-0'>
-                <button
-                  onClick={() => sendWebSocketMessage({ action: 'undo_last' })}
-                  className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
-                >
-                  <span>Undo Last Action</span>
-                </button>
-                <button
-                  onClick={() => sendWebSocketMessage({ action: 'reshuffle' })}
-                  className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
-                >
-                  <span>Reshuffle</span>
-                </button>
-                {/* <button
+            <div className='space-y-2 flex-shrink-0'>
+              <button
+                onClick={() => sendWebSocketMessage({ action: 'undo_last' })}
+                className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
+              >
+                <span>Undo Last Action</span>
+              </button>
+              <button
+                onClick={() => sendWebSocketMessage({ action: 'reshuffle' })}
+                className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
+              >
+                <span>Reshuffle</span>
+              </button>
+              {/* <button
                   onClick={() =>
                     sendWebSocketMessage({ action: 'previous_turn' })
                   }
@@ -1759,19 +1783,17 @@ const GameMenu = () => {
                 >
                   <span>Previous Hand</span>
                 </button> */}
-                <button
-                  onClick={() =>
-                    sendWebSocketMessage({ action: 'reset_round' })
-                  }
-                  className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
-                >
-                  <span>Reset Round</span>
-                </button>
-              </div>
+              <button
+                onClick={() => sendWebSocketMessage({ action: 'reset_game' })}
+                className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
+              >
+                <span>Delete all wins</span>
+              </button>
+            </div>
 
             {/* Deal Card Section (existing, now only for dealing cards) */}
-              {/* Card Values */}
-              <div className='grid grid-cols-3 gap-2 flex-shrink-0 mt-4'>
+            {/* Card Values */}
+            <div className='grid grid-cols-3 gap-2 flex-shrink-0 mt-4'>
               {/* First row - Ace in center */}
               <div></div>
               <button
@@ -1802,8 +1824,7 @@ const GameMenu = () => {
               ))}
             </div>
 
-
-              {/* Suits */}
+            {/* Suits */}
             <div className='grid grid-cols-2 gap-2 flex-shrink-0 mt-4'>
               {suits.map(suit => (
                 <button
@@ -1820,50 +1841,48 @@ const GameMenu = () => {
               ))}
             </div>
 
-              {/* Preview and Assign Button */}
-              <div className='flex space-x-2 flex-shrink-0 mt-4'>
-                {selectedCard && selectedSuit && (
-                  <>
-                    <button
-                      onClick={assignCard}
-                      className={`flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
-                      disabled={
-                        !(
-                          selectedCard &&
-                          selectedSuit &&
-                          (gameState?.game_phase === 'dealer' ||
-                            gameState?.selected_hand?.player_id)
-                        )
-                      }
-                    >
-                      <span>Deal Card</span>
-                    </button>
-                  </>
-                )}
-
-                <button
-                  onClick={() => {
-                    if (gameState?.current_turn === 'dealer') {
-                      sendWebSocketMessage({ action: 'hit_player' })
-                    } else if (gameState?.selected_hand?.player_id) {
-                      sendWebSocketMessage({
-                        action: 'hit_player',
-                        player_id: gameState.selected_hand.player_id,
-                        hand_index: gameState.selected_hand.hand_index
-                      })
-                    } else {
-                      setPopupMessage(
-                        '⚠️ Please select a player or dealer first'
+            {/* Preview and Assign Button */}
+            <div className='flex space-x-2 flex-shrink-0 mt-4'>
+              {selectedCard && selectedSuit && (
+                <>
+                  <button
+                    onClick={assignCard}
+                    className={`flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
+                    disabled={
+                      !(
+                        selectedCard &&
+                        selectedSuit &&
+                        (gameState?.game_phase === 'dealer' ||
+                          gameState?.selected_hand?.player_id)
                       )
-                      setShowPopup(true)
-                      setTimeout(() => setShowPopup(false), 3000)
                     }
-                  }}
-                  className='flex-1 p-2 bg-white hover:bg-gray-100 text-black rounded font-semibold text-sm'
-                >
-                  <span>Pull from Top of Stack</span>
-                </button>
-              </div>
+                  >
+                    <span>Deal Card</span>
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => {
+                  if (gameState?.current_turn === 'dealer') {
+                    sendWebSocketMessage({ action: 'hit_player' })
+                  } else if (gameState?.selected_hand?.player_id) {
+                    sendWebSocketMessage({
+                      action: 'hit_player',
+                      player_id: gameState.selected_hand.player_id,
+                      hand_index: gameState.selected_hand.hand_index
+                    })
+                  } else {
+                    setPopupMessage('⚠️ Please select a player or dealer first')
+                    setShowPopup(true)
+                    setTimeout(() => setShowPopup(false), 3000)
+                  }
+                }}
+                className='flex-1 p-2 bg-white hover:bg-gray-100 text-black rounded font-semibold text-sm'
+              >
+                <span>Pull from Top of Stack</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

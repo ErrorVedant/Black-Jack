@@ -374,12 +374,22 @@ const DisplayPage = () => {
   return (
     <div className='min-h-screen bg-[#D6AB5D] flex flex-col items-center justify-center'>
       <div className='h-[94vh] w-[96vw] m-3 bg-[#971909] flex flex-col'>
-        <nav className='w-full h-[15vh] relative flex items-center justify-center'>
+        <nav className='w-full h-[15vh] relative flex items-center justify-between px-8'>
           <img
             src='/assets/wood.png'
             alt='Wood Background'
             className='absolute inset-0 w-full h-full object-cover'
           />
+
+          {/* Left Button */}
+          <div className='relative top-4 flex items-center justify-center z-10'>
+            <div className='text-3xl text-yellow-500'>Table:&nbsp;</div>
+            <div className='text-2xl text-yellow-500'>
+              {gameState.table_number}
+            </div>
+          </div>
+
+          {/* Center Image - unchanged */}
           <img
             src='/assets/blackjack_logo.png'
             alt='BlackJack Logo'
@@ -389,6 +399,13 @@ const DisplayPage = () => {
               target.src = '/assets/logo.png'
             }}
           />
+
+          {/* Right Button */}
+          <div className='flex flex-col items-end justify-center z-10'>
+            <h1 className='text-yellow-500 text-3xl'>Bets: </h1>
+            <span className='text-yellow-500 text-2xl'>min: 0</span>
+            <span className='text-yellow-500 text-2xl'>max: 0</span>
+          </div>
         </nav>
 
         <div className='flex-1 grid grid-cols-9 grid-rows-9 w-[96vw] h-[79vh]'>
@@ -433,70 +450,71 @@ const DisplayPage = () => {
 
           {/* Players - Left side (1-3) */}
           {playerGrid.slice(0, 3).map(([playerId, gridClass], idx) => {
-            const player = gameState.players?.[playerId];
-            const state = getPlayerState(player);
-            const imgSrc = stateToImg[state];
-            const overlay = stateToOverlay[state];
-            
+            const player = gameState.players?.[playerId]
+            const state = getPlayerState(player)
+            const imgSrc = stateToImg[state]
+            const overlay = stateToOverlay[state]
+
             // Check if player has any splits active to hide button
-            const hasSplit1 = player?.split1_status === 1;
-            const hasSplit2 = player?.split2_status === 1;
-            const hasAnySplit = hasSplit1 || hasSplit2;
-            
+            const hasSplit1 = player?.split1_status === 1
+            const hasSplit2 = player?.split2_status === 1
+            const hasAnySplit = hasSplit1 || hasSplit2
+
             return (
               <div key={playerId} className={gridClass}>
-                <div className="w-[17vw] h-[17vh] flex flex-row items-center justify-center">
-                  <div className="flex-1 flex justify-center">
-                    <BlackJackHand
-                      playerId={playerId}
-                      player={player}
-                    />
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center justify-center'>
+                  <div className='flex-1 flex justify-center'>
+                    <BlackJackHand playerId={playerId} player={player} />
                   </div>
-                    <div className="relative w-[8vw] h-[14vh] flex items-center justify-center ml-2 flex-shrink-0">
-                      <img src={imgSrc} alt="Player State" className="w-full h-full object-contain" />
-                      <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center">
-                        <div className='font-bold text-3xl'>{idx + 1}</div>
-                        <div className="text-sm">{overlay}</div>
-                      </div>
+                  <div className='relative w-[8vw] h-[14vh] flex items-center justify-center ml-2 flex-shrink-0'>
+                    <img
+                      src={imgSrc}
+                      alt='Player State'
+                      className='w-full h-full object-contain'
+                    />
+                    <div className='absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center'>
+                      <div className='font-bold text-3xl'>{idx + 1}</div>
+                      <div className='text-sm'>{overlay}</div>
                     </div>
+                  </div>
                 </div>
               </div>
-            );
+            )
           })}
 
           {/* Players - Right side (4-6) */}
           {playerGrid.slice(3).map(([playerId, gridClass], idx) => {
-            const player = gameState.players?.[playerId];
-            const state = getPlayerState(player);
-            const imgSrc = stateToImg[state];
-            const overlay = stateToOverlay[state];
-            
+            const player = gameState.players?.[playerId]
+            const state = getPlayerState(player)
+            const imgSrc = stateToImg[state]
+            const overlay = stateToOverlay[state]
+
             // Check if player has any splits active to hide button
-            const hasSplit1 = player?.split1_status === 1;
-            const hasSplit2 = player?.split2_status === 1;
-            const hasAnySplit = hasSplit1 || hasSplit2;
-            
+            const hasSplit1 = player?.split1_status === 1
+            const hasSplit2 = player?.split2_status === 1
+            const hasAnySplit = hasSplit1 || hasSplit2
+
             return (
               <div key={playerId} className={gridClass}>
-                <div className="w-[17vw] h-[17vh] flex flex-row items-center justify-center">
-                    <div className="relative w-[8vw] h-[14vh] flex items-center justify-center mr-2 flex-shrink-0">
-                      <img src={imgSrc} alt="Player State" className="w-full h-full object-contain" />
-                      <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center">
-                        <div className='font-bold text-3xl'>{idx + 4}</div>
-                        <div className="text-sm">{overlay}</div>
-                      </div>
-                    </div>
-                  <div className="flex-1 flex justify-center">
-                    <BlackJackHand
-                      playerId={playerId}
-                      player={player}
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center justify-center'>
+                  <div className='relative w-[8vw] h-[14vh] flex items-center justify-center mr-2 flex-shrink-0'>
+                    <img
+                      src={imgSrc}
+                      alt='Player State'
+                      className='w-full h-full object-contain'
                     />
+                    <div className='absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center'>
+                      <div className='font-bold text-3xl'>{idx + 4}</div>
+                      <div className='text-sm'>{overlay}</div>
+                    </div>
+                  </div>
+                  <div className='flex-1 flex justify-center'>
+                    <BlackJackHand playerId={playerId} player={player} />
                   </div>
                 </div>
               </div>
-            );
+            )
           })}
-
 
           {/* Center Logo/Game Info */}
           <div className='col-start-5 col-end-6 row-start-1 row-end-3 flex flex-col items-center justify-center z-10'>
@@ -508,36 +526,36 @@ const DisplayPage = () => {
           </div>
 
           {/* Footer Stats */}
-          <footer className='col-start-1 col-end-10 row-start-8 row-end-10 flex justify-around items-center relative'>
+          <footer className='col-start-1 col-end-10 row-start-8 row-end-10 flex justify-start items-center relative'>
             <img
               src='/assets/wood.png'
               alt='Wood Background'
               className='absolute inset-0 w-full h-full object-cover rotate-180 z-0'
             />
-            <div className='relative top-4 flex items-center justify-center z-10'>
+            <div className='relative top-4 flex items-center justify-center z-10 mx-8'>
               <div className='text-3xl text-yellow-500'>Games:&nbsp;</div>
               <div className='text-2xl text-yellow-500'>
                 {gameState.round_number ?? 0}
               </div>
             </div>
-            <div className='relative top-4 flex items-center justify-center z-10'>
+            {/* <div className='relative top-4 flex items-center justify-center z-10'>
               <div className='text-3xl text-yellow-500'>Phase:&nbsp;</div>
               <div className='text-2xl text-yellow-500'>
                 {gameState.game_phase?.toUpperCase() || 'WAITING'}
               </div>
-            </div>
-            <div className='relative top-4 flex items-center justify-center z-10'>
+            </div> */}
+            {/* <div className='relative top-4 flex items-center justify-center z-10'>
               <div className='text-3xl text-yellow-500'>Table:&nbsp;</div>
               <div className='text-2xl text-yellow-500'>
                 {gameState.table_number}
               </div>
-            </div>
-            <div className='relative top-4 flex items-center justify-center z-10'>
+            </div> */}
+            {/* <div className='relative top-4 flex items-center justify-center z-10'>
               <div className='text-3xl text-yellow-500'>Mode:&nbsp;</div>
               <div className='text-2xl text-yellow-500'>
                 {gameState.mode?.toUpperCase() || 'AUTO'}
               </div>
-            </div>
+            </div> */}
           </footer>
         </div>
       </div>
