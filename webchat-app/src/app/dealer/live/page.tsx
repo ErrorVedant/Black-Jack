@@ -112,6 +112,7 @@ const GameMenu = () => {
   const [waitingForServer, setWaitingForServer] = useState(false)
   const previousTurnSentRef = useRef(false)
   const [showInsuranceButton, setShowInsuranceButton] = useState(false)
+  const prevIsConnectedRef = useRef(isConnected);
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -396,6 +397,19 @@ const GameMenu = () => {
       .map(([id]) => id)
   }
 
+  // Set game mode helper
+  const setGameMode = (mode: string) => {
+    sendWebSocketMessage({
+      action: 'set_game_mode',
+      mode,
+    });
+  };
+
+  useEffect(() => {
+    setGameMode('live');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const cardValues = [
     'A',
     '2',
@@ -656,6 +670,24 @@ const GameMenu = () => {
       setShowInsuranceButton(false)
     }
   }, [gameState])
+
+  useEffect(() => {
+    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, showPopup, popupMessage]);
+
+  useEffect(() => {
+    // Show connected popup only on reconnection (not initial mount)
+    if (prevIsConnectedRef.current === false && isConnected) {
+      setPopupMessage('✅ Connected to server');
+      setShowPopup(true);
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevIsConnectedRef.current = isConnected;
+  }, [isConnected]);
 
   return (
     <div className='min-h-screen bg-[#450A03] text-white'>

@@ -112,6 +112,19 @@ const GameMenu = () => {
     count: number
   }>({ playerId: null, round: -1, count: -1 })
 
+  // Set game mode helper
+  const setGameMode = (mode: string) => {
+    sendWebSocketMessage({
+      action: 'set_game_mode',
+      mode,
+    });
+  };
+
+  useEffect(() => {
+    setGameMode('manual');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     let ws: WebSocket | null = null
     let reconnectTimeout: NodeJS.Timeout
@@ -261,6 +274,26 @@ const GameMenu = () => {
       }
     }
   }, [])
+
+  const prevIsConnectedRef = useRef(isConnected);
+
+  useEffect(() => {
+    // Show connected popup only on reconnection (not initial mount)
+    if (prevIsConnectedRef.current === false && isConnected) {
+      setPopupMessage('✅ Connected to server');
+      setShowPopup(true);
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevIsConnectedRef.current = isConnected;
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, showPopup, popupMessage]);
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {

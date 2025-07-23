@@ -103,6 +103,19 @@ const GameMenu = () => {
   const [waitingForServer, setWaitingForServer] = useState(false)
   const [showInsuranceButton, setShowInsuranceButton] = useState(false)
 
+  // Set game mode helper
+  const setGameMode = (mode: string) => {
+    sendWebSocketMessage({
+      action: 'set_game_mode',
+      mode,
+    });
+  };
+
+  useEffect(() => {
+    setGameMode('auto');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     let ws: WebSocket | null = null
     let reconnectTimeout: NodeJS.Timeout
@@ -268,6 +281,26 @@ const GameMenu = () => {
       setShowInsuranceButton(false)
     }
   }, [gameState])
+
+  useEffect(() => {
+    if (isConnected && showPopup && popupMessage === '⚠️ Not connected to server') {
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, showPopup, popupMessage]);
+
+  const prevIsConnectedRef = useRef(isConnected);
+
+  useEffect(() => {
+    // Show connected popup only on reconnection (not initial mount)
+    if (prevIsConnectedRef.current === false && isConnected) {
+      setPopupMessage('✅ Connected to server');
+      setShowPopup(true);
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    prevIsConnectedRef.current = isConnected;
+  }, [isConnected]);
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -847,7 +880,7 @@ const GameMenu = () => {
                   {/* Dealer Controls: Show all when dealer phase */}
                   {gameState?.game_phase === 'dealer' && (
                     <div className='flex items-center justify-center space-x-3 mt-4'>
-                      <button
+                      {/* <button
                         onClick={() => {
                           if (gameState?.current_turn === 'dealer') {
                             sendWebSocketMessage({ action: 'hit_player' })
@@ -876,7 +909,7 @@ const GameMenu = () => {
                         className='px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
                       >
                         Next
-                      </button>
+                      </button> */}
                     </div>
                   )}
                 </div>

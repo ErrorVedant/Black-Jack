@@ -5,6 +5,10 @@ import motor.motor_asyncio
 from datetime import datetime
 import random
 import copy
+import logging
+import re
+
+import serial
 
 # MongoDB setup
 MONGO_URI = "mongodb://localhost:27017"
@@ -16,6 +20,13 @@ connected_clients = set()
 
 # Store the last 5 game states for undo functionality
 previous_game_states = []
+
+# Serial port setup (adjust as needed)
+ser = None
+try:
+    ser = serial.Serial('COM3', 9600, timeout=1)  # Change COM3 to your port
+except Exception as e:
+    print(f"Serial port not available: {e}")
 
 def log_function_call(func_name, *args, **kwargs):
     """Helper function to log function calls with timestamp"""
@@ -109,7 +120,6 @@ game_state = {
     "split_current_pointer": 0, # FOR LIVE MODE ONLY
     "split_call_live_previous_counter": 0, # FOR LIVE MODE ONLY 0: not split, 1: split, 2: split and next turn
     "evaluate_game": False,  # Track whether game has been evaluated
-    "final_game_states": [],
     "next_manual_counter": 0,  # no 2 next_turn occur during round 0
     "manual_distribution_count": 0,  # each player gets 2 cards only in round 0
 }
@@ -423,6 +433,7 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     log_function_call("handle_hit_player", player_id=player_id, hand_index=hand_index, card=card)
     print("\n=== HANDLE HIT PLAYER STARTED ===")
     print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
+    
     try:
         if ((game_state["mode"] == "live" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0) or game_state["round_number"] == 1):
             game_state["next_manual_counter"] = 1
@@ -639,6 +650,11 @@ def get_last_active_hand():
 async def handle_split_player_live(player_id):
     """Handle splitting a player's hand into two separate hands"""
     log_function_call("handle_split_player_auto", player_id=player_id)
+    import copy
+    # Save the current game state to previous_game_states as an action
+    previous_game_states.append(copy.deepcopy(game_state))
+    if len(previous_game_states) > 10:
+        previous_game_states.pop(0)
 
     if not player_id or player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": "Invalid player ID"})
@@ -1183,11 +1199,6 @@ async def handle_next_turn():
                 game_state["next_manual_counter"] = 0
 
             log_function_call("handle_next_turn")
-            import copy
-            # Save the current game state to previous_game_states as an action
-            previous_game_states.append(copy.deepcopy(game_state))
-            if len(previous_game_states) > 10:
-                previous_game_states.pop(0)
             # Add to action_history as well
             game_state["action_history"].append({
                 "action": "next_turn",
@@ -1303,11 +1314,6 @@ async def handle_previous_turn():
         log_function_call("handle_previous_turn")
         if game_state["split_fire_state"] == 1:
             game_state["split_fire_state"] = 0
-        import copy
-        # Save the current game state to previous_game_states as an action
-        previous_game_states.append(copy.deepcopy(game_state))
-        if len(previous_game_states) > 10:
-            previous_game_states.pop(0)
         # Add to action_history as well
         game_state["action_history"].append({
             "action": "previous_turn",
@@ -1432,6 +1438,9 @@ async def handle_live_start():
     print("\n=== STARTING LIVE GAME ===")
     # Set game mode to manual
     game_state["mode"] = "live"
+    # Start serial reading task for live mode
+    if ser:
+        asyncio.create_task(read_from_serial())
     await handle_start_game()  # Call handle_start_game at the start
 
 def get_active_players():
@@ -1775,5 +1784,63 @@ async def main():
         print(f"[{timestamp}] 6-deck shoe with auto-reshuffle at < 52 cards")
         await asyncio.Future()
 
+# Extract card value from serial input
+def extract_card_value(input_string):
+    """
+    Extract the card value from the input string formatted like:
+    [Manual Burn Cards]<Card:{data}>
+    """
+    match = re.search(r"<Card:(.*?)>", input_string)
+    return match.group(1) if match else None
+
+# Placeholder for foolproof_deal_card if not defined
+async def foolproof_deal_card(card):
+    """
+    Deal a card from the serial reader, following the same conditions as the frontend assignCard.
+    """
+    logging.info(f"[foolproof_deal_card] Card received: {card}")
+    # 1. Prevent double send: not needed here, as backend is event-driven
+    # 2. Dealer phase: deal to dealer
+    if game_state.get('game_phase') == 'dealer':
+        await handle_hit_player('dealer', 0, card)
+        return
+    # 3. Check for selected_hand and player
+    selected_hand = game_state.get('selected_hand')
+    if not selected_hand or not selected_hand.get('player_id'):
+        await broadcast({
+            'action': 'error',
+            'message': 'No player selected for card assignment.'
+        })
+        return
+    player_id = selected_hand['player_id']
+    # 4. Ensure player is active
+    player = game_state['players'].get(player_id)
+    if not player or not player.get('status'):
+        await broadcast({
+            'action': 'error',
+            'message': 'Player must be active to add cards.'
+        })
+        return
+    # 5. Assign card to the selected player/hand
+    hand_index = selected_hand.get('hand_index', 0)
+    await handle_hit_player(player_id, hand_index, card)
+
+# Continuously read cards from the serial port and deal them in live mode
+async def read_from_serial():
+    """Continuously reads card values from the casino shoe reader and adds them to the game."""
+    while True:
+        if ser and ser.in_waiting > 0:
+            raw_data = ser.readline().decode("utf-8").strip()
+            logging.info(f"Raw data from serial: {raw_data}")
+            card = extract_card_value(raw_data)
+            logging.info(f"Extracted card: {card}")
+            if card:
+                print(f"[SHOE READER] Card read from shoe reader: {card}")
+                await foolproof_deal_card(card)
+            else:
+                logging.info("No valid card extracted from serial data.")
+        await asyncio.sleep(0.01)  # Minimal sleep to yield control
+
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
