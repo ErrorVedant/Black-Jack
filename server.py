@@ -1280,6 +1280,21 @@ async def handle_next_turn():
                             "split_level": next_hand["split_level"]
                         }
                         print(f"Moving to next hand: Player {next_hand['player_id']}, Split Level {next_hand['split_level']}")
+                        # --- AUTO SKIP IF NEXT HAND IS 21 WITH 2 CARDS ---
+                        player_id = next_hand["player_id"]
+                        hand_index = next_hand["hand_index"]
+                        split_level = next_hand["split_level"]
+                        if player_id != "dealer":
+                            player = game_state["players"][player_id]
+                            if split_level == 1:
+                                hand = player["split1"][hand_index]
+                            elif split_level == 2:
+                                hand = player["split2"][hand_index]
+                            else:
+                                hand = player["hands"][hand_index]
+                            if calculate_hand_value(hand["cards"]) == 21:
+                                print(f"Auto-skipping hand for {player_id} (blackjack)")
+                                await handle_next_turn()
                     else:
                         # No more hands, move to dealer
                         print("No more hands found - moving to dealer phase")
