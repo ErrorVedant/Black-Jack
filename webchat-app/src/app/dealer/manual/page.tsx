@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import DealerNavbar from '@/components/DealerNavbar'
 import BetTableModal from '@/components/BetTableModal'
+import GameMenuModal from '@/components/GameMenuModal'
 
 interface Hand {
   cards: string[]
@@ -117,6 +119,8 @@ const GameMenu = () => {
   const [pendingTableNumber, setPendingTableNumber] = useState(0)
   const [pendingMinBet, setPendingMinBet] = useState(0)
   const [pendingMaxBet, setPendingMaxBet] = useState(0)
+  const [gameMenuOpen, setGameMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   // Set game mode helper
   const setGameMode = (mode: string) => {
@@ -594,9 +598,23 @@ const GameMenu = () => {
     //   action: 'change_table',
     //   table_number: pendingTableNumber
     // })
-    
+
     console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
   }
+
+  // Determine current mode based on pathname
+  const getCurrentMode = () => {
+    if (pathname === '/') return 'live'
+    if (pathname === '/dealer/auto') return 'auto'
+    if (pathname === '/dealer/manual') return 'manual'
+    return 'manual' // default
+  }
+
+  // const handleModeChange = (mode: string) => {
+  //   // This will be called when mode changes but you don't need to do anything
+  //   // since the component handles the routing internally
+  //   console.log(`Mode changing to: ${mode}`)
+  // }
 
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
@@ -679,6 +697,8 @@ const GameMenu = () => {
         currentMode='manual'
         betMenuOpen={betMenuOpen}
         setBetMenuOpen={setBetMenuOpen}
+        gameMenuOpen={gameMenuOpen}
+        setGameMenuOpen={setGameMenuOpen}
       />
 
       <BetTableModal
@@ -691,6 +711,16 @@ const GameMenu = () => {
         pendingMaxBet={pendingMaxBet}
         setPendingMaxBet={setPendingMaxBet}
         onSave={handleSave}
+      />
+
+      <GameMenuModal
+        menuOpen={gameMenuOpen}
+        setMenuOpen={setGameMenuOpen}
+        currentMode={getCurrentMode()}
+        sendWebSocketMessage={sendWebSocketMessage}
+        gameState={gameState}
+        setPopupMessage={setPopupMessage}
+        setShowPopup={setShowPopup}
       />
 
       {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
@@ -841,13 +871,13 @@ const GameMenu = () => {
                     </button>
 
                     <button
-                        onClick={() =>
-                          sendWebSocketMessage({ action: 'reset_round' })
-                        }
-                        className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
-                      >
-                        New Game
-                      </button>
+                      onClick={() =>
+                        sendWebSocketMessage({ action: 'reset_round' })
+                      }
+                      className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
+                    >
+                      New Game
+                    </button>
 
                     <button
                       // onClick={() =>
@@ -954,7 +984,7 @@ const GameMenu = () => {
                             </button>
                           )}
                         </div>
-                        {!isActive ? (
+                        {/* {!isActive ? (
                           <button
                             onClick={e => {
                               e.stopPropagation()
@@ -974,7 +1004,7 @@ const GameMenu = () => {
                           >
                             <span>Deactivate</span>
                           </button>
-                        )}
+                        )} */}
                       </div>
                       {isActive && (
                         <div className='space-y-4'>

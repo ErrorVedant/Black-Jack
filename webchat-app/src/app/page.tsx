@@ -1,4 +1,4 @@
-import GameMenu from "./dealer/auto/page";
+import GameMenu from "./dealer/live/page";
 export default function Home() {
   return (
     <>

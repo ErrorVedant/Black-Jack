@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import DealerNavbar from '@/components/DealerNavbar'
 import BetTableModal from '@/components/BetTableModal'
+import GameMenuModal from '@/components/GameMenuModal'
 
 interface Hand {
   cards: string[]
@@ -107,6 +109,8 @@ const GameMenu = () => {
   const [pendingTableNumber, setPendingTableNumber] = useState(0)
   const [pendingMinBet, setPendingMinBet] = useState(0)
   const [pendingMaxBet, setPendingMaxBet] = useState(0)
+  const [gameMenuOpen, setGameMenuOpen] = useState(false)
+  const pathname = usePathname()
 
   // Set game mode helper
   const setGameMode = (mode: string) => {
@@ -594,6 +598,20 @@ const GameMenu = () => {
     console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
   }
 
+  // Determine current mode based on pathname
+  const getCurrentMode = () => {
+    if (pathname === '/') return 'live'
+    if (pathname === '/dealer/auto') return 'auto'
+    if (pathname === '/dealer/manual') return 'manual'
+    return 'auto' // default
+  }
+
+  // const handleModeChange = (mode: string) => {
+  //   // This will be called when mode changes but you don't need to do anything
+  //   // since the component handles the routing internally
+  //   console.log(`Mode changing to: ${mode}`)
+  // }
+
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
@@ -675,6 +693,8 @@ const GameMenu = () => {
         currentMode='auto'
         betMenuOpen={betMenuOpen}
         setBetMenuOpen={setBetMenuOpen}
+        gameMenuOpen={gameMenuOpen}
+        setGameMenuOpen={setGameMenuOpen}
       />
 
       <BetTableModal
@@ -687,6 +707,21 @@ const GameMenu = () => {
         pendingMaxBet={pendingMaxBet}
         setPendingMaxBet={setPendingMaxBet}
         onSave={handleSave}
+      />
+
+      <GameMenuModal
+        menuOpen={gameMenuOpen}
+        setMenuOpen={setGameMenuOpen}
+        currentMode={getCurrentMode()}
+        sendWebSocketMessage={sendWebSocketMessage}
+        gameState={gameState}
+        selectedCard={selectedCard}
+        setSelectedCard={setSelectedCard}
+        selectedSuit={selectedSuit}
+        setSelectedSuit={setSelectedSuit}
+        assignCard={assignCard}
+        setPopupMessage={setPopupMessage}
+        setShowPopup={setShowPopup}
       />
 
       {/* <nav className='fixed top-0 left-0 right-0 h-[12vh] w-full overflow-hidden z-50 shadow-lg'>
@@ -1036,7 +1071,7 @@ const GameMenu = () => {
                               </span>
                             </div>
                           </div>
-                          {!isActive ? (
+                          {/* {!isActive ? (
                             <button
                               onClick={e => {
                                 e.stopPropagation()
@@ -1056,7 +1091,7 @@ const GameMenu = () => {
                             >
                               <span>Deactivate</span>
                             </button>
-                          )}
+                          )} */}
                         </div>
 
                         {isActive && (

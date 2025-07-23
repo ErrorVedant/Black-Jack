@@ -1,4 +1,4 @@
-"use client"
+'use client'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 
@@ -18,22 +18,26 @@ interface DealerNavbarProps {
   currentMode?: 'live' | 'auto' | 'manual'
   betMenuOpen?: boolean
   setBetMenuOpen?: (open: boolean) => void
+  gameMenuOpen?: boolean
+  setGameMenuOpen?: (open: boolean) => void
 }
 
-const DealerNavbar = ({ 
-  gameState, 
-  activatePlayer, 
-  deactivatePlayer, 
+const DealerNavbar = ({
+  gameState,
+  activatePlayer,
+  deactivatePlayer,
   currentMode,
   betMenuOpen,
-  setBetMenuOpen
+  setBetMenuOpen,
+  gameMenuOpen,
+  setGameMenuOpen
 }: DealerNavbarProps) => {
   const router = useRouter()
 
   const handleModeChange = (mode: string) => {
     switch (mode) {
       case 'live':
-        router.push('/dealer/live')
+        router.push('/')
         break
       case 'auto':
         router.push('/dealer/auto')
@@ -42,7 +46,7 @@ const DealerNavbar = ({
         router.push('/dealer/manual')
         break
       default:
-        router.push('/dealer/live')
+        router.push('/')
     }
   }
 
@@ -142,7 +146,7 @@ const DealerNavbar = ({
             <button
               onClick={() => handleModeChange('auto')}
               className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${
-                currentMode === 'auto'
+                currentMode === 'auto' 
                   ? 'bg-green-600 text-white shadow-lg'
                   : 'bg-yellow-400 text-black hover:bg-yellow-300'
               }`}
@@ -163,6 +167,14 @@ const DealerNavbar = ({
             >
               MANUAL
             </button>
+          </div>
+
+          <div
+            className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
+            onClick={() => setGameMenuOpen?.(true)}
+            aria-label='Open Game Menu'
+          >
+            Menu
           </div>
         </div>
       </div>
