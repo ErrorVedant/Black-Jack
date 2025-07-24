@@ -589,15 +589,15 @@ const GameMenu = () => {
 
   const handleSave = () => {
     // Uncomment and implement your WebSocket calls here
-    // sendWebSocketMessage({
-    //   action: 'change_bets',
-    //   min_bet: pendingMinBet,
-    //   max_bet: pendingMaxBet
-    // })
-    // sendWebSocketMessage({
-    //   action: 'change_table',
-    //   table_number: pendingTableNumber
-    // })
+    sendWebSocketMessage({
+      action: 'change_bets',
+      min_bet: pendingMinBet,
+      max_bet: pendingMaxBet
+    })
+    sendWebSocketMessage({
+      action: 'change_table',
+      table_number: pendingTableNumber
+    })
 
     console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
   }
@@ -879,14 +879,7 @@ const GameMenu = () => {
                       New Game
                     </button>
 
-                    <button
-                      // onClick={() =>
-                      //   sendWebSocketMessage({ action: 'reset_game' })
-                      // }
-                      className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
-                    >
-                      <span>Evaluate Round</span>
-                    </button>
+                    
                   </div>
                 </div>
               </div>

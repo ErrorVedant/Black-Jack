@@ -1,8 +1,8 @@
-import GameMenu from "./dealer/live/page";
+import DisplayPage from "./display/page";
 export default function Home() {
   return (
     <>
-    <GameMenu /> 
+    <DisplayPage /> 
     </>
   );
 }

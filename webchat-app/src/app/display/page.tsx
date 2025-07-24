@@ -28,6 +28,7 @@ interface Players {
 interface GameState {
   deck_count: number
   round_number: number
+  rounds_played_in_game: number
   dealer: {
     cards: string[]
     total: number
@@ -403,8 +404,8 @@ const DisplayPage = () => {
           {/* Right Button */}
           <div className='flex flex-col items-end justify-center z-10'>
             <h1 className='text-yellow-500 text-3xl'>Bets: </h1>
-            <span className='text-yellow-500 text-2xl'>min: 0</span>
-            <span className='text-yellow-500 text-2xl'>max: 0</span>
+            <span className='text-yellow-500 text-2xl'>min: {gameState.min_bet ?? 0}</span>
+            <span className='text-yellow-500 text-2xl'>max: {gameState.max_bet ?? 0}</span>
           </div>
         </nav>
 
@@ -535,7 +536,7 @@ const DisplayPage = () => {
             <div className='relative top-4 flex items-center justify-center z-10 mx-8'>
               <div className='text-3xl text-yellow-500'>Games:&nbsp;</div>
               <div className='text-2xl text-yellow-500'>
-                {gameState.round_number ?? 0}
+                {gameState.rounds_played_in_game ?? 0}
               </div>
             </div>
             {/* <div className='relative top-4 flex items-center justify-center z-10'>

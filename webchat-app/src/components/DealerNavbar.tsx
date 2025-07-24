@@ -37,7 +37,7 @@ const DealerNavbar = ({
   const handleModeChange = (mode: string) => {
     switch (mode) {
       case 'live':
-        router.push('/')
+        router.push('/dealer')
         break
       case 'auto':
         router.push('/dealer/auto')
@@ -46,7 +46,7 @@ const DealerNavbar = ({
         router.push('/dealer/manual')
         break
       default:
-        router.push('/')
+        router.push('/dealer')
     }
   }
 

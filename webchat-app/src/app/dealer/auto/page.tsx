@@ -585,15 +585,15 @@ const GameMenu = () => {
 
   const handleSave = () => {
     // Uncomment and implement your WebSocket calls here
-    // sendWebSocketMessage({
-    //   action: 'change_bets',
-    //   min_bet: pendingMinBet,
-    //   max_bet: pendingMaxBet
-    // })
-    // sendWebSocketMessage({
-    //   action: 'change_table',
-    //   table_number: pendingTableNumber
-    // })
+    sendWebSocketMessage({
+      action: 'change_bets',
+      min_bet: pendingMinBet,
+      max_bet: pendingMaxBet
+    })
+    sendWebSocketMessage({
+      action: 'change_table',
+      table_number: pendingTableNumber
+    })
 
     console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
   }

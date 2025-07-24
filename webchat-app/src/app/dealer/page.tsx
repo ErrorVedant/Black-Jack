@@ -558,15 +558,15 @@ const GameMenu = () => {
 
   const handleSave = () => {
     // Uncomment and implement your WebSocket calls here
-    // sendWebSocketMessage({
-    //   action: 'change_bets',
-    //   min_bet: pendingMinBet,
-    //   max_bet: pendingMaxBet
-    // })
-    // sendWebSocketMessage({
-    //   action: 'change_table',
-    //   table_number: pendingTableNumber
-    // })
+    sendWebSocketMessage({
+      action: 'change_bets',
+      min_bet: pendingMinBet,
+      max_bet: pendingMaxBet
+    })
+    sendWebSocketMessage({
+      action: 'change_table',
+      table_number: pendingTableNumber
+    })
 
     console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
   }
@@ -607,7 +607,6 @@ const GameMenu = () => {
       (gameState.manual_distribution_count === 1 ||
         gameState.manual_distribution_count === 2)
     ) {
-      console.log('toto')
       sendWebSocketMessage({ action: 'next_turn' })
     }
     // No timeout to clean up

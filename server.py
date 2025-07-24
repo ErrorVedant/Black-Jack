@@ -113,6 +113,7 @@ game_state = {
     "selected_hand": None,   
     "game_phase": "waiting",
     "table_number": 1,
+    "rounds_played_in_game": 1,
     "mode": "",
     "action_history": [],
     "auto_reshuffle_threshold": 52,
@@ -211,7 +212,10 @@ def serialize_game_state():
         "selected_hand": game_state["selected_hand"],
         "table_number": game_state["table_number"],
         "round_number": game_state["round_number"],
+        "min_bet": game_state["min_bet"],
+        "max_bet": game_state["max_bet"],
         "mode": game_state["mode"],
+        "rounds_played_in_game": game_state["rounds_played_in_game"],
         "evaluate_game": game_state["evaluate_game"],
         "split_fire_state": game_state["split_fire_state"],
         "split_call_live_previous_counter": game_state["split_call_live_previous_counter"],
@@ -297,7 +301,9 @@ async def handle_connection(websocket):
         "manual_make_default": lambda d: handle_manual_make_result(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), ""),
         "handle_manual_insurance": lambda d: handle_manual_insurance(d.get("player_id")),
         "manual_start":  lambda d: handle_manual_start(),
-        "previous_turn": lambda d: handle_previous_turn()
+        "previous_turn": lambda d: handle_previous_turn(),
+        "change_bets": lambda d: handle_change_bets(d.get("min_bet"), d.get("max_bet")),
+        "change_table": lambda d: handle_change_table(d.get("table_number")),
     }
 
     try:
@@ -797,21 +803,29 @@ async def handle_split_player_auto(player_id):
     })
 
     # Split the cards
-    card1, card2 = active_hand["cards"]
+    # Pop two cards from the deck for the split
+    if len(game_state["deck"]) < 2:
+        await broadcast({"action": "error", "message": "Not enough cards in deck to split"})
+        return
+    card1 = game_state["deck"].pop()
+    card2 = game_state["deck"].pop()
 
-    # Update the original hand with first card
-    active_hand["cards"] = [card1]
-    active_hand["total"] = calculate_hand_value([card1])
+    # Save the original two cards before split
+    original_card1, original_card2 = active_hand["cards"]
+
+    # Update the original hand with its original first card and card1
+    active_hand["cards"] = [original_card1, card1]
+    active_hand["total"] = calculate_hand_value(active_hand["cards"])
     active_hand["status"] = "playing"
 
-    # Create new hand with second card
+    # Create new hand with its original second card and card2
     new_hand = {
-        "cards": [card2],
-        "total": calculate_hand_value([card2]),
+        "cards": [original_card2, card2],
+        "total": calculate_hand_value([original_card2, card2]),
         "status": "playing",
         "result": ""
     }
-
+    print(f"New cards: {card1}, {card2}")
     # Add new hand to the appropriate split level
     if split_level == 0:  # Splitting main hand
         if player_data["split1_status"] == 0:
@@ -959,7 +973,7 @@ async def save_round_results(results):
 async def handle_reset_round():
     log_function_call("handle_reset_round")
     await save_action_history("reset_round", {})
-
+    game_state["rounds_played_in_game"] += 1
     # Reset all players to waiting state, but do not touch the deck
     for player_data in game_state["players"].values():
         if player_data["status"] == 1:  # Only reset active players
@@ -1040,7 +1054,7 @@ async def handle_set_table_number(table_number):
 async def handle_reset_game():
     log_function_call("handle_reset_game")
     await save_action_history("reset_game", {})
-    
+    game_state["rounds_played_in_game"] = 0
     # Reset all players to original state
     for player_id, player_data in game_state["players"].items():
         player_data.update({
@@ -1136,6 +1150,24 @@ def get_all_player_hands():
 
 async def handle_next_turn():
     """Handle moving to the next turn"""
+    async def maybe_auto_skip_blackjack():
+        player_id = game_state["current_player"]
+        selected = game_state["selected_hand"]
+        if player_id and player_id != "dealer" and selected:
+            split_level = selected["split_level"]
+            hand_index = selected["hand_index"]
+            player = game_state["players"][player_id]
+            if split_level == 1:
+                hand = player["split1"][hand_index]
+            elif split_level == 2:
+                hand = player["split2"][hand_index]
+            else:
+                hand = player["hands"][hand_index]
+            # Check for blackjack (21 with 2 cards)
+            if len(hand["cards"]) == 2 and calculate_hand_value(hand["cards"]) == 21:
+                print(f"Auto-skipping hand for {player_id} (blackjack)")
+                await handle_next_turn()
+
     try:
         selected = game_state.get("selected_hand")
         if (
@@ -1235,6 +1267,8 @@ async def handle_next_turn():
                         "split_level": 0
                     }
                     print(f"Moved to player: {first_player}")
+                    # Auto-skip if blackjack
+                    await maybe_auto_skip_blackjack()
                 else:
                     print("No active players found after dealer phase.")
                     game_state["game_phase"] = "waiting"
@@ -1280,21 +1314,8 @@ async def handle_next_turn():
                             "split_level": next_hand["split_level"]
                         }
                         print(f"Moving to next hand: Player {next_hand['player_id']}, Split Level {next_hand['split_level']}")
-                        # --- AUTO SKIP IF NEXT HAND IS 21 WITH 2 CARDS ---
-                        player_id = next_hand["player_id"]
-                        hand_index = next_hand["hand_index"]
-                        split_level = next_hand["split_level"]
-                        if player_id != "dealer":
-                            player = game_state["players"][player_id]
-                            if split_level == 1:
-                                hand = player["split1"][hand_index]
-                            elif split_level == 2:
-                                hand = player["split2"][hand_index]
-                            else:
-                                hand = player["hands"][hand_index]
-                            if calculate_hand_value(hand["cards"]) == 21:
-                                print(f"Auto-skipping hand for {player_id} (blackjack)")
-                                await handle_next_turn()
+                        # Auto-skip if blackjack
+                        await maybe_auto_skip_blackjack()
                     else:
                         # No more hands, move to dealer
                         print("No more hands found - moving to dealer phase")
@@ -1855,6 +1876,33 @@ async def read_from_serial():
             else:
                 logging.info("No valid card extracted from serial data.")
         await asyncio.sleep(0.01)  # Minimal sleep to yield control
+
+async def handle_change_bets(min_bet=None, max_bet=None):
+    log_function_call("handle_change_bets", min_bet=min_bet, max_bet=max_bet)
+    if min_bet is not None:
+        game_state["min_bet"] = min_bet
+    if max_bet is not None:
+        game_state["max_bet"] = max_bet
+    await broadcast({
+        "action": "bets_changed",
+        "min_bet": game_state["min_bet"],
+        "max_bet": game_state["max_bet"],
+        "game_state": serialize_game_state(),
+        "message": f"Bets changed: min {game_state['min_bet']}, max {game_state['max_bet']}"
+    })
+    log_game_state()
+
+async def handle_change_table(table_number=None):
+    log_function_call("handle_change_table", table_number=table_number)
+    if table_number is not None:
+        game_state["table_number"] = table_number
+        await broadcast({
+            "action": "table_changed",
+            "table_number": game_state["table_number"],
+            "game_state": serialize_game_state(),
+            "message": f"Table changed to {game_state['table_number']}"
+        })
+        log_game_state()
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
