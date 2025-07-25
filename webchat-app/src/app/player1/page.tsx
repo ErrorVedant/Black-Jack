@@ -508,9 +508,8 @@ const GameMenu = () => {
       return 'bg-green-500 border-2 border-green-700 text-white'
     if (result === 'tie')
       return 'bg-purple-500 border-2 border-purple-700 text-white'
-    if (isActive)
-      return 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
-    return 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
+    if (isActive) return ' text-white border-2 border-yellow-500'
+    // return 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
   }
 
   return (
@@ -706,7 +705,7 @@ const GameMenu = () => {
                 {gameState?.players?.player1 && (
                   <div className='text-center'>
                     <div
-                      className='bg-[#a42210] border-2 border-[#d4af37] p-4 sm:p-6 rounded-xl mb-6 sm:mb-8 shadow-md transition-all duration-300 relative'
+                      className='bg-[#a42210] border-2 border-[#d4af37] p-10  rounded-xl shadow-md transition-all duration-300 relative'
                       onClick={e => {
                         e.stopPropagation()
                         if (gameState.players.player1.status === 1) {
@@ -716,7 +715,7 @@ const GameMenu = () => {
                     >
                       <div className='flex items-center justify-between mb-4'>
                         <div className='flex items-center space-x-4'>
-                          <div
+                          {/* <div
                             className={`w-5 h-5 rounded-full shadow-lg ${
                               isHandSelected(gameState, 'player1', 0, 0)
                                 ? 'bg-blue-400 animate-pulse'
@@ -724,7 +723,7 @@ const GameMenu = () => {
                                 ? 'bg-green-400 animate-pulse'
                                 : 'bg-gray-400'
                             }`}
-                          />
+                          /> */}
                           <div>
                             <div
                               className={`text-xl font-medium font-[questrial] tracking-widest ${
@@ -740,7 +739,7 @@ const GameMenu = () => {
                                 </span>
                               )}
                             </div>
-                            <div
+                            {/* <div
                               className={`text-base ${
                                 isHandSelected(gameState, 'player1', 0, 0)
                                   ? 'text-gray-700'
@@ -752,7 +751,7 @@ const GameMenu = () => {
                                 : gameState.players.player1.status === 1
                                 ? 'Active'
                                 : 'Inactive'}
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -768,7 +767,18 @@ const GameMenu = () => {
                               gameState.players.player1.hands[0]?.result
                             )}`}
                           >
-                            <div className='flex justify-center items-center gap-4 mb-4'>
+                            <div className='text-left mb-1'>
+                              <div
+                                className={`text-lg font-medium ${
+                                  isHandSelected(gameState, 'player1', 0, 1)
+                                    ? 'text-gray-900'
+                                    : 'text-white'
+                                }`}
+                              >
+                                Main Hand
+                              </div>
+                            </div>
+                            <div className='flex justify-center items-center gap-4'>
                               {gameState.players.player1.hands[0]?.cards?.map(
                                 (card: string, index: number) => (
                                   <div
@@ -817,7 +827,7 @@ const GameMenu = () => {
                             )}
 
                             {/* Action Buttons */}
-                            <div className='flex justify-center gap-2 flex-wrap mt-8'>
+                            <div className='flex justify-center gap-2 flex-wrap mt-2 mb-4'>
                               {isHandSelected(gameState, 'player1', 0, 0) &&
                                 gameState?.current_player === 'player1' &&
                                 gameState.players.player1.hands[0]?.cards
@@ -919,7 +929,7 @@ const GameMenu = () => {
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
                                 >
-                                  <div className='text-center mb-3'>
+                                  <div className='text-left mb-1'>
                                     <div
                                       className={`text-lg font-medium ${
                                         isHandSelected(
@@ -1086,7 +1096,7 @@ const GameMenu = () => {
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
                                 >
-                                  <div className='text-center mb-3'>
+                                  <div className='text-left mb-1'>
                                     <div
                                       className={`text-lg font-medium ${
                                         isHandSelected(
@@ -1254,7 +1264,7 @@ const GameMenu = () => {
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
                                 >
-                                  <div className='text-center mb-3'>
+                                  <div className='text-left mb-1'>
                                     <div
                                       className={`text-lg font-medium ${
                                         isHandSelected(
@@ -1308,7 +1318,7 @@ const GameMenu = () => {
                                     ))}
                                   </div>
 
-                                  <div className='absolute top-[92%] left-[43%] text-center'>
+                                  <div className='absolute top-[91%] left-[43%] text-center'>
                                     <div className='inline-block bg-[#911606] px-3 py-1 rounded-full text-sm font-bold text-[#d4af37] border-2 border-[#d4af37]'>
                                       Total:{' '}
                                       {gameState.players.player1.split1[0]
@@ -1317,7 +1327,7 @@ const GameMenu = () => {
                                   </div>
 
                                   {/* Split1 Hand Action Buttons for Player 1 */}
-                                  <div className='flex justify-center gap-2 flex-wrap mt-8'>
+                                  <div className='flex justify-center gap-2 flex-wrap mt-2 mb-4'>
                                     {isHandSelected(
                                       gameState,
                                       'player1',
@@ -1449,7 +1459,7 @@ const GameMenu = () => {
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
                                 >
-                                  <div className='text-center mb-3'>
+                                  <div className='text-left mb-1'>
                                     <div
                                       className={`text-lg font-medium ${
                                         isHandSelected(
