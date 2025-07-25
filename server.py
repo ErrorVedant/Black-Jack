@@ -8,7 +8,13 @@ import copy
 import logging
 import re
 
+# win,fail,tie
+
 import serial
+# Serial port configuration for shoe reader
+SERIAL_PORT = "COM1"  # Adjust this to match your serial port
+BAUD_RATE = 9600
+ser = None
 
 # MongoDB setup
 MONGO_URI = "mongodb://localhost:27017"
@@ -187,6 +193,8 @@ async def save_action_history(action, data):
 def serialize_game_state():
     """Convert game state to JSON format"""
     log_function_call("serialize_game_state")
+    # Update first_active_player_hand in game_state
+    game_state["first_active_player_hand"] = get_first_active_player_hand()
     return {
         "deck_count": len(game_state["deck"]),
         "dealer": {
@@ -221,7 +229,8 @@ def serialize_game_state():
         "split_call_live_previous_counter": game_state["split_call_live_previous_counter"],
         "next_manual_counter": game_state["next_manual_counter"],
         "split_current_pointer": game_state["split_current_pointer"],
-        "manual_distribution_count": game_state["manual_distribution_count"]
+        "manual_distribution_count": game_state["manual_distribution_count"],
+        "first_active_player_hand": game_state["first_active_player_hand"]
     }
 
 async def broadcast(message):
@@ -324,9 +333,9 @@ async def handle_connection(websocket):
 
 async def handle_set_game_mode(mode):
     log_function_call("handle_set_game_mode", mode=mode)
-    if mode in ["live", "auto", "manual"]:
-        game_state["game_mode"] = mode
-        await broadcast({"action": "mode_changed", "mode": mode, "message": f"Game mode set to {mode.title()}"})
+    print(f"[DEBUG] Setting game mode to {mode}")
+    game_state["mode"] = mode
+    await broadcast({"action": "mode_changed", "mode": mode, "message": f"Game mode set to {mode.title()}"})
     log_game_state()
 
 async def handle_reshuffle():
@@ -362,11 +371,7 @@ async def handle_activate_player(player_id=None):
                 game_state["game_phase"] = "waiting"
             
             # Set this player as selected when activating
-            game_state["selected_hand"] = {
-                "player_id": player_id,
-                "hand_index": 0,
-                "split_level": 0
-            }
+            game_state["selected_hand"] = get_first_active_player_hand()
             
             await broadcast({
                 "action": "player_activated",
@@ -421,7 +426,7 @@ async def handle_remove_player(player_id):
     
     # Clear selected hand if it was the removed player
     if game_state["selected_hand"] and game_state["selected_hand"]["player_id"] == player_id:
-        game_state["selected_hand"] = None
+        game_state["selected_hand"] = get_first_active_player_hand()
     
     # Broadcast the update to all clients
     await broadcast({
@@ -441,6 +446,21 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
     
     try:
+        total_cards_in_play = count_total_cards_in_play()
+        print(f"[DEBUG] Mode: {game_state['mode']}, Total cards in play: {total_cards_in_play}")
+        if game_state["mode"] == "live" and card is None:
+            print("[ERROR] No card provided in live mode. Please select or rescan the card.")
+            await broadcast({
+                "action": "error",
+                "message": "Please select or rescan the card."
+            })
+            return
+        if game_state["mode"] == "live" and total_cards_in_play == 0:
+            print("[DEBUG] Calling handle_live_start()")
+            print(card)
+            await handle_live_start()
+        else:
+            print("[DEBUG] Not calling handle_live_start()")
         if ((game_state["mode"] == "live" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0) or game_state["round_number"] == 1):
             game_state["next_manual_counter"] = 1
             if player_id == "dealer":
@@ -482,6 +502,13 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     "game_state": serialize_game_state()
                 })
                 print("=== HANDLE HIT DEALER COMPLETED ===")
+                if game_state["game_phase"] == "dealer" and game_state["round_number"] == 0 and game_state["mode"] == "live":
+                    # Dealer should auto-advance after 1 card in round 0, live mode
+                    print("auto_advance (dealer)")
+                    hand_ref = game_state["dealer"]
+                    if hand_ref and len(hand_ref["cards"]) == 1:
+                        print(f"[DEBUG] Auto-advancing turn for dealer (1 card, round 0, live mode)")
+                        await handle_next_turn()
                 log_game_state()
                 return
 
@@ -561,7 +588,6 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     return
                 card = game_state["deck"].pop()
                 print(f"Drew random card: {card}")
-            
             hand["cards"].append(card)
             print(f"Cards after adding: {hand['cards']}")
             hand["total"] = calculate_hand_value(hand["cards"])
@@ -614,6 +640,28 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             print("\n=== HANDLE HIT PLAYER COMPLETED ===")
             print("Updated player state:", game_state["players"][player_id])
             log_game_state()
+
+            # Auto-advance turn if this is the second card for a player in round 0, live mode
+            if game_state["mode"] == "live" and game_state["round_number"] == 0:
+                print(f"game_phase: {game_state['game_phase']}")
+                if player_id != "dealer":
+                    # Find the hand we just added to
+                    print("auto_advance (player)")
+                    hand_ref = None
+                    split_level = 0
+                    if game_state["selected_hand"] and game_state["selected_hand"]["player_id"] == player_id:
+                        split_level = game_state["selected_hand"]["split_level"]
+                        if split_level == 1:
+                            hand_ref = game_state["players"][player_id]["split1"][hand_index]
+                        elif split_level == 2:
+                            hand_ref = game_state["players"][player_id]["split2"][hand_index]
+                        else:
+                            hand_ref = game_state["players"][player_id]["hands"][hand_index]
+                    else:
+                        hand_ref = game_state["players"][player_id]["hands"][hand_index]
+                    if hand_ref and len(hand_ref["cards"]) == 2:
+                        print(f"[DEBUG] Auto-advancing turn for {player_id} (2 cards, round 0, live mode)")
+                        await handle_next_turn()
     except Exception as e:
         print(f"Error in handle_hit_player: {str(e)}")
         import traceback
@@ -869,98 +917,13 @@ async def handle_split_player_auto(player_id):
 
     log_game_state()
 
-async def calculate_results():
-    """Calculate win/lose/draw results for all players"""
-    log_function_call("calculate_results")
-    dealer_total = game_state["dealer"]["total"]
-    dealer_blackjack = is_blackjack(game_state["dealer"]["cards"])
-    dealer_bust = is_bust(game_state["dealer"]["cards"])
-    
-    results = []
-    
-    for player_id, player_data in game_state["players"].items():
-        # Check main hands
-        for hand_index, hand in enumerate(player_data["hands"]):
-            if hand["status"] == "waiting":
-                continue
-                
-            result = calculate_hand_result(hand, dealer_total, dealer_blackjack, dealer_bust)
-            hand["result"] = result
-            results.append({
-                "player_id": player_id,
-                "hand_index": hand_index,
-                "split_level": 0,
-                "result": result,
-                "player_total": hand["total"],
-                "dealer_total": dealer_total
-            })
-        
-        # Check split1 hands
-        for hand_index, hand in enumerate(player_data["split1"]):
-            if hand["status"] == "waiting":
-                continue
-                
-            result = calculate_hand_result(hand, dealer_total, dealer_blackjack, dealer_bust)
-            hand["result"] = result
-            results.append({
-                "player_id": player_id,
-                "hand_index": hand_index,
-                "split_level": 1,
-                "result": result,
-                "player_total": hand["total"],
-                "dealer_total": dealer_total
-            })
-        
-        # Check split2 hands
-        for hand_index, hand in enumerate(player_data["split2"]):
-            if hand["status"] == "waiting":
-                continue
-                
-            result = calculate_hand_result(hand, dealer_total, dealer_blackjack, dealer_bust)
-            hand["result"] = result
-            results.append({
-                "player_id": player_id,
-                "hand_index": hand_index,
-                "split_level": 2,
-                "result": result,
-                "player_total": hand["total"],
-                "dealer_total": dealer_total
-            })
-    
-    await save_round_results(results)
-
-def calculate_hand_result(hand, dealer_total, dealer_blackjack, dealer_bust):
-    """Calculate result for a single hand"""
-    player_total = hand["total"]
-    player_blackjack = is_blackjack(hand["cards"])
-    player_bust = is_bust(hand["cards"])
-            
-    if hand["status"] == "surrendered":
-        return "surrender"
-    elif player_bust:
-        return "lose"
-    elif dealer_bust and not player_bust:
-        return "win"
-    elif player_blackjack and not dealer_blackjack:
-        return "blackjack_win"
-    elif dealer_blackjack and not player_blackjack:
-        return "lose"
-    elif player_blackjack and dealer_blackjack:
-        return "push"
-    elif player_total > dealer_total:
-        return "win"
-    elif player_total < dealer_total:
-        return "lose"
-    else:
-        return "push"
-
 async def save_round_results(results):
     """Save round results to MongoDB"""
     log_function_call("save_round_results", results=results)
     round_record = {
         "timestamp": datetime.utcnow(),
         "table_number": game_state["table_number"],
-        "game_mode": game_state["game_mode"],
+        "game_mode": game_state["mode"],
         "dealer_total": game_state["dealer"]["total"],
         "dealer_bust": is_bust(game_state["dealer"]["cards"]),
         "results": results
@@ -991,9 +954,8 @@ async def handle_reset_round():
     game_state.update({
         "game_phase": "waiting",
         "current_player": None,
-        "selected_hand": None,  # Clear selected hand on round reset
+        "selected_hand": get_first_active_player_hand(),  # Set to first active hand on round reset
         "evaluate_game": False,  # Reset evaluate_game flag
-        "mode": "",
         "split_fire_state": 0,
         "split_current_pointer": 0,
         "split_call_live_previous_counter": 0,
@@ -1081,7 +1043,7 @@ async def handle_reset_game():
         "selected_hand": None,  # Clear selected hand on game reset
         "deck": create_deck(),
         "action_history": [],
-        "game_mode": "live",  # Reset to default game mode
+        "mode": "",  # Reset to default game mode
         "table_number": 1,
         "evaluate_game": False  # Reset evaluate_game flag
     })
@@ -1527,9 +1489,10 @@ async def handle_distribute_cards_auto():
         for player_id, player_data in game_state["players"].items():
             if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
+                await asyncio.sleep(0.4)
                 await handle_hit_player(player_id, 0)
                 await handle_next_turn()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.4)
         await handle_hit_player("dealer", 0)
         await handle_next_turn()
 
@@ -1813,12 +1776,31 @@ async def handle_manual_insurance(player_id):
 
 async def main():
     log_function_call("main")
-    async with websockets.serve(handle_connection, "localhost", 6790):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        print(f"[{timestamp}] Advanced Blackjack WebSocket server running on ws://localhost:6790")
-        print(f"[{timestamp}] Features: Live/Auto/Manual modes, Split, Double Down, Surrender")
-        print(f"[{timestamp}] 6-deck shoe with auto-reshuffle at < 52 cards")
-        await asyncio.Future()
+    """Starts the WebSocket server."""
+    # Initialize serial port for shoe reader
+    global ser
+    try:
+        ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.5)
+        print(f"Connected to shoe reader on {SERIAL_PORT}")
+    except serial.SerialException as e:
+        print(f"Serial port error: {e}")
+        logging.error(f"Failed to connect to shoe reader on {SERIAL_PORT}: {e}")
+        ser = None
+    # Start the serial reader as a background task
+    serial_task = asyncio.create_task(read_from_serial())
+
+    async with websockets.serve(handle_connection, "0.0.0.0", 6790):
+        print("Mini Flush WebSocket server running on ws://localhost:6790")
+        print(f"Shoe reader attempting to connect on {SERIAL_PORT}")
+        try:
+            await asyncio.gather(
+                asyncio.Future(),  # Keep WebSocket server running
+                serial_task
+            )
+        except KeyboardInterrupt:
+            print("Shutting down server...")
+            if ser and ser.is_open:
+                ser.close()
 
 # Extract card value from serial input
 def extract_card_value(input_string):
@@ -1826,7 +1808,12 @@ def extract_card_value(input_string):
     Extract the card value from the input string formatted like:
     [Manual Burn Cards]<Card:{data}>
     """
+    print(f"[extract_card_value] Input string: {input_string}")
     match = re.search(r"<Card:(.*?)>", input_string)
+    if match:
+        print(f"[extract_card_value] Match found: {match.group(1)}")
+    else:
+        print("[extract_card_value] No match found.")
     return match.group(1) if match else None
 
 # Placeholder for foolproof_deal_card if not defined
@@ -1835,14 +1822,18 @@ async def foolproof_deal_card(card):
     Deal a card from the serial reader, following the same conditions as the frontend assignCard.
     """
     logging.info(f"[foolproof_deal_card] Card received: {card}")
+    print(f"[foolproof_deal_card] Card received: {card}")
     # 1. Prevent double send: not needed here, as backend is event-driven
     # 2. Dealer phase: deal to dealer
     if game_state.get('game_phase') == 'dealer':
+        print("[foolproof_deal_card] Game phase is dealer. Dealing to dealer.")
         await handle_hit_player('dealer', 0, card)
         return
     # 3. Check for selected_hand and player
     selected_hand = game_state.get('selected_hand')
+    print(f"[foolproof_deal_card] Selected hand: {selected_hand}")
     if not selected_hand or not selected_hand.get('player_id'):
+        print("[foolproof_deal_card] No player selected for card assignment.")
         await broadcast({
             'action': 'error',
             'message': 'No player selected for card assignment.'
@@ -1851,7 +1842,9 @@ async def foolproof_deal_card(card):
     player_id = selected_hand['player_id']
     # 4. Ensure player is active
     player = game_state['players'].get(player_id)
+    print(f"[foolproof_deal_card] Player: {player_id}, Player data: {player}")
     if not player or not player.get('status'):
+        print("[foolproof_deal_card] Player must be active to add cards.")
         await broadcast({
             'action': 'error',
             'message': 'Player must be active to add cards.'
@@ -1859,22 +1852,27 @@ async def foolproof_deal_card(card):
         return
     # 5. Assign card to the selected player/hand
     hand_index = selected_hand.get('hand_index', 0)
+    print(f"[foolproof_deal_card] Assigning card {card} to player {player_id}, hand_index {hand_index}")
     await handle_hit_player(player_id, hand_index, card)
 
 # Continuously read cards from the serial port and deal them in live mode
 async def read_from_serial():
     """Continuously reads card values from the casino shoe reader and adds them to the game."""
+    print("[read_from_serial] Starting to read from serial port...")
     while True:
         if ser and ser.in_waiting > 0:
             raw_data = ser.readline().decode("utf-8").strip()
+            print(f"[read_from_serial] Raw data from serial: {raw_data}")
             logging.info(f"Raw data from serial: {raw_data}")
             card = extract_card_value(raw_data)
             logging.info(f"Extracted card: {card}")
+            print(f"[read_from_serial] Extracted card: {card}")
             if card:
                 print(f"[SHOE READER] Card read from shoe reader: {card}")
                 await foolproof_deal_card(card)
             else:
                 logging.info("No valid card extracted from serial data.")
+                print("[read_from_serial] No valid card extracted from serial data.")
         await asyncio.sleep(0.01)  # Minimal sleep to yield control
 
 async def handle_change_bets(min_bet=None, max_bet=None):
@@ -1903,6 +1901,39 @@ async def handle_change_table(table_number=None):
             "message": f"Table changed to {game_state['table_number']}"
         })
         log_game_state()
+
+def count_total_cards_in_play():
+    """Count the total number of cards currently held by all players (all hands, splits) and the dealer."""
+    total = 0
+    # Count dealer's cards
+    total += len(game_state["dealer"]["cards"])
+    # Count all player hands
+    for player_data in game_state["players"].values():
+        # Main hand
+        total += len(player_data["hands"][0]["cards"])
+        # Split1
+        if player_data["split1_status"] == 1 and player_data["split1"]:
+            total += len(player_data["split1"][0]["cards"])
+        # Split2
+        if player_data["split2_status"] == 1 and player_data["split2"]:
+            total += len(player_data["split2"][0]["cards"])
+    print(f"[count_total_cards_in_play] Total cards in play: {total}")
+    return total
+
+def get_first_active_player_hand():
+    """Return the first active player (not dealer) in the format for selected_hand, skipping blackjacks."""
+    for player_id, player_data in game_state["players"].items():
+        if player_data["status"] == 1:
+            hand = player_data["hands"][0]
+            # Skip if this hand is a blackjack (21 with 2 cards)
+            if len(hand["cards"]) == 2 and calculate_hand_value(hand["cards"]) == 21:
+                continue
+            return {
+                "player_id": player_id,
+                "hand_index": 0,
+                "split_level": 0
+            }
+    return None
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

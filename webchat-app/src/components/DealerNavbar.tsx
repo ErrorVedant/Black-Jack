@@ -9,6 +9,8 @@ interface GameState {
       status: number
     }
   }
+  min_bet?: number
+  max_bet?: number
 }
 
 interface DealerNavbarProps {
@@ -67,22 +69,30 @@ const DealerNavbar = ({
         <div className='flex items-center justify-between h-full px-2 xs:px-4 sm:px-6 md:px-8 lg:px-12'>
           {/* Left Logo - Optimized for 1112x800 */}
           <div
-            className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
+            className='w-24 h-16 sm:w-28 sm:h-16 md:w-32 md:h-20 lg:w-40 lg:h-24 relative flex-col items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
             aria-label='Open Bet/Table Menu'
             onClick={handleLogoClick}
           >
-            <div className='relative w-12 h-12 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16'>
+            <div className='relative w-full h-full'>
               <Image
                 src='/assets/logo.png'
                 alt='Casino Wars Logo'
                 fill
                 className='object-contain'
-                sizes='(max-width: 640px) 32px, (max-width: 768px) 40px, (max-width: 1024px) 48px, (max-width: 1280px) 64px, 64px'
+                sizes='(max-width: 640px) 96px, (max-width: 768px) 112px, (max-width: 1024px) 128px, (max-width: 1280px) 160px, 160px'
                 priority
               />
             </div>
-            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base -mt-1'>
+          </div>
+          <div className='flex flex-col items-start border-l-4 border-r-4 border-yellow-300 px-2'>
+            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-0'>
               Table: {gameState?.table_number || 'N/A'}
+            </span>
+            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+              Min Bet: {gameState?.min_bet ?? 'N/A'}
+            </span>
+            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+              Max Bet: {gameState?.max_bet ?? 'N/A'}
             </span>
           </div>
 
@@ -108,9 +118,8 @@ const DealerNavbar = ({
                       }
                     }
                   }}
-                  aria-label={`Toggle Player ${index + 1} - ${
-                    isActive ? 'Active' : 'Inactive'
-                  }`}
+                  aria-label={`Toggle Player ${index + 1} - ${isActive ? 'Active' : 'Inactive'
+                    }`}
                 >
                   <Image
                     src={
@@ -132,11 +141,10 @@ const DealerNavbar = ({
             {/* Live Mode Button */}
             <button
               onClick={() => handleModeChange('live')}
-              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${
-                currentMode === 'live'
-                  ? 'bg-green-600 text-white shadow-lg'
-                  : 'bg-yellow-400 text-black hover:bg-yellow-300'
-              }`}
+              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'live'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                }`}
               aria-label='Switch to Live Mode'
             >
               LIVE
@@ -145,11 +153,10 @@ const DealerNavbar = ({
             {/* Auto Mode Button */}
             <button
               onClick={() => handleModeChange('auto')}
-              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${
-                currentMode === 'auto' 
-                  ? 'bg-green-600 text-white shadow-lg'
-                  : 'bg-yellow-400 text-black hover:bg-yellow-300'
-              }`}
+              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'auto'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                }`}
               aria-label='Switch to Auto Mode'
             >
               AUTO
@@ -158,11 +165,10 @@ const DealerNavbar = ({
             {/* Manual Mode Button */}
             <button
               onClick={() => handleModeChange('manual')}
-              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${
-                currentMode === 'manual'
-                  ? 'bg-green-600 text-white shadow-lg'
-                  : 'bg-yellow-400 text-black hover:bg-yellow-300'
-              }`}
+              className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'manual'
+                ? 'bg-green-600 text-white shadow-lg'
+                : 'bg-yellow-400 text-black hover:bg-yellow-300'
+                }`}
               aria-label='Switch to Manual Mode'
             >
               MANUAL
@@ -170,11 +176,20 @@ const DealerNavbar = ({
           </div>
 
           <div
-            className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
+            className='w-24 h-16 sm:w-28 sm:h-16 md:w-32 md:h-20 lg:w-40 lg:h-24 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
             onClick={() => setGameMenuOpen?.(true)}
             aria-label='Open Game Menu'
           >
-            Menu
+            <div className='relative w-full h-full'>
+              <Image
+                src='/assets/menu.png'
+                alt='Menu'
+                fill
+                className='object-contain'
+                sizes='(max-width: 640px) 96px, (max-width: 768px) 112px, (max-width: 1024px) 128px, (max-width: 1280px) 160px, 160px'
+                priority
+              />
+            </div>
           </div>
         </div>
       </div>

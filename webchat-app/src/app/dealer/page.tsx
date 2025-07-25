@@ -55,6 +55,11 @@ interface GameState {
   split_call_live_previous_counter: number
   split_current_pointer: number
   split_fire_state: number
+  first_active_player_hand?: {
+    player_id: string;
+    hand_index: number;
+    split_level: number;
+  };
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -137,6 +142,14 @@ const GameMenu = () => {
         console.log('Connected to server')
         setIsConnected(true)
         reconnectAttempts = 0
+        // Send set_game_mode only after connection is open
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log("Sending set_game_mode to backend (onopen)");
+          ws.send(JSON.stringify({
+            action: 'set_game_mode',
+            mode: 'live'
+          }));
+        }
       }
 
       ws.onclose = () => {
@@ -406,19 +419,6 @@ const GameMenu = () => {
       .map(([id]) => id)
   }
 
-  // Set game mode helper
-  const setGameMode = (mode: string) => {
-    sendWebSocketMessage({
-      action: 'set_game_mode',
-      mode
-    })
-  }
-
-  useEffect(() => {
-    setGameMode('live')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const cardValues = [
     'A',
     '2',
@@ -511,9 +511,16 @@ const GameMenu = () => {
       !selectedCard ||
       !selectedSuit
     ) {
-      setPopupMessage('⚠️ Please select player, card, and suit')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
+      console.log('first_active_player_hand', gameState?.first_active_player_hand)
+      if (gameState && gameState.first_active_player_hand) {
+        const { player_id, hand_index, split_level } = gameState.first_active_player_hand;
+        sendWebSocketMessage({
+          action: 'hit_player',
+          player_id,
+          hand_index,
+          split_level
+        });
+      }
       return
     }
     // Ensure player is active
@@ -597,45 +604,13 @@ const GameMenu = () => {
     return 'bg-black/20'
   }
 
-  // --- Auto next_turn for live distribution ---
-  useEffect(() => {
-    if (
-      gameState?.mode === 'live' &&
-      gameState?.round_number === 0 &&
-      gameState?.selected_hand?.player_id &&
-      gameState.selected_hand.player_id !== 'dealer' &&
-      (gameState.manual_distribution_count === 1 ||
-        gameState.manual_distribution_count === 2)
-    ) {
-      sendWebSocketMessage({ action: 'next_turn' })
-    }
-    // No timeout to clean up
-  }, [
-    gameState?.manual_distribution_count,
-    gameState?.selected_hand?.player_id,
-    gameState?.round_number
-  ])
-
-  useEffect(() => {
-    if (
-      gameState?.mode === 'live' &&
-      gameState?.round_number === 0 &&
-      gameState?.selected_hand?.player_id === 'dealer' &&
-      gameState?.manual_distribution_count === 1
-    ) {
-      console.log('dealer->player')
-      sendWebSocketMessage({ action: 'next_turn' })
-    }
-    // No timeout to clean up
-  }, [gameState, socket])
-
   useEffect(() => {
     if (
       gameState?.selected_hand?.player_id &&
       gameState?.players?.[gameState.selected_hand.player_id]?.hands?.[0]?.cards
         ?.length === 2 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split1_status ===
-        1 &&
+      1 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
         ?.cards?.length === 1 &&
       gameState?.split_call_live_previous_counter === 1 &&
@@ -653,7 +628,7 @@ const GameMenu = () => {
       gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
         ?.cards?.length === 2 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split2_status ===
-        1 &&
+      1 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split2?.[0]
         ?.cards?.length === 1 &&
       gameState?.split_call_live_previous_counter === 2 &&
@@ -923,11 +898,10 @@ const GameMenu = () => {
             {/* Dealer Window */}
             <div className='flex justify-center'>
               <div
-                className={`w-full rounded-2xl ${
-                  gameState?.game_phase === 'dealer'
-                    ? 'bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400'
-                    : 'bg-[#911606] text-white'
-                }`}
+                className={`w-full rounded-2xl ${gameState?.game_phase === 'dealer'
+                  ? 'bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400'
+                  : 'bg-[#911606] text-white'
+                  }`}
               >
                 {/* <div className='flex items-center justify-between mb-4'>
                   <h2
@@ -1027,34 +1001,12 @@ const GameMenu = () => {
                       <div className='text-base font-medium bg-[#911606] text-yellow-500 rounded-2xl px-2 border border-yellow-500'>
                         Total:{' '}
                         <span
-                          className={`${
-                            dealerTotal > 21 ? 'text-red-500' : 'text-blue-400'
-                          }`}
+                          className={`${dealerTotal > 21 ? 'text-red-500' : 'text-blue-400'
+                            }`}
                         >
                           {dealerTotal}
                         </span>
                       </div>
-                      <button
-                        onClick={() =>
-                          sendWebSocketMessage({ action: 'live_start' })
-                        }
-                        className='px-2 py-1 bg-yellow-600 text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2'
-                      >
-                        {/* <svg
-                          className='w-5 h-5'
-                          fill='none'
-                          viewBox='0 0 24 24'
-                          stroke='currentColor'
-                        >
-                          <path
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                            strokeWidth={2}
-                            d='M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                          />
-                        </svg> */}
-                        <span>Live Start</span>
-                      </button>
 
                       <button
                         onClick={() =>
@@ -1093,14 +1045,13 @@ const GameMenu = () => {
                   return (
                     <div
                       key={playerId}
-                      className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                        'bg-[#C1351D] text-gray-200 border border-red-500/30'
+                      className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${'bg-[#C1351D] text-gray-200 border border-red-500/30'
                         // isCurrentHand
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : isActive
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
-                      }`}
+                        }`}
                       onClick={e => {
                         e.stopPropagation()
                         if (isActive) {
@@ -1122,17 +1073,16 @@ const GameMenu = () => {
                             /> */}
                             <div>
                               <div
-                                className={`text-lg font-bold ${
-                                  isCurrentHand ? 'text-gray-900' : 'text-white'
-                                }`}
+                                className={`text-lg font-bold ${isCurrentHand ? 'text-gray-900' : 'text-white'
+                                  }`}
                               >
                                 {playerId.replace('player', 'Player ')}
                                 {gameState?.players?.[playerId]?.insurence ===
                                   1 && (
-                                  <span className='ml-2 text-yellow-400 font-semibold text-base'>
-                                    Insured
-                                  </span>
-                                )}
+                                    <span className='ml-2 text-yellow-400 font-semibold text-base'>
+                                      Insured
+                                    </span>
+                                  )}
                               </div>
                               {/* <div
                                 className={`text-sm ${
@@ -1146,11 +1096,7 @@ const GameMenu = () => {
                                   : 'Inactive'}
                               </div> */}
 
-                              <span className={'text-sm'}>
-                                Total:{' '}
-                                {gameState?.players?.[playerId]?.hands?.[0]
-                                  ?.total ?? 0}
-                              </span>
+
                             </div>
                           </div>
                           {/* {!isActive ? (
@@ -1203,18 +1149,31 @@ const GameMenu = () => {
                         </div>
 
                         {isActive && (
-                          <div className='space-y-4'>
-                            {/* Cards Display */}
-                            <div
-                              className={`rounded-lg p-3 ${getHandBoxColor(
-                                isHandSelected(gameState, playerId, 0, 0) &&
+                          <>
+
+                            <div className='space-y-4'>
+                              {/* Cards Display */}
+                              <div
+                                className={`rounded-lg p-3 ${getHandBoxColor(
+                                  isHandSelected(gameState, playerId, 0, 0) &&
                                   gameState?.current_player === playerId,
-                                gameState?.players?.[playerId]?.hands?.[0]
-                                  ?.result
-                              )}`}
-                            >
-                              <div className='flex items-center justify-between mb-2'>
-                                {/* <div
+                                  gameState?.players?.[playerId]?.hands?.[0]
+                                    ?.result
+                                )}`}
+                              >
+                                <span className={'text-sm'}>
+                                  Total:{' '}
+                                  {gameState?.players?.[playerId]?.hands?.[0]
+                                    ?.total ?? 0}
+                                  {gameState?.players?.[playerId]?.hands?.[0]?.status && (
+                                    <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                      {gameState.players[playerId].hands[0].status}
+                                    </span>
+                                  )}
+                                </span>
+
+                                <div className='flex items-center justify-between mb-2'>
+                                  {/* <div
                                   className={`text-sm font-medium ${
                                     isCurrentHand
                                       ? 'text-gray-900'
@@ -1223,176 +1182,175 @@ const GameMenu = () => {
                                 >
                                   Cards:
                                 </div> */}
-                              </div>
-                              <div className='flex justify-center space-x-2 mb-2'>
-                                {gameState?.players?.[
-                                  playerId
-                                ]?.hands?.[0]?.cards?.map(
-                                  (card: string, index: number) => (
-                                    <div
-                                      key={index}
-                                      className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
-                                    >
-                                      <img
-                                        src={`/cards/${card}.png`}
-                                        alt={card}
-                                        className='w-full h-full object-contain'
-                                        onError={e => {
-                                          const target =
-                                            e.target as HTMLImageElement
-                                          target.src = '/cards/back.png'
-                                        }}
-                                      />
-                                    </div>
-                                  )
-                                )}
-                                {/* Empty card slots */}
-                                {[
-                                  ...Array(
-                                    Math.max(
-                                      0,
-                                      2 -
+                                </div>
+                                <div className='flex justify-center space-x-2 mb-2'>
+                                  {gameState?.players?.[
+                                    playerId
+                                  ]?.hands?.[0]?.cards?.map(
+                                    (card: string, index: number) => (
+                                      <div
+                                        key={index}
+                                        className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                      >
+                                        <img
+                                          src={`/cards/${card}.png`}
+                                          alt={card}
+                                          className='w-full h-full object-contain'
+                                          onError={e => {
+                                            const target =
+                                              e.target as HTMLImageElement
+                                            target.src = '/cards/back.png'
+                                          }}
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                  {/* Empty card slots */}
+                                  {[
+                                    ...Array(
+                                      Math.max(
+                                        0,
+                                        2 -
                                         (gameState?.players?.[playerId]
                                           ?.hands?.[0]?.cards?.length ?? 0)
+                                      )
                                     )
-                                  )
-                                ].map((_, index) => (
-                                  <div
-                                    key={`empty-${index}`}
-                                    className={`w-12 h-16 border-2 border-dashed rounded-lg ${
-                                      isCurrentHand
+                                  ].map((_, index) => (
+                                    <div
+                                      key={`empty-${index}`}
+                                      className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentHand
                                         ? 'border-yellow-400/50 bg-yellow-500/10'
                                         : 'border-gray-400 bg-gray-800/50'
-                                    }`}
-                                  />
-                                ))}
-                              </div>
-                              <div className='mt-2 flex items-center justify-between'>
-                                {/* <span
+                                        }`}
+                                    />
+                                  ))}
+                                </div>
+                                <div className='mt-2 flex items-center justify-between'>
+                                  {/* <span
                                   className={'text-lg font-bold text-blue-400'}
                                 >
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.total ?? 0}
                                 </span> */}
-                                <div className='flex flex-wrap justify-center items-center gap-1'>
-                                  {isHandSelected(gameState, playerId, 0, 0) &&
-                                    gameState?.current_player === playerId && (
-                                      <>
-                                        {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                        {showInsuranceButton &&
-                                          !insuranceState[playerId] &&
-                                          !gameState.players[playerId].hands[0]
-                                            .insurence && (
-                                            <button
-                                              onClick={() =>
-                                                handleInsurance(playerId)
-                                              }
-                                              className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
-                                            >
-                                              Insurance
-                                            </button>
-                                          )}
+                                  <div className='flex flex-wrap justify-center items-center gap-1'>
+                                    {isHandSelected(gameState, playerId, 0, 0) &&
+                                      gameState?.current_player === playerId && (
+                                        <>
+                                          {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
+                                          {showInsuranceButton &&
+                                            !insuranceState[playerId] &&
+                                            !gameState.players[playerId].hands[0]
+                                              .insurence && (
+                                              <button
+                                                onClick={() =>
+                                                  handleInsurance(playerId)
+                                                }
+                                                className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
+                                              >
+                                                Insurance
+                                              </button>
+                                            )}
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'hit_player',
+                                                player_id: playerId,
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand(
+                                                playerId,
+                                                0,
+                                                0
+                                              )
+                                            }}
+                                            className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                                          >
+                                            Hit
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'double_player',
+                                                player_id: playerId,
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand(
+                                                playerId,
+                                                0,
+                                                0
+                                              )
+                                            }}
+                                            className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                          >
+                                            Double
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'next_turn',
+                                                player_id: playerId,
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand(
+                                                playerId,
+                                                0,
+                                                0
+                                              )
+                                            }}
+                                            className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
+                                          >
+                                            Stand
+                                          </button>
+                                        </>
+                                      )}
+                                    {/* Main hand split button */}
+                                    {isHandSelected(gameState, playerId, 0, 0) &&
+                                      gameState?.current_player === playerId &&
+                                      gameState?.players?.[playerId]?.hands?.[0]
+                                        ?.cards?.length === 2 &&
+                                      canSplit(
+                                        gameState.players[playerId].hands[0].cards
+                                      ) &&
+                                      gameState.players[playerId].hands[0]
+                                        .status === 'playing' && (
                                         <button
-                                          onClick={() => {
+                                          onClick={() =>
                                             sendWebSocketMessage({
-                                              action: 'hit_player',
-                                              player_id: playerId,
-                                              hand_index: 0
+                                              action: 'split_player_live',
+                                              player_id: playerId
                                             })
-                                            clearInsuranceForHand(
-                                              playerId,
-                                              0,
-                                              0
-                                            )
-                                          }}
-                                          className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                                          }
+                                          className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
                                         >
-                                          Hit
+                                          Split
                                         </button>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'double_player',
-                                              player_id: playerId,
-                                              hand_index: 0
-                                            })
-                                            clearInsuranceForHand(
-                                              playerId,
-                                              0,
-                                              0
-                                            )
-                                          }}
-                                          className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                        >
-                                          Double
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'next_turn',
-                                              player_id: playerId,
-                                              hand_index: 0
-                                            })
-                                            clearInsuranceForHand(
-                                              playerId,
-                                              0,
-                                              0
-                                            )
-                                          }}
-                                          className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                        >
-                                          Stand
-                                        </button>
-                                      </>
-                                    )}
-                                  {/* Main hand split button */}
-                                  {isHandSelected(gameState, playerId, 0, 0) &&
-                                    gameState?.current_player === playerId &&
-                                    gameState?.players?.[playerId]?.hands?.[0]
-                                      ?.cards?.length === 2 &&
-                                    canSplit(
-                                      gameState.players[playerId].hands[0].cards
-                                    ) &&
-                                    gameState.players[playerId].hands[0]
-                                      .status === 'playing' && (
-                                      <button
-                                        onClick={() =>
-                                          sendWebSocketMessage({
-                                            action: 'split_player_live',
-                                            player_id: playerId
-                                          })
-                                        }
-                                        className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                      >
-                                        Split
-                                      </button>
-                                    )}
+                                      )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            {/* Split1 Hands Display */}
-                            {Array.isArray(
-                              gameState?.players?.[playerId]?.split1
-                            ) &&
-                              gameState?.players?.[playerId]?.split1[0]?.cards
-                                ?.length > 0 && (
-                                <div className='mt-4'>
-                                  <div
-                                    className={`rounded-lg p-3 ${getHandBoxColor(
-                                      isHandSelected(
-                                        gameState,
-                                        playerId,
-                                        0,
-                                        1
-                                      ) &&
+                              {/* Split1 Hands Display */}
+                              {Array.isArray(
+                                gameState?.players?.[playerId]?.split1
+                              ) &&
+                                gameState?.players?.[playerId]?.split1[0]?.cards
+                                  ?.length > 0 && (
+                                  <div className='mt-4'>
+                                    <div
+                                      className={`rounded-lg p-3 ${getHandBoxColor(
+                                        isHandSelected(
+                                          gameState,
+                                          playerId,
+                                          0,
+                                          1
+                                        ) &&
                                         gameState?.current_player === playerId,
-                                      gameState.players[playerId].split1[0]
-                                        .result
-                                    )}`}
-                                  >
-                                    <div className='flex items-center justify-between mb-2'>
-                                      {/* <div
+                                        gameState.players[playerId].split1[0]
+                                          .result
+                                      )}`}
+                                    >
+                                      <div className='flex items-center justify-between mb-2'>
+                                        {/* <div
                                         className={`text-sm font-medium ${
                                           isCurrentSplit1Hand
                                             ? 'text-gray-900'
@@ -1401,69 +1359,71 @@ const GameMenu = () => {
                                       >
                                         Cards:
                                       </div> */}
-                                      <div
-                                        className={`text-sm font-medium ${
-                                          isCurrentSplit1Hand
+                                        <div
+                                          className={`text-sm font-medium ${isCurrentSplit1Hand
                                             ? 'text-gray-900'
                                             : 'text-white'
-                                        }`}
-                                      >
-                                        Total:{' '}
-                                        <span
-                                          className={`text-sm font-medium ${
-                                            isCurrentSplit1Hand
+                                            }`}
+                                        >
+                                          Total:{' '}
+                                          <span
+                                            className={`text-sm font-medium ${isCurrentSplit1Hand
                                               ? 'text-gray-900'
                                               : 'text-white'
-                                          }`}
-                                        >
-                                          {gameState.players[playerId].split1[0]
-                                            .total ?? 0}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className='flex justify-center gap-2 mb-2'>
-                                      {gameState.players[
-                                        playerId
-                                      ].split1[0].cards.map((card, index) => (
-                                        <div
-                                          key={index}
-                                          className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
-                                        >
-                                          <img
-                                            src={`/cards/${card}.png`}
-                                            alt={card}
-                                            className='w-full h-full object-contain'
-                                            onError={e => {
-                                              const target =
-                                                e.target as HTMLImageElement
-                                              target.src = '/cards/back.png'
-                                            }}
-                                          />
+                                              }`}
+                                          >
+                                            {gameState.players[playerId].split1[0]
+                                              .total ?? 0}
+                                            {gameState.players[playerId].split1[0].status && (
+                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                                {gameState.players[playerId].split1[0].status}
+                                              </span>
+                                            )}
+                                          </span>
                                         </div>
-                                      ))}
-                                      {/* Empty card slots */}
-                                      {[
-                                        ...Array(
-                                          Math.max(
-                                            0,
-                                            2 -
+                                      </div>
+                                      <div className='flex justify-center gap-2 mb-2'>
+                                        {gameState.players[
+                                          playerId
+                                        ].split1[0].cards.map((card, index) => (
+                                          <div
+                                            key={index}
+                                            className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                          >
+                                            <img
+                                              src={`/cards/${card}.png`}
+                                              alt={card}
+                                              className='w-full h-full object-contain'
+                                              onError={e => {
+                                                const target =
+                                                  e.target as HTMLImageElement
+                                                target.src = '/cards/back.png'
+                                              }}
+                                            />
+                                          </div>
+                                        ))}
+                                        {/* Empty card slots */}
+                                        {[
+                                          ...Array(
+                                            Math.max(
+                                              0,
+                                              2 -
                                               (gameState.players[playerId]
                                                 .split1[0].cards.length ?? 0)
+                                            )
                                           )
-                                        )
-                                      ].map((_, index) => (
-                                        <div
-                                          key={`empty-${index}`}
-                                          className={`w-12 h-16 border-2 border-dashed rounded-lg ${
-                                            isCurrentSplit1Hand
+                                        ].map((_, index) => (
+                                          <div
+                                            key={`empty-${index}`}
+                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit1Hand
                                               ? 'border-yellow-400/50 bg-yellow-500/10'
                                               : 'border-gray-400 bg-gray-800/50'
-                                          }`}
-                                        />
-                                      ))}
-                                    </div>
-                                    <div className='mt-2 flex items-center justify-between'>
-                                      {/* <span
+                                              }`}
+                                          />
+                                        ))}
+                                      </div>
+                                      <div className='mt-2 flex items-center justify-between'>
+                                        {/* <span
                                         className={
                                           'text-lg font-bold text-blue-400'
                                         }
@@ -1471,112 +1431,112 @@ const GameMenu = () => {
                                         {gameState.players[playerId].split1[0]
                                           .total ?? 0}
                                       </span> */}
-                                      <div className='flex flex-wrap justify-center items-center gap-1'>
-                                        {isHandSelected(
-                                          gameState,
-                                          playerId,
-                                          0,
-                                          1
-                                        ) &&
-                                          gameState?.current_player ===
-                                            playerId && (
-                                            <>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'hit_player',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
-                                              >
-                                                Hit
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'double_player',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                              >
-                                                Double
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'next_turn',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                              >
-                                                Stand
-                                              </button>
-                                            </>
-                                          )}
-                                        {/* Split1 split button */}
-                                        {isHandSelected(
-                                          gameState,
-                                          playerId,
-                                          0,
-                                          1
-                                        ) &&
-                                          gameState?.current_player ===
-                                            playerId &&
-                                          gameState?.players?.[playerId]
-                                            ?.split1?.[0]?.cards?.length ===
-                                            2 &&
-                                          canSplit(
-                                            gameState.players[playerId]
-                                              .split1[0].cards
+                                        <div className='flex flex-wrap justify-center items-center gap-1'>
+                                          {isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            1
                                           ) &&
-                                          gameState.players[playerId].split1[0]
-                                            .status === 'playing' && (
-                                            <button
-                                              onClick={() =>
-                                                sendWebSocketMessage({
-                                                  action: 'split_player_live',
-                                                  player_id: playerId
-                                                })
-                                              }
-                                              className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                            >
-                                              Split
-                                            </button>
-                                          )}
+                                            gameState?.current_player ===
+                                            playerId && (
+                                              <>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'hit_player',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                                                >
+                                                  Hit
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'double_player',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                                >
+                                                  Double
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'next_turn',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
+                                                >
+                                                  Stand
+                                                </button>
+                                              </>
+                                            )}
+                                          {/* Split1 split button */}
+                                          {isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            1
+                                          ) &&
+                                            gameState?.current_player ===
+                                            playerId &&
+                                            gameState?.players?.[playerId]
+                                              ?.split1?.[0]?.cards?.length ===
+                                            2 &&
+                                            canSplit(
+                                              gameState.players[playerId]
+                                                .split1[0].cards
+                                            ) &&
+                                            gameState.players[playerId].split1[0]
+                                              .status === 'playing' && (
+                                              <button
+                                                onClick={() =>
+                                                  sendWebSocketMessage({
+                                                    action: 'split_player_live',
+                                                    player_id: playerId
+                                                  })
+                                                }
+                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                              >
+                                                Split
+                                              </button>
+                                            )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                            {/* Split2 Hands Display */}
-                            {Array.isArray(
-                              gameState?.players?.[playerId]?.split2
-                            ) &&
-                              gameState?.players?.[playerId]?.split2[0]?.cards
-                                ?.length > 0 && (
-                                <div className='mt-4'>
-                                  <div
-                                    className={`rounded-lg p-3 ${getHandBoxColor(
-                                      isHandSelected(
-                                        gameState,
-                                        playerId,
-                                        0,
-                                        2
-                                      ) &&
+                              {/* Split2 Hands Display */}
+                              {Array.isArray(
+                                gameState?.players?.[playerId]?.split2
+                              ) &&
+                                gameState?.players?.[playerId]?.split2[0]?.cards
+                                  ?.length > 0 && (
+                                  <div className='mt-4'>
+                                    <div
+                                      className={`rounded-lg p-3 ${getHandBoxColor(
+                                        isHandSelected(
+                                          gameState,
+                                          playerId,
+                                          0,
+                                          2
+                                        ) &&
                                         gameState?.current_player === playerId,
-                                      gameState.players[playerId].split2[0]
-                                        .result
-                                    )}`}
-                                  >
-                                    <div className='flex items-center justify-between mb-2'>
-                                      {/* <div
+                                        gameState.players[playerId].split2[0]
+                                          .result
+                                      )}`}
+                                    >
+                                      <div className='flex items-center justify-between mb-2'>
+                                        {/* <div
                                         className={`text-sm font-medium ${
                                           isCurrentSplit2Hand
                                             ? 'text-gray-900'
@@ -1585,69 +1545,71 @@ const GameMenu = () => {
                                       >
                                         Cards:
                                       </div> */}
-                                      <div
-                                        className={`text-sm font-medium ${
-                                          isCurrentSplit1Hand
+                                        <div
+                                          className={`text-sm font-medium ${isCurrentSplit1Hand
                                             ? 'text-gray-900'
                                             : 'text-white'
-                                        }`}
-                                      >
-                                        Total:{' '}
-                                        <span
-                                          className={`text-sm font-medium ${
-                                            isCurrentSplit1Hand
+                                            }`}
+                                        >
+                                          Total:{' '}
+                                          <span
+                                            className={`text-sm font-medium ${isCurrentSplit1Hand
                                               ? 'text-gray-900'
                                               : 'text-white'
-                                          }`}
-                                        >
-                                          {gameState.players[playerId].split1[0]
-                                            .total ?? 0}
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <div className='flex justify-center gap-2 mb-2'>
-                                      {gameState.players[
-                                        playerId
-                                      ].split2[0].cards.map((card, index) => (
-                                        <div
-                                          key={index}
-                                          className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
-                                        >
-                                          <img
-                                            src={`/cards/${card}.png`}
-                                            alt={card}
-                                            className='w-full h-full object-contain'
-                                            onError={e => {
-                                              const target =
-                                                e.target as HTMLImageElement
-                                              target.src = '/cards/back.png'
-                                            }}
-                                          />
+                                              }`}
+                                          >
+                                            {gameState.players[playerId].split2[0]
+                                              .total ?? 0}
+                                            {gameState.players[playerId].split2[0].status && (
+                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                                {gameState.players[playerId].split2[0].status}
+                                              </span>
+                                            )}
+                                          </span>
                                         </div>
-                                      ))}
-                                      {/* Empty card slots */}
-                                      {[
-                                        ...Array(
-                                          Math.max(
-                                            0,
-                                            2 -
+                                      </div>
+                                      <div className='flex justify-center gap-2 mb-2'>
+                                        {gameState.players[
+                                          playerId
+                                        ].split2[0].cards.map((card, index) => (
+                                          <div
+                                            key={index}
+                                            className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                          >
+                                            <img
+                                              src={`/cards/${card}.png`}
+                                              alt={card}
+                                              className='w-full h-full object-contain'
+                                              onError={e => {
+                                                const target =
+                                                  e.target as HTMLImageElement
+                                                target.src = '/cards/back.png'
+                                              }}
+                                            />
+                                          </div>
+                                        ))}
+                                        {/* Empty card slots */}
+                                        {[
+                                          ...Array(
+                                            Math.max(
+                                              0,
+                                              2 -
                                               (gameState.players[playerId]
                                                 .split2[0].cards.length ?? 0)
+                                            )
                                           )
-                                        )
-                                      ].map((_, index) => (
-                                        <div
-                                          key={`empty-${index}`}
-                                          className={`w-12 h-16 border-2 border-dashed rounded-lg ${
-                                            isCurrentSplit2Hand
+                                        ].map((_, index) => (
+                                          <div
+                                            key={`empty-${index}`}
+                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit2Hand
                                               ? 'border-yellow-400/50 bg-yellow-500/10'
                                               : 'border-gray-400 bg-gray-800/50'
-                                          }`}
-                                        />
-                                      ))}
-                                    </div>
-                                    <div className='mt-2 flex items-center justify-between'>
-                                      {/* <span
+                                              }`}
+                                          />
+                                        ))}
+                                      </div>
+                                      <div className='mt-2 flex items-center justify-between'>
+                                        {/* <span
                                         className={
                                           'text-lg font-bold text-blue-400'
                                         }
@@ -1655,90 +1617,91 @@ const GameMenu = () => {
                                         {gameState.players[playerId].split2[0]
                                           .total ?? 0}
                                       </span> */}
-                                      <div className='flex flex-wrap justify-center items-center gap-1'>
-                                        {isHandSelected(
-                                          gameState,
-                                          playerId,
-                                          0,
-                                          2
-                                        ) &&
-                                          gameState?.current_player ===
-                                            playerId && (
-                                            <>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'hit_player',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
-                                              >
-                                                Hit
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'double_player',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                              >
-                                                Double
-                                              </button>
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'next_turn',
-                                                    player_id: playerId,
-                                                    hand_index: 0
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                              >
-                                                Stand
-                                              </button>
-                                            </>
-                                          )}
-                                        {/* Split2 split button */}
-                                        {isHandSelected(
-                                          gameState,
-                                          playerId,
-                                          0,
-                                          2
-                                        ) &&
-                                          gameState?.current_player ===
-                                            playerId &&
-                                          gameState?.players?.[playerId]
-                                            ?.split2?.[0]?.cards?.length ===
-                                            2 &&
-                                          canSplit(
-                                            gameState.players[playerId]
-                                              .split2[0].cards
+                                        <div className='flex flex-wrap justify-center items-center gap-1'>
+                                          {isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            2
                                           ) &&
-                                          gameState.players[playerId].split2[0]
-                                            .status === 'playing' && (
-                                            <button
-                                              onClick={() =>
-                                                sendWebSocketMessage({
-                                                  action: 'split_player_live',
-                                                  player_id: playerId
-                                                })
-                                              }
-                                              className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                            >
-                                              Split
-                                            </button>
-                                          )}
+                                            gameState?.current_player ===
+                                            playerId && (
+                                              <>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'hit_player',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
+                                                >
+                                                  Hit
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'double_player',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                                >
+                                                  Double
+                                                </button>
+                                                <button
+                                                  onClick={() =>
+                                                    sendWebSocketMessage({
+                                                      action: 'next_turn',
+                                                      player_id: playerId,
+                                                      hand_index: 0
+                                                    })
+                                                  }
+                                                  className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
+                                                >
+                                                  Stand
+                                                </button>
+                                              </>
+                                            )}
+                                          {/* Split2 split button */}
+                                          {isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            2
+                                          ) &&
+                                            gameState?.current_player ===
+                                            playerId &&
+                                            gameState?.players?.[playerId]
+                                              ?.split2?.[0]?.cards?.length ===
+                                            2 &&
+                                            canSplit(
+                                              gameState.players[playerId]
+                                                .split2[0].cards
+                                            ) &&
+                                            gameState.players[playerId].split2[0]
+                                              .status === 'playing' && (
+                                              <button
+                                                onClick={() =>
+                                                  sendWebSocketMessage({
+                                                    action: 'split_player_live',
+                                                    player_id: playerId
+                                                  })
+                                                }
+                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                              >
+                                                Split
+                                              </button>
+                                            )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              )}
-                          </div>
+                                )}
+                            </div>
+                          </>
                         )}
                       </div>
 
@@ -1802,12 +1765,12 @@ const GameMenu = () => {
               >
                 <span>Undo Last Action</span>
               </button>
-              <button
+              {/* <button
                 onClick={() => sendWebSocketMessage({ action: 'reshuffle' })}
                 className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
               >
                 <span>Reshuffle</span>
-              </button>
+              </button> */}
               {/* <button
                   onClick={() =>
                     sendWebSocketMessage({ action: 'previous_turn' })
@@ -1830,11 +1793,10 @@ const GameMenu = () => {
               {/* First row - Ace in center */}
               <div></div>
               <button
-                className={`p-1.5 rounded font-bold text-base ${
-                  selectedCard === 'A'
-                    ? 'bg-red-800 text-white'
-                    : 'bg-white hover:bg-gray-100 text-black'
-                }`}
+                className={`p-1.5 rounded font-bold text-base ${selectedCard === 'A'
+                  ? 'bg-red-800 text-white'
+                  : 'bg-white hover:bg-gray-100 text-black'
+                  }`}
                 onClick={() => setSelectedCard('A')}
               >
                 A
@@ -1845,11 +1807,10 @@ const GameMenu = () => {
               {cardValues.slice(1).map(value => (
                 <button
                   key={value}
-                  className={`p-1.5 rounded font-bold text-base ${
-                    selectedCard === value
-                      ? 'bg-red-800 text-white'
-                      : 'bg-white hover:bg-gray-100 text-black'
-                  }`}
+                  className={`p-1.5 rounded font-bold text-base ${selectedCard === value
+                    ? 'bg-red-800 text-white'
+                    : 'bg-white hover:bg-gray-100 text-black'
+                    }`}
                   onClick={() => setSelectedCard(value)}
                 >
                   {value}
@@ -1862,11 +1823,10 @@ const GameMenu = () => {
               {suits.map(suit => (
                 <button
                   key={suit.value}
-                  className={`p-2 rounded text-2xl ${
-                    selectedSuit === suit.value
-                      ? 'bg-red-800 text-white'
-                      : 'bg-white hover:bg-gray-100'
-                  }`}
+                  className={`p-2 rounded text-2xl ${selectedSuit === suit.value
+                    ? 'bg-red-800 text-white'
+                    : 'bg-white hover:bg-gray-100'
+                    }`}
                   onClick={() => setSelectedSuit(suit.value)}
                 >
                   <span className={suit.color}>{suit.symbol}</span>
@@ -1876,44 +1836,11 @@ const GameMenu = () => {
 
             {/* Preview and Assign Button */}
             <div className='flex space-x-2 flex-shrink-0 mt-4'>
-              {selectedCard && selectedSuit && (
-                <>
-                  <button
-                    onClick={assignCard}
-                    className={`flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
-                    disabled={
-                      !(
-                        selectedCard &&
-                        selectedSuit &&
-                        (gameState?.game_phase === 'dealer' ||
-                          gameState?.selected_hand?.player_id)
-                      )
-                    }
-                  >
-                    <span>Deal Card</span>
-                  </button>
-                </>
-              )}
-
               <button
-                onClick={() => {
-                  if (gameState?.current_turn === 'dealer') {
-                    sendWebSocketMessage({ action: 'hit_player' })
-                  } else if (gameState?.selected_hand?.player_id) {
-                    sendWebSocketMessage({
-                      action: 'hit_player',
-                      player_id: gameState.selected_hand.player_id,
-                      hand_index: gameState.selected_hand.hand_index
-                    })
-                  } else {
-                    setPopupMessage('⚠️ Please select a player or dealer first')
-                    setShowPopup(true)
-                    setTimeout(() => setShowPopup(false), 3000)
-                  }
-                }}
-                className='flex-1 p-2 bg-white hover:bg-gray-100 text-black rounded font-semibold text-sm'
+                onClick={assignCard}
+                className={`flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
               >
-                <span>Pull from Top of Stack</span>
+                <span>Send Card</span>
               </button>
             </div>
           </div>

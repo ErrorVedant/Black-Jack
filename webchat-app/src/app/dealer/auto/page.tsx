@@ -139,6 +139,14 @@ const GameMenu = () => {
         console.log('Connected to server')
         setIsConnected(true)
         reconnectAttempts = 0
+        // Send set_game_mode only after connection is open
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log("Sending set_game_mode to backend (onopen)");
+          ws.send(JSON.stringify({
+            action: 'set_game_mode',
+            mode: 'auto'
+          }));
+        }
       }
 
       ws.onclose = () => {
@@ -291,6 +299,7 @@ const GameMenu = () => {
     }
   }, [gameState])
 
+
   useEffect(() => {
     if (
       isConnected &&
@@ -301,6 +310,17 @@ const GameMenu = () => {
       return () => clearTimeout(timer)
     }
   }, [isConnected, showPopup, popupMessage])
+
+  useEffect(() => {
+    // Show connected popup only on reconnection (not initial mount)
+    if (prevIsConnectedRef.current === false && isConnected) {
+      setPopupMessage('✅ Connected to server')
+      setShowPopup(true)
+      const timer = setTimeout(() => setShowPopup(false), 1000)
+      return () => clearTimeout(timer)
+    }
+    prevIsConnectedRef.current = isConnected
+  }, [isConnected])
 
   const prevIsConnectedRef = useRef(isConnected)
 
