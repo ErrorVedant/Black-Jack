@@ -58,10 +58,10 @@ interface GameState {
   split_current_pointer: number
   split_fire_state: number
   first_active_player_hand?: {
-    player_id: string;
-    hand_index: number;
-    split_level: number;
-  };
+    player_id: string
+    hand_index: number
+    split_level: number
+  }
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -130,7 +130,7 @@ const GameMenu = () => {
   const [gameMenuOpen, setGameMenuOpen] = useState(false)
   const [showLiveFunctionPopup, setShowLiveFunctionPopup] = useState(false)
   const [liveFunctionMessage, setLiveFunctionMessage] = useState('')
-  const previousLiveFunctionsRef = useRef<{[key: string]: string}>({}) // Track previous live function values
+  const previousLiveFunctionsRef = useRef<{ [key: string]: string }>({}) // Track previous live function values
   const pathname = usePathname()
 
   useEffect(() => {
@@ -149,11 +149,13 @@ const GameMenu = () => {
         reconnectAttempts = 0
         // Send set_game_mode only after connection is open
         if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log("Sending set_game_mode to backend (onopen)");
-          ws.send(JSON.stringify({
-            action: 'set_game_mode',
-            mode: 'live'
-          }));
+          console.log('Sending set_game_mode to backend (onopen)')
+          ws.send(
+            JSON.stringify({
+              action: 'set_game_mode',
+              mode: 'live'
+            })
+          )
         }
       }
 
@@ -524,9 +526,13 @@ const GameMenu = () => {
       !selectedCard ||
       !selectedSuit
     ) {
-      console.log('Auto-hit triggered, first_active_player_hand:', gameState?.first_active_player_hand)
+      console.log(
+        'Auto-hit triggered, first_active_player_hand:',
+        gameState?.first_active_player_hand
+      )
       if (gameState && gameState.first_active_player_hand) {
-        const { player_id, hand_index, split_level } = gameState.first_active_player_hand;
+        const { player_id, hand_index, split_level } =
+          gameState.first_active_player_hand
         console.log('Auto-hit sending:', { player_id, hand_index, split_level })
         setWaitingForServer(true)
         sendWebSocketMessage({
@@ -534,7 +540,7 @@ const GameMenu = () => {
           player_id,
           hand_index,
           split_level
-        });
+        })
       }
       return
     }
@@ -626,7 +632,7 @@ const GameMenu = () => {
       gameState?.players?.[gameState.selected_hand.player_id]?.hands?.[0]?.cards
         ?.length === 2 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split1_status ===
-      1 &&
+        1 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
         ?.cards?.length === 1 &&
       gameState?.split_call_live_previous_counter === 1 &&
@@ -644,7 +650,7 @@ const GameMenu = () => {
       gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
         ?.cards?.length === 2 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split2_status ===
-      1 &&
+        1 &&
       gameState?.players?.[gameState.selected_hand.player_id]?.split2?.[0]
         ?.cards?.length === 1 &&
       gameState?.split_call_live_previous_counter === 2 &&
@@ -693,7 +699,13 @@ const GameMenu = () => {
     const split2Status = player?.split2_status === 0
     const mainHandHas2Cards = player?.hands?.[0]?.cards?.length === 2
     const playerInsuranceStatus = player?.insurence !== 1
-    if (dealerFirstCardA && split1Status && split2Status && mainHandHas2Cards && playerInsuranceStatus) {
+    if (
+      dealerFirstCardA &&
+      split1Status &&
+      split2Status &&
+      mainHandHas2Cards &&
+      playerInsuranceStatus
+    ) {
       setShowInsuranceButton(true)
     } else {
       setShowInsuranceButton(false)
@@ -726,7 +738,7 @@ const GameMenu = () => {
   useEffect(() => {
     if (!gameState) return
 
-    const currentLiveFunctions: {[key: string]: string} = {}
+    const currentLiveFunctions: { [key: string]: string } = {}
     let hasChanges = false
     let changeMessages: string[] = []
 
@@ -735,7 +747,7 @@ const GameMenu = () => {
       const dealerKey = 'dealer'
       const currentValue = gameState.dealer.live_function_hand
       const previousValue = previousLiveFunctionsRef.current[dealerKey]
-      
+
       if (previousValue !== currentValue && currentValue) {
         hasChanges = true
         changeMessages.push(`Dealer: ${currentValue}`)
@@ -744,52 +756,69 @@ const GameMenu = () => {
     }
 
     // Check all players' live_function_hand values
-    Object.entries(gameState.players || {}).forEach(([playerId, playerData]) => {
-      // Check main hands
-      playerData.hands?.forEach((hand, handIndex) => {
-        if (hand.live_function_hand) {
-          const key = `${playerId}_hand_${handIndex}`
-          const currentValue = hand.live_function_hand
-          const previousValue = previousLiveFunctionsRef.current[key]
-          
-          if (previousValue !== currentValue && currentValue) {
-            hasChanges = true
-            changeMessages.push(`${playerId.replace('player', 'Player ')} Main Hand: ${currentValue}`)
-          }
-          currentLiveFunctions[key] = currentValue
-        }
-      })
+    Object.entries(gameState.players || {}).forEach(
+      ([playerId, playerData]) => {
+        // Check main hands
+        playerData.hands?.forEach((hand, handIndex) => {
+          if (hand.live_function_hand) {
+            const key = `${playerId}_hand_${handIndex}`
+            const currentValue = hand.live_function_hand
+            const previousValue = previousLiveFunctionsRef.current[key]
 
-      // Check split1 hands
-      playerData.split1?.forEach((hand, handIndex) => {
-        if (hand.live_function_hand) {
-          const key = `${playerId}_split1_${handIndex}`
-          const currentValue = hand.live_function_hand
-          const previousValue = previousLiveFunctionsRef.current[key]
-          
-          if (previousValue !== currentValue && currentValue) {
-            hasChanges = true
-            changeMessages.push(`${playerId.replace('player', 'Player ')} Split 1: ${currentValue}`)
+            if (previousValue !== currentValue && currentValue) {
+              hasChanges = true
+              changeMessages.push(
+                `${playerId.replace(
+                  'player',
+                  'Player '
+                )} Main Hand: ${currentValue}`
+              )
+            }
+            currentLiveFunctions[key] = currentValue
           }
-          currentLiveFunctions[key] = currentValue
-        }
-      })
+        })
 
-      // Check split2 hands
-      playerData.split2?.forEach((hand, handIndex) => {
-        if (hand.live_function_hand) {
-          const key = `${playerId}_split2_${handIndex}`
-          const currentValue = hand.live_function_hand
-          const previousValue = previousLiveFunctionsRef.current[key]
-          
-          if (previousValue !== currentValue && currentValue) {
-            hasChanges = true
-            changeMessages.push(`${playerId.replace('player', 'Player ')} Split 2: ${currentValue}`)
+        // Check split1 hands
+        playerData.split1?.forEach((hand, handIndex) => {
+          if (hand.live_function_hand) {
+            const key = `${playerId}_split1_${handIndex}`
+            const currentValue = hand.live_function_hand
+            const previousValue = previousLiveFunctionsRef.current[key]
+
+            if (previousValue !== currentValue && currentValue) {
+              hasChanges = true
+              changeMessages.push(
+                `${playerId.replace(
+                  'player',
+                  'Player '
+                )} Split 1: ${currentValue}`
+              )
+            }
+            currentLiveFunctions[key] = currentValue
           }
-          currentLiveFunctions[key] = currentValue
-        }
-      })
-    })
+        })
+
+        // Check split2 hands
+        playerData.split2?.forEach((hand, handIndex) => {
+          if (hand.live_function_hand) {
+            const key = `${playerId}_split2_${handIndex}`
+            const currentValue = hand.live_function_hand
+            const previousValue = previousLiveFunctionsRef.current[key]
+
+            if (previousValue !== currentValue && currentValue) {
+              hasChanges = true
+              changeMessages.push(
+                `${playerId.replace(
+                  'player',
+                  'Player '
+                )} Split 2: ${currentValue}`
+              )
+            }
+            currentLiveFunctions[key] = currentValue
+          }
+        })
+      }
+    )
 
     // Show popup if there are changes
     if (hasChanges && changeMessages.length > 0) {
@@ -996,10 +1025,11 @@ const GameMenu = () => {
             {/* Dealer Window */}
             <div className='flex justify-center'>
               <div
-                className={`w-full rounded-2xl ${gameState?.game_phase === 'dealer'
-                  ? 'bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400'
-                  : 'bg-[#911606] text-white'
-                  }`}
+                className={`w-full rounded-2xl ${
+                  gameState?.game_phase === 'dealer'
+                    ? 'bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400'
+                    : 'bg-[#911606] text-white'
+                }`}
               >
                 {/* <div className='flex items-center justify-between mb-4'>
                   <h2
@@ -1099,8 +1129,9 @@ const GameMenu = () => {
                       <div className='text-base font-medium bg-[#911606] text-yellow-500 rounded-2xl px-2 border border-yellow-500'>
                         Total:{' '}
                         <span
-                          className={`${dealerTotal > 21 ? 'text-red-500' : 'text-blue-400'
-                            }`}
+                          className={`${
+                            dealerTotal > 21 ? 'text-red-500' : 'text-blue-400'
+                          }`}
                         >
                           {dealerTotal}
                         </span>
@@ -1143,13 +1174,14 @@ const GameMenu = () => {
                   return (
                     <div
                       key={playerId}
-                      className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${'bg-[#C1351D] text-gray-200 border border-red-500/30'
+                      className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                        'bg-[#C1351D] text-gray-200 border border-red-500/30'
                         // isCurrentHand
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : isActive
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
-                        }`}
+                      }`}
                       onClick={e => {
                         e.stopPropagation()
                         if (isActive) {
@@ -1170,17 +1202,14 @@ const GameMenu = () => {
                               }`}
                             /> */}
                             <div>
-                              <div
-                                className={`text-lg font-bold ${isCurrentHand ? 'text-gray-900' : 'text-white'
-                                  }`}
-                              >
+                              <div className={`text-lg font-bold text-white`}>
                                 {playerId.replace('player', 'Player ')}
                                 {gameState?.players?.[playerId]?.insurence ===
                                   1 && (
-                                    <span className='ml-2 text-yellow-400 font-semibold text-base'>
-                                      Insured
-                                    </span>
-                                  )}
+                                  <span className='ml-2 text-yellow-400 font-semibold text-base'>
+                                    Insured
+                                  </span>
+                                )}
                               </div>
                               {/* <div
                                 className={`text-sm ${
@@ -1193,8 +1222,6 @@ const GameMenu = () => {
                                   ? 'Active'
                                   : 'Inactive'}
                               </div> */}
-
-
                             </div>
                           </div>
                           {/* {!isActive ? (
@@ -1248,24 +1275,34 @@ const GameMenu = () => {
 
                         {isActive && (
                           <>
-
                             <div className='space-y-4'>
                               {/* Cards Display */}
                               <div
                                 className={`rounded-lg p-3 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 0) &&
-                                  gameState?.current_player === playerId,
+                                    gameState?.current_player === playerId,
                                   gameState?.players?.[playerId]?.hands?.[0]
                                     ?.result
                                 )}`}
                               >
-                                <span className={'text-sm'}>
+                                <span
+                                  className={`text-sm ${
+                                    isHandSelected(gameState, playerId, 0, 0) &&
+                                    gameState?.current_player === playerId
+                                      ? 'text-black'
+                                      : 'text-white'
+                                  }`}
+                                >
                                   Total:{' '}
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.total ?? 0}
-                                  {gameState?.players?.[playerId]?.hands?.[0]?.live_function_hand && (
-                                    <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                      {gameState.players[playerId].hands[0].live_function_hand}
+                                  {gameState?.players?.[playerId]?.hands?.[0]
+                                    ?.live_function_hand && (
+                                    <span className='ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle'>
+                                      {
+                                        gameState.players[playerId].hands[0]
+                                          .live_function_hand
+                                      }
                                     </span>
                                   )}
                                 </span>
@@ -1309,17 +1346,18 @@ const GameMenu = () => {
                                       Math.max(
                                         0,
                                         2 -
-                                        (gameState?.players?.[playerId]
-                                          ?.hands?.[0]?.cards?.length ?? 0)
+                                          (gameState?.players?.[playerId]
+                                            ?.hands?.[0]?.cards?.length ?? 0)
                                       )
                                     )
                                   ].map((_, index) => (
                                     <div
                                       key={`empty-${index}`}
-                                      className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentHand
-                                        ? 'border-yellow-400/50 bg-yellow-500/10'
-                                        : 'border-gray-400 bg-gray-800/50'
-                                        }`}
+                                      className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                        isCurrentHand
+                                          ? 'border-yellow-400/50 bg-yellow-500/10'
+                                          : 'border-gray-400 bg-gray-800/50'
+                                      }`}
                                     />
                                   ))}
                                 </div>
@@ -1331,14 +1369,20 @@ const GameMenu = () => {
                                     ?.total ?? 0}
                                 </span> */}
                                   <div className='flex flex-wrap justify-center items-center gap-1'>
-                                    {isHandSelected(gameState, playerId, 0, 0) &&
-                                      gameState?.current_player === playerId && (
+                                    {isHandSelected(
+                                      gameState,
+                                      playerId,
+                                      0,
+                                      0
+                                    ) &&
+                                      gameState?.current_player ===
+                                        playerId && (
                                         <>
                                           {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
                                           {showInsuranceButton &&
                                             !insuranceState[playerId] &&
-                                            !gameState.players[playerId].hands[0]
-                                              .insurence && (
+                                            !gameState.players[playerId]
+                                              .hands[0].insurence && (
                                               <button
                                                 onClick={() =>
                                                   handleInsurance(playerId)
@@ -1402,12 +1446,18 @@ const GameMenu = () => {
                                         </>
                                       )}
                                     {/* Main hand split button */}
-                                    {isHandSelected(gameState, playerId, 0, 0) &&
+                                    {isHandSelected(
+                                      gameState,
+                                      playerId,
+                                      0,
+                                      0
+                                    ) &&
                                       gameState?.current_player === playerId &&
                                       gameState?.players?.[playerId]?.hands?.[0]
                                         ?.cards?.length === 2 &&
                                       canSplit(
-                                        gameState.players[playerId].hands[0].cards
+                                        gameState.players[playerId].hands[0]
+                                          .cards
                                       ) &&
                                       gameState.players[playerId].hands[0]
                                         .status === 'playing' && (
@@ -1442,7 +1492,8 @@ const GameMenu = () => {
                                           0,
                                           1
                                         ) &&
-                                        gameState?.current_player === playerId,
+                                          gameState?.current_player ===
+                                            playerId,
                                         gameState.players[playerId].split1[0]
                                           .result
                                       )}`}
@@ -1458,23 +1509,44 @@ const GameMenu = () => {
                                         Cards:
                                       </div> */}
                                         <div
-                                          className={`text-sm font-medium ${isCurrentSplit1Hand
-                                            ? 'text-gray-900'
-                                            : 'text-white'
-                                            }`}
+                                          className={`text-sm font-medium ${
+                                            isHandSelected(
+                                              gameState,
+                                              playerId,
+                                              0,
+                                              1
+                                            ) &&
+                                            gameState?.current_player ===
+                                              playerId
+                                              ? 'text-black'
+                                              : 'text-white'
+                                          }`}
                                         >
                                           Total:{' '}
                                           <span
-                                            className={`text-sm font-medium ${isCurrentSplit1Hand
-                                              ? 'text-gray-900'
-                                              : 'text-white'
-                                              }`}
+                                            className={`text-sm font-medium ${
+                                              isHandSelected(
+                                                gameState,
+                                                playerId,
+                                                0,
+                                                1
+                                              ) &&
+                                              gameState?.current_player ===
+                                                playerId
+                                                ? 'text-black'
+                                                : 'text-white'
+                                            }`}
                                           >
-                                            {gameState.players[playerId].split1[0]
-                                              .total ?? 0}
-                                            {gameState.players[playerId].split1[0].live_function_hand && (
-                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                                {gameState.players[playerId].split1[0].live_function_hand}
+                                            {gameState.players[playerId]
+                                              .split1[0].total ?? 0}
+                                            {gameState.players[playerId]
+                                              .split1[0].live_function_hand && (
+                                              <span className='ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle'>
+                                                {
+                                                  gameState.players[playerId]
+                                                    .split1[0]
+                                                    .live_function_hand
+                                                }
                                               </span>
                                             )}
                                           </span>
@@ -1506,17 +1578,18 @@ const GameMenu = () => {
                                             Math.max(
                                               0,
                                               2 -
-                                              (gameState.players[playerId]
-                                                .split1[0].cards.length ?? 0)
+                                                (gameState.players[playerId]
+                                                  .split1[0].cards.length ?? 0)
                                             )
                                           )
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit1Hand
-                                              ? 'border-yellow-400/50 bg-yellow-500/10'
-                                              : 'border-gray-400 bg-gray-800/50'
-                                              }`}
+                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                              isCurrentSplit1Hand
+                                                ? 'border-yellow-400/50 bg-yellow-500/10'
+                                                : 'border-gray-400 bg-gray-800/50'
+                                            }`}
                                           />
                                         ))}
                                       </div>
@@ -1537,7 +1610,7 @@ const GameMenu = () => {
                                             1
                                           ) &&
                                             gameState?.current_player ===
-                                            playerId && (
+                                              playerId && (
                                               <>
                                                 <button
                                                   onClick={() =>
@@ -1585,16 +1658,17 @@ const GameMenu = () => {
                                             1
                                           ) &&
                                             gameState?.current_player ===
-                                            playerId &&
+                                              playerId &&
                                             gameState?.players?.[playerId]
                                               ?.split1?.[0]?.cards?.length ===
-                                            2 &&
+                                              2 &&
                                             canSplit(
                                               gameState.players[playerId]
                                                 .split1[0].cards
                                             ) &&
-                                            gameState.players[playerId].split1[0]
-                                              .status === 'playing' && (
+                                            gameState.players[playerId]
+                                              .split1[0].status ===
+                                              'playing' && (
                                               <button
                                                 onClick={() =>
                                                   sendWebSocketMessage({
@@ -1628,7 +1702,8 @@ const GameMenu = () => {
                                           0,
                                           2
                                         ) &&
-                                        gameState?.current_player === playerId,
+                                          gameState?.current_player ===
+                                            playerId,
                                         gameState.players[playerId].split2[0]
                                           .result
                                       )}`}
@@ -1644,23 +1719,44 @@ const GameMenu = () => {
                                         Cards:
                                       </div> */}
                                         <div
-                                          className={`text-sm font-medium ${isCurrentSplit1Hand
-                                            ? 'text-gray-900'
-                                            : 'text-white'
-                                            }`}
+                                          className={`text-sm font-medium ${
+                                            isHandSelected(
+                                              gameState,
+                                              playerId,
+                                              0,
+                                              2
+                                            ) &&
+                                            gameState?.current_player ===
+                                              playerId
+                                              ? 'text-black'
+                                              : 'text-white'
+                                          }`}
                                         >
                                           Total:{' '}
                                           <span
-                                            className={`text-sm font-medium ${isCurrentSplit1Hand
-                                              ? 'text-gray-900'
-                                              : 'text-white'
-                                              }`}
+                                            className={`text-sm font-medium ${
+                                              isHandSelected(
+                                                gameState,
+                                                playerId,
+                                                0,
+                                                2
+                                              ) &&
+                                              gameState?.current_player ===
+                                                playerId
+                                                ? 'text-black'
+                                                : 'text-white'
+                                            }`}
                                           >
-                                            {gameState.players[playerId].split2[0]
-                                              .total ?? 0}
-                                            {gameState.players[playerId].split2[0].live_function_hand && (
-                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                                {gameState.players[playerId].split2[0].live_function_hand}
+                                            {gameState.players[playerId]
+                                              .split2[0].total ?? 0}
+                                            {gameState.players[playerId]
+                                              .split2[0].live_function_hand && (
+                                              <span className='ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle'>
+                                                {
+                                                  gameState.players[playerId]
+                                                    .split2[0]
+                                                    .live_function_hand
+                                                }
                                               </span>
                                             )}
                                           </span>
@@ -1692,17 +1788,18 @@ const GameMenu = () => {
                                             Math.max(
                                               0,
                                               2 -
-                                              (gameState.players[playerId]
-                                                .split2[0].cards.length ?? 0)
+                                                (gameState.players[playerId]
+                                                  .split2[0].cards.length ?? 0)
                                             )
                                           )
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${isCurrentSplit2Hand
-                                              ? 'border-yellow-400/50 bg-yellow-500/10'
-                                              : 'border-gray-400 bg-gray-800/50'
-                                              }`}
+                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                              isCurrentSplit2Hand
+                                                ? 'border-yellow-400/50 bg-yellow-500/10'
+                                                : 'border-gray-400 bg-gray-800/50'
+                                            }`}
                                           />
                                         ))}
                                       </div>
@@ -1723,7 +1820,7 @@ const GameMenu = () => {
                                             2
                                           ) &&
                                             gameState?.current_player ===
-                                            playerId && (
+                                              playerId && (
                                               <>
                                                 <button
                                                   onClick={() =>
@@ -1771,16 +1868,17 @@ const GameMenu = () => {
                                             2
                                           ) &&
                                             gameState?.current_player ===
-                                            playerId &&
+                                              playerId &&
                                             gameState?.players?.[playerId]
                                               ?.split2?.[0]?.cards?.length ===
-                                            2 &&
+                                              2 &&
                                             canSplit(
                                               gameState.players[playerId]
                                                 .split2[0].cards
                                             ) &&
-                                            gameState.players[playerId].split2[0]
-                                              .status === 'playing' && (
+                                            gameState.players[playerId]
+                                              .split2[0].status ===
+                                              'playing' && (
                                               <button
                                                 onClick={() =>
                                                   sendWebSocketMessage({
@@ -1900,10 +1998,11 @@ const GameMenu = () => {
               {/* First row - Ace in center */}
               <div></div>
               <button
-                className={`p-1.5 rounded font-bold text-base ${selectedCard === 'A'
-                  ? 'bg-red-800 text-white'
-                  : 'bg-white hover:bg-gray-100 text-black'
-                  }`}
+                className={`p-1.5 rounded font-bold text-base ${
+                  selectedCard === 'A'
+                    ? 'bg-red-800 text-white'
+                    : 'bg-white hover:bg-gray-100 text-black'
+                }`}
                 onClick={() => setSelectedCard('A')}
               >
                 A
@@ -1914,10 +2013,11 @@ const GameMenu = () => {
               {cardValues.slice(1).map(value => (
                 <button
                   key={value}
-                  className={`p-1.5 rounded font-bold text-base ${selectedCard === value
-                    ? 'bg-red-800 text-white'
-                    : 'bg-white hover:bg-gray-100 text-black'
-                    }`}
+                  className={`p-1.5 rounded font-bold text-base ${
+                    selectedCard === value
+                      ? 'bg-red-800 text-white'
+                      : 'bg-white hover:bg-gray-100 text-black'
+                  }`}
                   onClick={() => setSelectedCard(value)}
                 >
                   {value}
@@ -1930,10 +2030,11 @@ const GameMenu = () => {
               {suits.map(suit => (
                 <button
                   key={suit.value}
-                  className={`p-2 rounded text-2xl ${selectedSuit === suit.value
-                    ? 'bg-red-800 text-white'
-                    : 'bg-white hover:bg-gray-100'
-                    }`}
+                  className={`p-2 rounded text-2xl ${
+                    selectedSuit === suit.value
+                      ? 'bg-red-800 text-white'
+                      : 'bg-white hover:bg-gray-100'
+                  }`}
                   onClick={() => setSelectedSuit(suit.value)}
                 >
                   <span className={suit.color}>{suit.symbol}</span>
@@ -1982,9 +2083,7 @@ const GameMenu = () => {
             <div className='text-center relative z-10'>
               {/* Header */}
               <div className='mb-6'>
-                <div className='text-6xl mb-2 animate-pulse'>
-                  🎯
-                </div>
+                <div className='text-6xl mb-2 animate-pulse'>🎯</div>
                 <h2 className='text-3xl font-bold mb-2 text-yellow-300 drop-shadow-lg tracking-wider'>
                   LIVE ACTION
                 </h2>
@@ -2006,7 +2105,10 @@ const GameMenu = () => {
                       if (match) {
                         const [, playerHand, action] = match
                         return (
-                          <div key={index} className='bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/50 rounded-lg p-3'>
+                          <div
+                            key={index}
+                            className='bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/50 rounded-lg p-3'
+                          >
                             <div className='text-sm text-yellow-300 mb-1'>
                               PLAYER & HAND:
                             </div>
