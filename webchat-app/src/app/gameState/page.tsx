@@ -8,6 +8,7 @@ interface Hand {
   result?: string
   bet?: number
   insurence?: number
+  live_function_hand?: string
 }
 
 interface PlayerData {
@@ -17,6 +18,8 @@ interface PlayerData {
   split1_status: number
   split2: Hand[]
   split2_status: number
+  insurence?: number
+  live_function_player?: string
 }
 
 interface Players {
@@ -25,16 +28,16 @@ interface Players {
 
 interface GameState {
   deck_count: number
-  game_mode: string
   dealer: {
     cards: string[]
     total: number
     status: string
+    result?: string
+    live_function_hand?: string
   }
   players: Players
   game_phase: string
   table_number: number
-  current_turn: string
   selected_hand?: {
     player_id: string
     hand_index: number
@@ -46,6 +49,17 @@ interface GameState {
   evaluate_game: boolean
   manual_distribution_count: number
   next_manual_counter: number
+  min_bet: number
+  max_bet: number
+  rounds_played_in_game: number
+  split_fire_state: number
+  split_current_pointer: number
+  split_call_live_previous_counter: number
+  first_active_player_hand?: {
+    player_id: string
+    hand_index: number
+    split_level: number
+  }
 }
 
 export default function GameStatePage() {

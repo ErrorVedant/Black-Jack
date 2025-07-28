@@ -228,6 +228,7 @@ const GameMenu = () => {
             setPopupMessage(data.message)
             setShowPopup(true)
             setTimeout(() => setShowPopup(false), 1000)
+            setWaitingForServer(false) // Reset waiting state on error
             break
           case 'player_hit':
           case 'dealer_hit':
@@ -715,6 +716,7 @@ const GameMenu = () => {
         setBetMenuOpen={setBetMenuOpen}
         gameMenuOpen={gameMenuOpen}
         setGameMenuOpen={setGameMenuOpen}
+        sendWebSocketMessage={sendWebSocketMessage}
       />
 
       <BetTableModal

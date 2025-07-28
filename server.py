@@ -57,61 +57,67 @@ game_state = {
     "round_number": 0,
     "min_bet": 0,
     "max_bet": 0,
-    "dealer": {"cards": [], "total": 0, "status": "playing", "result": ""},
+    "dealer": {"cards": [], "total": 0, "status": "playing", "result": "", "live_function_hand": ""},
     "players": {
         "player1": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         },
         "player2": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         },
         "player3": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         },
         "player4": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         },
         "player5": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         },
         "player6": {
-            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
-            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "hands": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
+            "split1": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split1_status": 0,
-            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": ""}],
+            "split2": [{"cards": [], "total": 0, "status": "waiting", "result": "", "live_function_hand": ""}],
             "split2_status": 0,
             "status": 0,
-            "insurence": 0
+            "insurence": 0,
+            "live_function_player": ""
         }
     },
     "max_players": 7,
@@ -201,7 +207,8 @@ def serialize_game_state():
             "cards": game_state["dealer"]["cards"],
             "total": game_state["dealer"]["total"],
             "status": game_state["dealer"]["status"],
-            "result": game_state["dealer"].get("result", "")
+            "result": game_state["dealer"].get("result", ""),
+            "live_function_hand": game_state["dealer"].get("live_function_hand", "")
         },
         "players": {
             pid: {
@@ -211,7 +218,8 @@ def serialize_game_state():
                 "split2": pdata["split2"],
                 "split2_status": pdata["split2_status"],
                 "status": pdata["status"],
-                "insurence": pdata.get("insurence", 0)
+                "insurence": pdata.get("insurence", 0),
+                "live_function_player": pdata.get("live_function_player", "")
             }
             for pid, pdata in game_state["players"].items()
         },
@@ -313,6 +321,8 @@ async def handle_connection(websocket):
         "previous_turn": lambda d: handle_previous_turn(),
         "change_bets": lambda d: handle_change_bets(d.get("min_bet"), d.get("max_bet")),
         "change_table": lambda d: handle_change_table(d.get("table_number")),
+        "set_live_function_hand": lambda d: set_live_function_hand(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), d.get("value", "")),
+        "set_live_function_player": lambda d: set_live_function_player(d.get("player_id"), d.get("value", "")),
     }
 
     try:
@@ -1934,6 +1944,50 @@ def get_first_active_player_hand():
                 "split_level": 0
             }
     return None
+
+def set_live_function_hand(player_id, split_level=0, hand_index=0, value=""):
+    """Set the live_function_hand for a given player (or dealer) and hand."""
+    print(f"[set_live_function_hand] player_id={player_id}, split_level={split_level}, hand_index={hand_index}, value={value}")
+    if player_id == "dealer":
+        game_state["dealer"]["live_function_hand"] = value
+    elif player_id in game_state["players"]:
+        player = game_state["players"][player_id]
+        if split_level == 1:
+            player["split1"][hand_index]["live_function_hand"] = value
+        elif split_level == 2:
+            player["split2"][hand_index]["live_function_hand"] = value
+        else:
+            player["hands"][hand_index]["live_function_hand"] = value
+    else:
+        print(f"[set_live_function_hand] Invalid player_id: {player_id}")
+        return
+    
+    # Broadcast the update to all clients
+    asyncio.create_task(broadcast({
+        "action": "live_function_hand_updated",
+        "player_id": player_id,
+        "split_level": split_level,
+        "hand_index": hand_index,
+        "value": value,
+        "game_state": serialize_game_state()
+    }))
+
+def set_live_function_player(player_id, value=""):
+    """Set the live_function_player for a given player."""
+    print(f"[set_live_function_player] player_id={player_id}, value={value}")
+    if player_id in game_state["players"]:
+        game_state["players"][player_id]["live_function_player"] = value
+    else:
+        print(f"[set_live_function_player] Invalid player_id: {player_id}")
+        return
+    
+    # Broadcast the update to all clients
+    asyncio.create_task(broadcast({
+        "action": "live_function_player_updated",
+        "player_id": player_id,
+        "value": value,
+        "game_state": serialize_game_state()
+    }))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

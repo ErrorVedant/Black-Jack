@@ -22,6 +22,7 @@ interface DealerNavbarProps {
   setBetMenuOpen?: (open: boolean) => void
   gameMenuOpen?: boolean
   setGameMenuOpen?: (open: boolean) => void
+  sendWebSocketMessage?: (message: any) => void
 }
 
 const DealerNavbar = ({
@@ -32,24 +33,36 @@ const DealerNavbar = ({
   betMenuOpen,
   setBetMenuOpen,
   gameMenuOpen,
-  setGameMenuOpen
+  setGameMenuOpen,
+  sendWebSocketMessage
 }: DealerNavbarProps) => {
   const router = useRouter()
 
   const handleModeChange = (mode: string) => {
-    switch (mode) {
-      case 'live':
-        router.push('/dealer')
-        break
-      case 'auto':
-        router.push('/dealer/auto')
-        break
-      case 'manual':
-        router.push('/dealer/manual')
-        break
-      default:
-        router.push('/dealer')
+    // Send WebSocket message to set game mode before switching
+    if (sendWebSocketMessage) {
+      sendWebSocketMessage({
+        action: 'set_game_mode',
+        mode: mode
+      })
     }
+    
+    // Small delay to ensure WebSocket message is sent before navigation
+    setTimeout(() => {
+      switch (mode) {
+        case 'live':
+          router.push('/dealer')
+          break
+        case 'auto':
+          router.push('/dealer/auto')
+          break
+        case 'manual':
+          router.push('/dealer/manual')
+          break
+        default:
+          router.push('/dealer')
+      }
+    }, 100)
   }
 
   const handleLogoClick = () => {
