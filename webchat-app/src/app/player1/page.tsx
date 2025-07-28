@@ -590,6 +590,11 @@ const GameMenu = () => {
                   <span className='text-yellow-300 text-xs sm:text-sm lg:text-base -mt-1'>
                     Table: {gameState?.table_number}
                   </span>
+                  {/* {gameState?.mode && (
+                    <span className='ml-2 px-3 py-1 bg-blue-700 text-white text-xs sm:text-sm lg:text-base rounded-full font-semibold shadow border border-blue-300 uppercase tracking-wider'>
+                      {gameState.mode}
+                    </span>
+                  )} */}
                 </div>
 
                 <div className='flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4'>
@@ -645,6 +650,15 @@ const GameMenu = () => {
                           <span className='font-semibold'>Phase: </span>
                           <span className='text-green-300'>
                             {gameState.game_phase}
+                          </span>
+                        </>
+                      )}
+                      {gameState?.mode && (
+                        <>
+                          <span className='mx-2'>|</span>
+                          <span className='font-semibold'>Mode: </span>
+                          <span className='text-green-300'>
+                            {gameState.mode}
                           </span>
                         </>
                       )}

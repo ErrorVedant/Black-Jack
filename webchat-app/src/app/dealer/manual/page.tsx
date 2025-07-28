@@ -150,13 +150,13 @@ const GameMenu = () => {
         setIsConnected(true)
         reconnectAttempts = 0
         // Send set_game_mode only after connection is open
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log("Sending set_game_mode to backend (onopen)");
-          ws.send(JSON.stringify({
-            action: 'set_game_mode',
-            mode: 'manual'
-          }));
-        }
+        // if (ws && ws.readyState === WebSocket.OPEN) {
+        //   console.log("Sending set_game_mode to backend (onopen)");
+        //   ws.send(JSON.stringify({
+        //     action: 'set_game_mode',
+        //     mode: 'manual'
+        //   }));
+        // }
       }
 
       ws.onclose = () => {

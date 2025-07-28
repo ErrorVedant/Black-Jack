@@ -126,7 +126,7 @@ game_state = {
     "game_phase": "waiting",
     "table_number": 1,
     "rounds_played_in_game": 1,
-    "mode": "",
+    "mode": "live",
     "action_history": [],
     "auto_reshuffle_threshold": 52,
     "split_fire_state": 0, # FOR LIVE MODE ONLY
@@ -345,7 +345,11 @@ async def handle_set_game_mode(mode):
     log_function_call("handle_set_game_mode", mode=mode)
     print(f"[DEBUG] Setting game mode to {mode}")
     game_state["mode"] = mode
-    await broadcast({"action": "mode_changed", "mode": mode, "message": f"Game mode set to {mode.title()}"})
+    await broadcast({
+        "action": "game_state_update",
+        "game_state": serialize_game_state(),
+        "message": f"Game mode set to {mode.title()}"
+    })
     log_game_state()
 
 async def handle_reshuffle():
@@ -1053,7 +1057,7 @@ async def handle_reset_game():
         "selected_hand": None,  # Clear selected hand on game reset
         "deck": create_deck(),
         "action_history": [],
-        "mode": "",  # Reset to default game mode
+        # "mode": "",  # Reset to default game mode
         "table_number": 1,
         "evaluate_game": False  # Reset evaluate_game flag
     })
