@@ -121,7 +121,7 @@ const GameMenu = () => {
   const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({})
   const [waitingForServer, setWaitingForServer] = useState(false)
   const previousTurnSentRef = useRef(false)
-  const [showInsuranceButton, setShowInsuranceButton] = useState(false)
+
   const prevIsConnectedRef = useRef(isConnected)
   const [betMenuOpen, setBetMenuOpen] = useState(false)
   const [pendingTableNumber, setPendingTableNumber] = useState(0)
@@ -626,91 +626,68 @@ const GameMenu = () => {
     return 'bg-black/20'
   }
 
-  useEffect(() => {
-    if (
-      gameState?.selected_hand?.player_id &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.hands?.[0]?.cards
-        ?.length === 2 &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split1_status ===
-        1 &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
-        ?.cards?.length === 1 &&
-      gameState?.split_call_live_previous_counter === 1 &&
-      gameState?.split_fire_state === 0
-    ) {
-      sendWebSocketMessage({ action: 'next_turn' })
-      console.log('split_call_live_previous_counter')
-    }
-    // No timeout to clean up
-  }, [gameState])
+  // useEffect(() => {
+  //   if (
+  //     gameState?.selected_hand?.player_id &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.hands?.[0]?.cards
+  //       ?.length === 2 &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split1_status ===
+  //       1 &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
+  //       ?.cards?.length === 1 &&
+  //     gameState?.split_call_live_previous_counter === 1 &&
+  //     gameState?.split_fire_state === 0
+  //   ) {
+  //     sendWebSocketMessage({ action: 'next_turn' })
+  //     console.log('split_call_live_previous_counter')
+  //   }
+  //   // No timeout to clean up
+  // }, [gameState])
 
-  useEffect(() => {
-    if (
-      gameState?.selected_hand?.player_id &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
-        ?.cards?.length === 2 &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split2_status ===
-        1 &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split2?.[0]
-        ?.cards?.length === 1 &&
-      gameState?.split_call_live_previous_counter === 2 &&
-      gameState?.split_fire_state === 0
-    ) {
-      sendWebSocketMessage({ action: 'next_turn' })
-      console.log('split_call_live_previous_counter')
-    }
-    // No timeout to clean up
-  }, [gameState])
+  // useEffect(() => {
+  //   if (
+  //     gameState?.selected_hand?.player_id &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
+  //       ?.cards?.length === 2 &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split2_status ===
+  //       1 &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split2?.[0]
+  //       ?.cards?.length === 1 &&
+  //     gameState?.split_call_live_previous_counter === 2 &&
+  //     gameState?.split_fire_state === 0
+  //   ) {
+  //     sendWebSocketMessage({ action: 'next_turn' })
+  //     console.log('split_call_live_previous_counter')
+  //   }
+  //   // No timeout to clean up
+  // }, [gameState])
 
-  useEffect(() => {
-    if (
-      gameState?.split_current_pointer === 1 &&
-      gameState?.split_call_live_previous_counter === 1 &&
-      gameState?.split_fire_state == 1 &&
-      gameState?.selected_hand?.player_id &&
-      gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
-        ?.cards?.length === 2 &&
-      !previousTurnSentRef.current
-    ) {
-      previousTurnSentRef.current = true
-      sendWebSocketMessage({ action: 'previous_turn' })
-    }
-    // Reset the lock if the condition is no longer true
-    if (
-      previousTurnSentRef.current &&
-      (gameState?.split_current_pointer !== 1 ||
-        gameState?.split_call_live_previous_counter !== 1 ||
-        gameState?.split_fire_state !== 1)
-    ) {
-      previousTurnSentRef.current = false
-    }
-    // No timeout to clean up
-  }, [gameState])
+  // useEffect(() => {
+  //   if (
+  //     gameState?.split_current_pointer === 1 &&
+  //     gameState?.split_call_live_previous_counter === 1 &&
+  //     gameState?.split_fire_state == 1 &&
+  //     gameState?.selected_hand?.player_id &&
+  //     gameState?.players?.[gameState.selected_hand.player_id]?.split1?.[0]
+  //       ?.cards?.length === 2 &&
+  //     !previousTurnSentRef.current
+  //   ) {
+  //     previousTurnSentRef.current = true
+  //     sendWebSocketMessage({ action: 'previous_turn' })
+  //   }
+  //   // Reset the lock if the condition is no longer true
+  //   if (
+  //     previousTurnSentRef.current &&
+  //     (gameState?.split_current_pointer !== 1 ||
+  //       gameState?.split_call_live_previous_counter !== 1 ||
+  //       gameState?.split_fire_state !== 1)
+  //   ) {
+  //     previousTurnSentRef.current = false
+  //   }
+  //   // No timeout to clean up
+  // }, [gameState])
 
-  useEffect(() => {
-    if (!gameState || !gameState.selected_hand?.player_id) {
-      setShowInsuranceButton(false)
-      return
-    }
-    const playerId = gameState.selected_hand.player_id
-    const player = gameState.players?.[playerId]
-    const dealerFirstCardA = gameState.dealer?.cards?.[0]?.[0] === 'A'
-    const split1Status = player?.split1_status === 0
-    const split2Status = player?.split2_status === 0
-    const mainHandHas2Cards = player?.hands?.[0]?.cards?.length === 2
-    const playerInsuranceStatus = player?.insurence !== 1
-    if (
-      dealerFirstCardA &&
-      split1Status &&
-      split2Status &&
-      mainHandHas2Cards &&
-      playerInsuranceStatus
-    ) {
-      setShowInsuranceButton(true)
-    } else {
-      setShowInsuranceButton(false)
-    }
-  }, [gameState])
+
 
   useEffect(() => {
     if (
@@ -733,6 +710,17 @@ const GameMenu = () => {
     }
     prevIsConnectedRef.current = isConnected
   }, [isConnected])
+
+  // Set game mode when component loads
+  useEffect(() => {
+    if (isConnected && sendWebSocketMessage && (gameState?.mode !== 'live')) {
+      sendWebSocketMessage({
+        action: 'set_game_mode',
+        mode: 'live'
+      })
+      console.log('Setting game mode to live on component load')
+    }
+  }, [isConnected, sendWebSocketMessage, gameState?.mode])
 
   // Monitor live_function_hand changes
   useEffect(() => {
@@ -1379,10 +1367,13 @@ const GameMenu = () => {
                                         playerId && (
                                         <>
                                           {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                          {showInsuranceButton &&
-                                            !insuranceState[playerId] &&
+                                          {gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
                                             !gameState.players[playerId]
-                                              .hands[0].insurence && (
+                                              .hands[0].insurence &&
+                                            gameState.players[playerId].split1_status === 0 &&
+                                            gameState.players[playerId].split2_status === 0 &&
+                                            gameState.players[playerId].hands[0]?.cards?.length === 2 &&
+                                            gameState.players[playerId].insurence !== 1 && (
                                               <button
                                                 onClick={() =>
                                                   handleInsurance(playerId)

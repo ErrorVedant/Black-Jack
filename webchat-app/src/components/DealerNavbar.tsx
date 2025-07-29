@@ -39,30 +39,41 @@ const DealerNavbar = ({
   const router = useRouter()
 
   const handleModeChange = (mode: string) => {
-    // Send WebSocket message to set game mode before switching
-    if (sendWebSocketMessage) {
-      sendWebSocketMessage({
-        action: 'set_game_mode',
-        mode: mode
-      })
+    // Navigate first
+    switch (mode) {
+      case 'live':
+        // if (sendWebSocketMessage) {
+        //   sendWebSocketMessage({
+        //     action: 'set_game_mode',
+        //     mode: 'live'
+        //   })
+        //   console.log('Sending set_game_mode to backend (after navigation)')
+        // }
+        router.push('/dealer')
+        break
+      case 'auto':
+        // if (sendWebSocketMessage) {
+        //   sendWebSocketMessage({
+        //     action: 'set_game_mode',
+        //     mode: 'auto'
+        //   })
+        //   console.log('Sending set_game_mode to backend (after navigation)')
+        // }
+        router.push('/dealer/auto')
+        break
+      case 'manual':
+        // if (sendWebSocketMessage) {
+        //   sendWebSocketMessage({
+        //     action: 'set_game_mode',
+        //     mode: 'manual'
+        //   })
+        //   console.log('Sending set_game_mode to backend (after navigation)')
+        // }
+        router.push('/dealer/manual')
+        break
+      default:
+        router.push('/dealer')
     }
-    
-    // Small delay to ensure WebSocket message is sent before navigation
-    setTimeout(() => {
-      switch (mode) {
-        case 'live':
-          router.push('/dealer')
-          break
-        case 'auto':
-          router.push('/dealer/auto')
-          break
-        case 'manual':
-          router.push('/dealer/manual')
-          break
-        default:
-          router.push('/dealer')
-      }
-    }, 100)
   }
 
   const handleLogoClick = () => {

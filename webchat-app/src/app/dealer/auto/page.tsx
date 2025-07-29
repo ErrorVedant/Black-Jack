@@ -104,7 +104,7 @@ const GameMenu = () => {
   }>({})
   const [dealerAutoPlayed, setDealerAutoPlayed] = useState(false)
   const [waitingForServer, setWaitingForServer] = useState(false)
-  const [showInsuranceButton, setShowInsuranceButton] = useState(false)
+
   const [betMenuOpen, setBetMenuOpen] = useState(false)
   const [pendingTableNumber, setPendingTableNumber] = useState(0)
   const [pendingMinBet, setPendingMinBet] = useState(0)
@@ -120,10 +120,7 @@ const GameMenu = () => {
     })
   }
 
-  useEffect(() => {
-    setGameMode('auto')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -282,23 +279,7 @@ const GameMenu = () => {
     }
   }, [gameState, socket, dealerAutoPlayed])
 
-  useEffect(() => {
-    if (!gameState || !gameState.selected_hand?.player_id) {
-      setShowInsuranceButton(false)
-      return
-    }
-    const playerId = gameState.selected_hand.player_id
-    const player = gameState.players?.[playerId]
-    const dealerFirstCardA = gameState.dealer?.cards?.[0]?.[0] === 'A'
-    const split1Status = player?.split1_status === 0
-    const split2Status = player?.split2_status === 0
-    const mainHandHas2Cards = player?.hands?.[0]?.cards?.length === 2
-    if (dealerFirstCardA && split1Status && split2Status && mainHandHas2Cards) {
-      setShowInsuranceButton(true)
-    } else {
-      setShowInsuranceButton(false)
-    }
-  }, [gameState])
+
 
 
   useEffect(() => {
@@ -459,6 +440,17 @@ const GameMenu = () => {
       setTimeout(() => setShowPopup(false), 3000)
     }
   }
+
+  // Set game mode when component loads
+  useEffect(() => {
+    if (isConnected && sendWebSocketMessage && (gameState?.mode !== 'auto')) {
+      sendWebSocketMessage({
+        action: 'set_game_mode',
+        mode: 'auto'
+      })
+      console.log('Setting game mode to auto on component load')
+    }
+  }, [isConnected, sendWebSocketMessage, gameState?.mode])
 
   // Add this new function to get active players
   const getActivePlayers = () => {
@@ -1191,10 +1183,13 @@ const GameMenu = () => {
                                     gameState?.current_player === playerId && (
                                       <>
                                         {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                        {showInsuranceButton &&
-                                          !insuranceState[playerId] &&
+                                        {gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
                                           !gameState.players[playerId]
-                                            .insurence && (
+                                            .insurence &&
+                                          gameState.players[playerId].split1_status === 0 &&
+                                          gameState.players[playerId].split2_status === 0 &&
+                                          gameState.players[playerId].hands[0]?.cards?.length === 2 &&
+                                          gameState.players[playerId].insurence !== 1 && (
                                             <button
                                               onClick={() =>
                                                 handleInsurance(playerId)

@@ -615,16 +615,22 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             if is_bust(hand["cards"]):
                 hand["status"] = "bust"
                 hand["result"] = "fail"
+                if game_state["mode"] == "live":
+                    set_live_function_hand(player_id, split_level, hand_index, "bust")
                 print(f"Hand busted with total {hand['total']}")
                 await handle_next_turn()
             elif is_blackjack(hand["cards"]):
                 hand["status"] = "blackjack"
                 hand["result"] = "win"
+                if game_state["mode"] == "live":
+                    set_live_function_hand(player_id, split_level, hand_index, "blackjack")
                 print(f"Blackjack!")
                 if game_state["round_number"] == 1:
                     await handle_next_turn()
             elif hand["total"] == 21:
                 hand["result"] = "win"
+                if game_state["mode"] == "live":
+                    set_live_function_hand(player_id, split_level, hand_index, "21")
                 await handle_next_turn()
             
             print("Saving action to history...")
@@ -1146,6 +1152,7 @@ async def handle_next_turn():
 
     try:
         selected = game_state.get("selected_hand")
+        
         if (
             selected and
             selected.get("player_id") in game_state["players"] and
@@ -1588,6 +1595,11 @@ async def evaluate_game():
 
 async def handle_insurence(player_id, hand_index=0, split_level=0):
     """Set the 'insurence' property of the specified player to 1 (no split logic)"""
+
+    previous_game_states.append(copy.deepcopy(game_state))
+    if len(previous_game_states) > 10:
+        previous_game_states.pop(0)
+
     if player_id not in game_state["players"]:
         await broadcast({"action": "error", "message": f"Invalid player ID: {player_id}"})
         return

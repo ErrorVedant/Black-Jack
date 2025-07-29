@@ -130,10 +130,7 @@ const GameMenu = () => {
     })
   }
 
-  useEffect(() => {
-    setGameMode('manual')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -452,6 +449,17 @@ const GameMenu = () => {
       setTimeout(() => setShowPopup(false), 3000)
     }
   }
+
+  // Set game mode when component loads
+  useEffect(() => {
+    if (isConnected && sendWebSocketMessage && (gameState?.mode !== 'manual')) {
+      sendWebSocketMessage({
+        action: 'set_game_mode',
+        mode: 'manual'
+      })
+      console.log('Setting game mode to manual on component load')
+    }
+  }, [isConnected, sendWebSocketMessage, gameState?.mode])
 
   // Add this new function to get active players
   const getActivePlayers = () => {
@@ -882,15 +890,7 @@ const GameMenu = () => {
                   </div>
                   {/* Right: Total and buttons */}
                   <div className='flex flex-col items-end gap-y-2 flex-shrink-0'>
-                    <button
-                      onClick={() =>
-                        sendWebSocketMessage({ action: 'manual_start' })
-                      }
-                      className='px-2 py-1 bg-yellow-600 text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-2'
-                    >
-                      <span>Manual Start</span>
-                    </button>
-
+                    
                     <button
                       onClick={() =>
                         sendWebSocketMessage({ action: 'reset_round' })

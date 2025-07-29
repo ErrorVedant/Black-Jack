@@ -730,17 +730,46 @@ const GameMenu = () => {
                     >
                       <div className='flex items-center justify-between mb-4'>
                         <div className='flex items-center space-x-4'>
+                          {/* <div
+                            className={`w-5 h-5 rounded-full shadow-lg ${
+                              isHandSelected(gameState, 'player1', 0, 0)
+                                ? 'bg-blue-400 animate-pulse'
+                                : gameState.players.player1.status === 1
+                                ? 'bg-green-400 animate-pulse'
+                                : 'bg-gray-400'
+                            }`}
+                          /> */}
                           <div>
-                            <div
-                              className={`text-xl font-medium font-[questrial] tracking-widest text-white}`}
-                            >
-                              Your Hand
-                              {gameState.players.player1.insurence === 1 && (
-                                <span className='ml-3 text-yellow-400 text-base font-semibold'>
-                                  Insured
-                                </span>
-                              )}
+                            <div className='flex items-center justify-between mb-4'>
+                              <div className='flex items-center space-x-4'>
+                                <div>
+                                  <div
+                                    className={`text-xl font-medium font-[questrial] tracking-widest text-white}`}
+                                  >
+                                    Your Hand
+                                    {gameState.players.player1.insurence ===
+                                      1 && (
+                                      <span className='ml-3 text-yellow-400 text-base font-semibold'>
+                                        Insured
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
+                            {/* <div
+                              className={`text-base ${
+                                isHandSelected(gameState, 'player1', 0, 0)
+                                  ? 'text-gray-700'
+                                  : 'opacity-75'
+                              }`}
+                            >
+                              {isHandSelected(gameState, 'player1', 0, 0)
+                                ? 'Current Hand'
+                                : gameState.players.player1.status === 1
+                                ? 'Active'
+                                : 'Inactive'}
+                            </div> */}
                           </div>
                         </div>
                       </div>
@@ -759,8 +788,7 @@ const GameMenu = () => {
                             <div className='text-left mb-1'>
                               <div
                                 className={`text-lg font-medium ${
-                                  isHandSelected(gameState, 'player1', 0, 0) &&
-                                  gameState?.current_player === 'player1'
+                                  isHandSelected(gameState, 'player1', 0, 0)
                                     ? 'text-gray-950'
                                     : 'text-white'
                                 }`}
@@ -768,7 +796,7 @@ const GameMenu = () => {
                                 Main Hand
                               </div>
                             </div>
-                            <div className='flex justify-center items-center gap-4 mb-4'>
+                            <div className='flex justify-center items-center gap-4'>
                               {gameState.players.player1.hands[0]?.cards?.map(
                                 (card: string, index: number) => (
                                   <div
@@ -983,13 +1011,161 @@ const GameMenu = () => {
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
                                 >
-                                  <div className='text-left mb-1'>
+                                  <div className='mt-4'>
                                     <div
-                                      className={`text-lg font-medium text-black`}
+                                      className={`rounded-xl p-4 relative ${getHandBoxColor(
+                                        isHandSelected(
+                                          gameState,
+                                          'player1',
+                                          0,
+                                          1
+                                        ) &&
+                                          gameState?.current_player ===
+                                            'player1',
+                                        gameState.players.player1.status === 1,
+                                        gameState.players.player1.split1[0]
+                                          ?.result
+                                      )}`}
                                     >
-                                      Split Hand 1
+                                      <div className='text-left mb-1'>
+                                        <div
+                                          className={`text-lg font-medium text-black`}
+                                        >
+                                          Split Hand 1
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {/* <div className='flex justify-center items-center gap-4 mb-4'>
+                                  {gameState.players.player1.split1[0]?.cards?.map(
+                                    (card: string, index: number) => (
+                                      <div
+                                        key={index}
+                                        className='relative w-16 h-24 transform hover:scale-110 transition-transform duration-200 group'
+                                      >
+                                        <img
+                                          src={`/cards/${card}.png`}
+                                          alt={card}
+                                          className='w-full h-full object-contain'
+                                          onError={e => {
+                                            const target =
+                                              e.target as HTMLImageElement
+                                            target.src = '/cards/back.png'
+                                          }}
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                  {gameState.mode !== 'manual' &&
+                                    [
+                                      ...Array(
+                                        Math.max(
+                                          0,
+                                          2 -
+                                            (gameState.players.player1.split1[0]
+                                              ?.cards?.length ?? 0)
+                                        )
+                                      )
+                                    ].map((_, index) => (
+                                      <div
+                                        key={`empty-${index}`}
+                                        className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
+                                      />
+                                    ))}
+                                </div> */}
+
+                                  {/* <div className='absolute top-[93%] left-[43%] text-center'>
+                                  <div className='inline-block bg-[#911606] px-3 py-1 rounded-full text-sm font-bold text-[#d4af37] border-2 border-[#d4af37]'>
+                                    Total:{' '}
+                                    {gameState.players.player1.split1[0]?.total ??
+                                      0}
+                                  </div>
+                                </div> */}
+
+                                  {/* Split1 Hand Action Buttons for Player 1 */}
+                                  {/* <div className='flex justify-center gap-2 flex-wrap mt-8'>
+                                  {isHandSelected(gameState, 'player1', 0, 1) &&
+                                    gameState?.current_player === 'player1' &&
+                                    gameState.players.player1.split1[0]?.cards
+                                      ?.length === 2 &&
+                                    canSplit(
+                                      gameState.players.player1.split1[0].cards
+                                    ) &&
+                                    gameState.players.player1.split1[0]
+                                      .status === 'playing' && (
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'split_player_auto',
+                                            player_id: 'player1'
+                                          })
+                                        }
+                                        className='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors'
+                                      >
+                                        Split
+                                      </button>
+                                    )}
+
+                                  {isHandSelected(gameState, 'player1', 0, 1) &&
+                                    gameState?.current_player === 'player1' && (
+                                      <>
+                                        {gameState?.dealer?.cards?.[0]?.[0] ===
+                                          'A' &&
+                                          !insuranceState[`player1_0_1`] &&
+                                          !gameState.players.player1.split1[0]
+                                            .insurence && (
+                                            <button
+                                              onClick={() =>
+                                                handleInsurance('player1', 0, 1)
+                                              }
+                                              className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
+                                            >
+                                              Insurance
+                                            </button>
+                                          )}
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'hit_player',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 1)
+                                          }}
+                                          className='px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors'
+                                        >
+                                          Hit
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'double_player',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 1)
+                                          }}
+                                          className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
+                                        >
+                                          Double
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'next_turn',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 1)
+                                          }}
+                                          className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
+                                        >
+                                          Stand
+                                        </button>
+                                      </>
+                                    )}
+                                </div> */}
                                 </div>
                               </div>
                             )}
@@ -1018,6 +1194,136 @@ const GameMenu = () => {
                                       Split Hand 2
                                     </div>
                                   </div>
+
+                                  {/* <div className='flex justify-center items-center gap-4 mb-4'>
+                                  {gameState.players.player1.split2[0]?.cards?.map(
+                                    (card: string, index: number) => (
+                                      <div
+                                        key={index}
+                                        className='relative w-16 h-24 transform hover:scale-110 transition-transform duration-200 group'
+                                      >
+                                        <img
+                                          src={`/cards/${card}.png`}
+                                          alt={card}
+                                          className='w-full h-full object-contain'
+                                          onError={e => {
+                                            const target =
+                                              e.target as HTMLImageElement
+                                            target.src = '/cards/back.png'
+                                          }}
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                  {gameState.mode !== 'manual' &&
+                                    [
+                                      ...Array(
+                                        Math.max(
+                                          0,
+                                          2 -
+                                            (gameState.players.player1.split2[0]
+                                              ?.cards?.length ?? 0)
+                                        )
+                                      )
+                                    ].map((_, index) => (
+                                      <div
+                                        key={`empty-${index}`}
+                                        className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
+                                      />
+                                    ))}
+                                </div> */}
+
+                                  {/* <div className='absolute top-[82%] left-[43%] text-center'>
+                                  <div className='inline-block bg-[#911606] px-3 py-1 rounded-full text-sm font-bold text-[#d4af37] border-2 border-[#d4af37]'>
+                                    Total:{' '}
+                                    {gameState.players.player1.split2[0]?.total ??
+                                      0}
+                                  </div>
+                                </div> */}
+
+                                  {/* Split2 Hand Action Buttons for Player 1 */}
+                                  {/* <div className='flex justify-center gap-2 flex-wrap mt-8'>
+                                  {isHandSelected(gameState, 'player1', 0, 2) &&
+                                    gameState?.current_player === 'player1' &&
+                                    gameState.players.player1.split2[0]?.cards
+                                      ?.length === 2 &&
+                                    canSplit(
+                                      gameState.players.player1.split2[0].cards
+                                    ) &&
+                                    gameState.players.player1.split2[0]
+                                      .status === 'playing' && (
+                                      <button
+                                        onClick={() =>
+                                          sendWebSocketMessage({
+                                            action: 'split_player_auto',
+                                            player_id: 'player1'
+                                          })
+                                        }
+                                        className='px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors'
+                                      >
+                                        Split
+                                      </button>
+                                    )}
+
+                                  {isHandSelected(gameState, 'player1', 0, 2) &&
+                                    gameState?.current_player === 'player1' && (
+                                      <>
+                                        {gameState?.dealer?.cards?.[0]?.[0] ===
+                                          'A' &&
+                                          !insuranceState[`player1_0_2`] &&
+                                          !gameState.players.player1.split2[0]
+                                            .insurence && (
+                                            <button
+                                              onClick={() =>
+                                                handleInsurance('player1', 0, 2)
+                                              }
+                                              className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
+                                            >
+                                              Insurance
+                                            </button>
+                                          )}
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'hit_player',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 2)
+                                          }}
+                                          className='px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors'
+                                        >
+                                          Hit
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'double_player',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 2)
+                                          }}
+                                          className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
+                                        >
+                                          Double
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'next_turn',
+                                              player_id: 'player1',
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand('player1', 0, 2)
+                                          }}
+                                          className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
+                                        >
+                                          Stand
+                                        </button>
+                                      </>
+                                    )}
+                                </div> */}
                                 </div>
                               </div>
                             )}
@@ -1607,9 +1913,9 @@ const GameMenu = () => {
                       {playerResult === 'tie' && '🤝'}
                     </div>
                     <h2 className='text-4xl font-bold mb-2 text-yellow-300 drop-shadow-lg tracking-wider'>
-                      {playerResult === 'win' && 'YOU WIN'}
-                      {playerResult === 'lose' && 'DEALER WINS'}
-                      {playerResult === 'tie' && 'TIE'}
+                      {playerResult === 'win' && 'BLACKJACK!'}
+                      {playerResult === 'lose' && 'HOUSE WINS'}
+                      {playerResult === 'tie' && 'PUSH'}
                     </h2>
                     <div className='text-xl text-yellow-100 opacity-90'>
                       {playerResult === 'win' && 'Congratulations!'}
@@ -1658,7 +1964,7 @@ const GameMenu = () => {
                             }
                           case 'tie':
                             return {
-                              text: 'TIE',
+                              text: 'PUSH',
                               color: 'text-yellow-300',
                               bg: 'bg-yellow-700/30'
                             }
