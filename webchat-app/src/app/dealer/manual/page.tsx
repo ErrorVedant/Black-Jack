@@ -958,12 +958,8 @@ const GameMenu = () => {
                             }`}
                           /> */}
                           <div>
-                            <div
-                              className={`text-lg font-bold ${
-                                isCurrentHand ? 'text-gray-900' : 'text-white'
-                              }`}
-                            >
-                              {playerId.replace('player', 'Player ')}
+                            <div className={`text-lg font-bold text-white`}>
+                                {playerId.replace('player', 'Player ')}
                             </div>
                             {/* <div
                               className={`text-sm ${

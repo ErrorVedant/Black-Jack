@@ -10,6 +10,7 @@ interface Hand {
   result?: string
   bet?: number
   insurence?: number
+  live_function_hand?: string
 }
 
 interface PlayerData {
@@ -338,7 +339,6 @@ const GameMenu = () => {
     resultPopupDismissed // Add this dependency
   ])
 
-  // Add a useEffect to reset the dismissed flag when a new game starts
   useEffect(() => {
     // Reset the dismissed flag when game starts or resets
     if (
@@ -674,18 +674,13 @@ const GameMenu = () => {
 
                 {/* Right Logo */}
                 <div
-                  className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'
+                  className='w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden mr-4'
                   aria-label='Open Game Menu'
                 >
-                  <div className='relative w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16'>
-                    <Image
-                      src='/assets/menu.png'
-                      alt='Menu Icon'
-                      fill
-                      className='object-contain'
-                      sizes='(max-width: 640px) 32px, (max-width: 768px) 40px, (max-width: 1024px) 48px, (max-width: 1280px) 64px, 64px'
-                      priority
-                    />
+                  <div className='flex flex-col items-end justify-center w-full h-full'>
+                    <h1 className='text-yellow-500'>Bets: </h1>
+                    <span className='text-yellow-500'>min: 0</span>
+                    <span className='text-yellow-500'>max: 0</span>
                   </div>
                 </div>
               </div>
@@ -886,10 +881,24 @@ const GameMenu = () => {
                                   'playing' && (
                                   <button
                                     onClick={() => {
-                                      sendWebSocketMessage({
-                                        action: 'split_player_auto',
-                                        player_id: 'player6'
-                                      })
+                                      if (gameState?.mode === 'live') {
+                                        sendWebSocketMessage({
+                                          action: 'set_live_function_hand',
+                                          player_id: 'player6',
+                                          split_level: 0,
+                                          hand_index: 0,
+                                          value: 'Split'
+                                        })
+                                      }
+                                      if (
+                                        gameState?.mode === 'auto' ||
+                                        gameState?.mode === 'manual'
+                                      ) {
+                                        sendWebSocketMessage({
+                                          action: 'split_player_auto',
+                                          player_id: 'player6'
+                                        })
+                                      }
                                     }}
                                     className='px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
                                   >
@@ -916,7 +925,22 @@ const GameMenu = () => {
                                         1 && (
                                         <button
                                           onClick={() => {
-                                            handleInsurance('player6', 0, 0)
+                                            if (gameState?.mode === 'live') {
+                                              sendWebSocketMessage({
+                                                action:
+                                                  'set_live_function_hand',
+                                                player_id: 'player6',
+                                                split_level: 0,
+                                                hand_index: 0,
+                                                value: 'insurence'
+                                              })
+                                            }
+                                            if (
+                                              gameState?.mode === 'auto' ||
+                                              gameState?.mode === 'manual'
+                                            ) {
+                                              handleInsurance('player6', 0, 0)
+                                            }
                                           }}
                                           className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
                                         >
@@ -925,6 +949,15 @@ const GameMenu = () => {
                                       )}
                                     <button
                                       onClick={() => {
+                                        if (gameState?.mode === 'live') {
+                                          sendWebSocketMessage({
+                                            action: 'set_live_function_hand',
+                                            player_id: 'player6',
+                                            split_level: 0,
+                                            hand_index: 0,
+                                            value: 'Hit'
+                                          })
+                                        }
                                         sendWebSocketMessage({
                                           action: 'hit_player',
                                           player_id: 'player6',
@@ -938,6 +971,15 @@ const GameMenu = () => {
                                     </button>
                                     <button
                                       onClick={() => {
+                                        if (gameState?.mode === 'live') {
+                                          sendWebSocketMessage({
+                                            action: 'set_live_function_hand',
+                                            player_id: 'player6',
+                                            split_level: 0,
+                                            hand_index: 0,
+                                            value: 'Double'
+                                          })
+                                        }
                                         sendWebSocketMessage({
                                           action: 'double_player',
                                           player_id: 'player6',
@@ -951,6 +993,15 @@ const GameMenu = () => {
                                     </button>
                                     <button
                                       onClick={() => {
+                                        if (gameState?.mode === 'live') {
+                                          sendWebSocketMessage({
+                                            action: 'set_live_function_hand',
+                                            player_id: 'player6',
+                                            split_level: 0,
+                                            hand_index: 0,
+                                            value: 'Stand'
+                                          })
+                                        }
                                         sendWebSocketMessage({
                                           action: 'next_turn',
                                           player_id: 'player6',
@@ -1113,10 +1164,25 @@ const GameMenu = () => {
                                         .status === 'playing' && (
                                         <button
                                           onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'split_player_auto',
-                                              player_id: 'player6'
-                                            })
+                                            if (gameState?.mode === 'live') {
+                                              sendWebSocketMessage({
+                                                action:
+                                                  'set_live_function_hand',
+                                                player_id: 'player6',
+                                                split_level: 1,
+                                                hand_index: 0,
+                                                value: 'Split'
+                                              })
+                                            }
+                                            if (
+                                              gameState?.mode === 'auto' ||
+                                              gameState?.mode === 'manual'
+                                            ) {
+                                              sendWebSocketMessage({
+                                                action: 'split_player_auto',
+                                                player_id: 'player6'
+                                              })
+                                            }
                                           }}
                                           className='px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
                                         >
@@ -1148,11 +1214,17 @@ const GameMenu = () => {
                                               .insurence !== 1 && (
                                               <button
                                                 onClick={() => {
-                                                  handleInsurance(
-                                                    'player6',
-                                                    0,
-                                                    1
-                                                  )
+                                                  if (
+                                                    gameState?.mode ===
+                                                      'auto' ||
+                                                    gameState?.mode === 'manual'
+                                                  ) {
+                                                    handleInsurance(
+                                                      'player6',
+                                                      0,
+                                                      1
+                                                    )
+                                                  }
                                                 }}
                                                 className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
                                               >
@@ -1161,16 +1233,31 @@ const GameMenu = () => {
                                             )}
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'hit_player',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                1
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 1,
+                                                  hand_index: 0,
+                                                  value: 'Hit'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'hit_player',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  1
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
                                           >
@@ -1178,16 +1265,31 @@ const GameMenu = () => {
                                           </button>
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'double_player',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                1
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 1,
+                                                  hand_index: 0,
+                                                  value: 'Double'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'double_player',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  1
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
                                           >
@@ -1195,16 +1297,31 @@ const GameMenu = () => {
                                           </button>
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'next_turn',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                1
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 1,
+                                                  hand_index: 0,
+                                                  value: 'Stand'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'next_turn',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  1
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
                                           >
@@ -1307,10 +1424,25 @@ const GameMenu = () => {
                                         .status === 'playing' && (
                                         <button
                                           onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'split_player_auto',
-                                              player_id: 'player6'
-                                            })
+                                            if (gameState?.mode === 'live') {
+                                              sendWebSocketMessage({
+                                                action:
+                                                  'set_live_function_hand',
+                                                player_id: 'player6',
+                                                split_level: 2,
+                                                hand_index: 0,
+                                                value: 'Split'
+                                              })
+                                            }
+                                            if (
+                                              gameState?.mode === 'auto' ||
+                                              gameState?.mode === 'manual'
+                                            ) {
+                                              sendWebSocketMessage({
+                                                action: 'split_player_auto',
+                                                player_id: 'player6'
+                                              })
+                                            }
                                           }}
                                           className='px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
                                         >
@@ -1342,11 +1474,17 @@ const GameMenu = () => {
                                               .insurence !== 1 && (
                                               <button
                                                 onClick={() => {
-                                                  handleInsurance(
-                                                    'player6',
-                                                    0,
-                                                    2
-                                                  )
+                                                  if (
+                                                    gameState?.mode ===
+                                                      'auto' ||
+                                                    gameState?.mode === 'manual'
+                                                  ) {
+                                                    handleInsurance(
+                                                      'player6',
+                                                      0,
+                                                      2
+                                                    )
+                                                  }
                                                 }}
                                                 className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
                                               >
@@ -1355,16 +1493,31 @@ const GameMenu = () => {
                                             )}
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'hit_player',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                2
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 2,
+                                                  hand_index: 0,
+                                                  value: 'Hit'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'hit_player',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  2
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors'
                                           >
@@ -1372,16 +1525,31 @@ const GameMenu = () => {
                                           </button>
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'double_player',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                2
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 2,
+                                                  hand_index: 0,
+                                                  value: 'Double'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'double_player',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  2
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
                                           >
@@ -1389,16 +1557,31 @@ const GameMenu = () => {
                                           </button>
                                           <button
                                             onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'next_turn',
-                                                player_id: 'player6',
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                'player6',
-                                                0,
-                                                2
-                                              )
+                                              if (gameState?.mode === 'live') {
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    'set_live_function_hand',
+                                                  player_id: 'player6',
+                                                  split_level: 2,
+                                                  hand_index: 0,
+                                                  value: 'Stand'
+                                                })
+                                              }
+                                              if (
+                                                gameState?.mode === 'auto' ||
+                                                gameState?.mode === 'manual'
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: 'next_turn',
+                                                  player_id: 'player6',
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  'player6',
+                                                  0,
+                                                  2
+                                                )
+                                              }
                                             }}
                                             className='px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
                                           >
@@ -1457,7 +1640,6 @@ const GameMenu = () => {
             </div>
           )}
 
-          {/* Result Popup with casino-style styling */}
           {/* Result Popup */}
           {showResultPopup && (
             <div className='fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm'>

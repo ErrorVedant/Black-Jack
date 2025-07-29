@@ -10,6 +10,7 @@ interface Hand {
   result?: string
   bet?: number
   insurence?: number
+  live_function_hand?: string
 }
 
 interface PlayerData {

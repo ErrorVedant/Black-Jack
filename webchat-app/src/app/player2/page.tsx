@@ -340,11 +340,14 @@ const GameMenu = () => {
   ])
 
   useEffect(() => {
-  // Reset the dismissed flag when game starts or resets
-  if (gameState?.game_phase === 'playing' || gameState?.game_phase === 'dealing') {
-    setResultPopupDismissed(false)
-  }
-}, [gameState?.game_phase])
+    // Reset the dismissed flag when game starts or resets
+    if (
+      gameState?.game_phase === 'playing' ||
+      gameState?.game_phase === 'dealing'
+    ) {
+      setResultPopupDismissed(false)
+    }
+  }, [gameState?.game_phase])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -837,29 +840,36 @@ const GameMenu = () => {
                           }`}
                         /> */}
                           <div>
-                            <div
-                              className={`text-xl font-medium font-[questrial] tracking-widest text-white}`}
-                            >
-                              Your Hand
-                              {gameState.players.player2.insurence === 1 && (
-                                <span className='ml-3 text-yellow-400 text-base font-semibold'>
-                                  Insured
-                                </span>
-                              )}
+                            <div className='flex items-center justify-between mb-4'>
+                              <div className='flex items-center space-x-4'>
+                                <div>
+                                  <div
+                                    className={`text-xl font-medium font-[questrial] tracking-widest text-white}`}
+                                  >
+                                    Your Hand
+                                    {gameState.players.player2.insurence ===
+                                      1 && (
+                                      <span className='ml-3 text-yellow-400 text-base font-semibold'>
+                                        Insured
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                             {/* <div
-                            className={`text-base ${
-                              isHandSelected(gameState, 'player2', 0, 0)
-                                ? 'text-gray-700'
-                                : 'opacity-75'
-                            }`}
-                          >
-                            {isHandSelected(gameState, 'player2', 0, 0)
-                              ? 'Current Hand'
-                              : gameState.players.player2.status === 1
-                              ? 'Active'
-                              : 'Inactive'}
-                          </div> */}
+                              className={`text-base ${
+                                isHandSelected(gameState, 'player1', 0, 0)
+                                  ? 'text-gray-700'
+                                  : 'opacity-75'
+                              }`}
+                            >
+                              {isHandSelected(gameState, 'player1', 0, 0)
+                                ? 'Current Hand'
+                                : gameState.players.player1.status === 1
+                                ? 'Active'
+                                : 'Inactive'}
+                            </div> */}
                           </div>
                         </div>
                       </div>

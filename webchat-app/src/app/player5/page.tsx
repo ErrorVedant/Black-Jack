@@ -10,6 +10,7 @@ interface Hand {
   result?: string
   bet?: number
   insurence?: number
+  live_function_hand?: string
 }
 
 interface PlayerData {
@@ -338,7 +339,6 @@ const GameMenu = () => {
     resultPopupDismissed // Add this dependency
   ])
 
-  // Add a useEffect to reset the dismissed flag when a new game starts
   useEffect(() => {
     // Reset the dismissed flag when game starts or resets
     if (
@@ -1640,7 +1640,6 @@ const GameMenu = () => {
             </div>
           )}
 
-          {/* Result Popup */}
           {/* Result Popup */}
           {showResultPopup && (
             <div className='fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm'>
