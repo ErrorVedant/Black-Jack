@@ -90,6 +90,7 @@ const GameMenu = () => {
   }>({})
   const [showResultPopup, setShowResultPopup] = useState(false)
   const [playerResult, setPlayerResult] = useState<string>('')
+  const [resultPopupDismissed, setResultPopupDismissed] = useState(false)
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -160,6 +161,7 @@ const GameMenu = () => {
             setIsDealerSelected(data.current_turn === 'dealer')
             setShowResultPopup(false)
             setPlayerResult('')
+            setResultPopupDismissed(false)
             break
           case 'round_reset':
             setIsPlaying(false)
@@ -169,6 +171,7 @@ const GameMenu = () => {
             setIsRoundFinished(true)
             setShowResultPopup(false)
             setPlayerResult('')
+            setResultPopupDismissed(false)
             break
           case 'game_reset':
             setIsPlaying(false)
@@ -180,12 +183,14 @@ const GameMenu = () => {
             setSelectedSuit(null)
             setShowResultPopup(false)
             setPlayerResult('')
+            setResultPopupDismissed(false)
             setPopupMessage(data.message)
             setShowPopup(true)
             setTimeout(() => setShowPopup(false), 3000)
             break
           case 'game_evaluated':
             setShowResultPopup(true)
+            setResultPopupDismissed(false)
             // Get player2's result
             const player2Data = data.game_state?.players?.player2
             if (player2Data) {
@@ -212,6 +217,51 @@ const GameMenu = () => {
               setPlayerResult(overallResult)
             }
             break
+          case 'manual_make_win':
+          case 'manual_make_lose':
+          case 'manual_make_tie':
+          case 'manual_make_default':
+            // Check if this action affects player2
+            if (data.player_id === 'player2') {
+              // Show popup immediately for manual actions
+              setShowResultPopup(true)
+              setResultPopupDismissed(false)
+
+              // Determine result based on action
+              let manualResult = 'lose'
+              if (data.action === 'manual_make_win') {
+                manualResult = 'win'
+              } else if (data.action === 'manual_make_tie') {
+                manualResult = 'tie'
+              } else if (data.action === 'manual_make_lose') {
+                manualResult = 'lose'
+              } else if (data.action === 'manual_make_default') {
+                // For default, check the actual result from game state
+                const player2Data = data.game_state?.players?.player2
+                if (player2Data) {
+                  const mainHandResult = player2Data.hands?.[0]?.result
+                  const split1Result = player2Data.split1?.[0]?.result
+                  const split2Result = player2Data.split2?.[0]?.result
+
+                  if (
+                    mainHandResult === 'win' ||
+                    split1Result === 'win' ||
+                    split2Result === 'win'
+                  ) {
+                    manualResult = 'win'
+                  } else if (
+                    mainHandResult === 'tie' ||
+                    split1Result === 'tie' ||
+                    split2Result === 'tie'
+                  ) {
+                    manualResult = 'tie'
+                  }
+                }
+              }
+
+              setPlayerResult(manualResult)
+            }
+            break
           case 'error':
             setPopupMessage(data.message)
             setShowPopup(true)
@@ -234,6 +284,67 @@ const GameMenu = () => {
       }
     }
   }, [])
+
+  // Add this useEffect after your existing useEffects
+  useEffect(() => {
+    // Watch for manual mode result changes in game state
+    if (
+      gameState?.players?.player2 &&
+      gameState?.mode === 'manual' &&
+      !showResultPopup &&
+      !resultPopupDismissed
+    ) {
+      const player2Data = gameState.players.player2
+      const mainHandResult = player2Data.hands?.[0]?.result
+      const split1Result = player2Data.split1?.[0]?.result
+      const split2Result = player2Data.split2?.[0]?.result
+
+      // Check if any hand has a definitive result
+      const hasResults = mainHandResult || split1Result || split2Result
+      const hasDefinitiveResults =
+        (mainHandResult &&
+          ['win', 'lose', 'tie', 'fail'].includes(mainHandResult)) ||
+        (split1Result &&
+          ['win', 'lose', 'tie', 'fail'].includes(split1Result)) ||
+        (split2Result && ['win', 'lose', 'tie', 'fail'].includes(split2Result))
+
+      if (hasResults && hasDefinitiveResults) {
+        setShowResultPopup(true)
+
+        // Determine overall result
+        let overallResult = 'lose'
+        if (
+          mainHandResult === 'win' ||
+          split1Result === 'win' ||
+          split2Result === 'win'
+        ) {
+          overallResult = 'win'
+        } else if (
+          mainHandResult === 'tie' ||
+          split1Result === 'tie' ||
+          split2Result === 'tie'
+        ) {
+          overallResult = 'tie'
+        }
+
+        setPlayerResult(overallResult)
+      }
+    }
+  }, [
+    gameState?.players?.player2?.hands?.[0]?.result,
+    gameState?.players?.player2?.split1?.[0]?.result,
+    gameState?.players?.player2?.split2?.[0]?.result,
+    gameState?.mode,
+    showResultPopup,
+    resultPopupDismissed
+  ])
+
+  useEffect(() => {
+  // Reset the dismissed flag when game starts or resets
+  if (gameState?.game_phase === 'playing' || gameState?.game_phase === 'dealing') {
+    setResultPopupDismissed(false)
+  }
+}, [gameState?.game_phase])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -1963,7 +2074,10 @@ const GameMenu = () => {
 
                   {/* Action button with casino styling */}
                   <button
-                    onClick={() => setShowResultPopup(false)}
+                    onClick={() => {
+                      setShowResultPopup(false)
+                      setResultPopupDismissed(true)
+                    }}
                     className='bg-gradient-to-r from-yellow-500 via-yellow-600 to-yellow-700 hover:from-yellow-600 hover:via-yellow-700 hover:to-yellow-800 text-black px-8 py-4 rounded-2xl font-bold text-xl transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-yellow-300 hover:border-yellow-200 active:scale-95'
                   >
                     DEAL AGAIN
