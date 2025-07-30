@@ -323,6 +323,7 @@ async def handle_connection(websocket):
         "change_table": lambda d: handle_change_table(d.get("table_number")),
         "set_live_function_hand": lambda d: set_live_function_hand(d.get("player_id"), d.get("split_level", 0), d.get("hand_index", 0), d.get("value", "")),
         "set_live_function_player": lambda d: set_live_function_player(d.get("player_id"), d.get("value", "")),
+        "pull_from_pull_stack": lambda d: handle_pull_from_pull_stack(),
     }
 
     try:
@@ -876,7 +877,6 @@ async def handle_split_player_auto(player_id):
         await broadcast({"action": "error", "message": "Not enough cards in deck to split"})
         return
     card1 = game_state["deck"].pop()
-    card2 = game_state["deck"].pop()
 
     # Save the original two cards before split
     original_card1, original_card2 = active_hand["cards"]
@@ -888,12 +888,12 @@ async def handle_split_player_auto(player_id):
 
     # Create new hand with its original second card and card2
     new_hand = {
-        "cards": [original_card2, card2],
-        "total": calculate_hand_value([original_card2, card2]),
+        "cards": [original_card2],
+        "total": calculate_hand_value([original_card2]),
         "status": "playing",
         "result": ""
     }
-    print(f"New cards: {card1}, {card2}")
+    print(f"New cards: {card1}")
     # Add new hand to the appropriate split level
     if split_level == 0:  # Splitting main hand
         if player_data["split1_status"] == 0:
@@ -1987,6 +1987,42 @@ def set_live_function_hand(player_id, split_level=0, hand_index=0, value=""):
         "value": value,
         "game_state": serialize_game_state()
     }))
+
+async def handle_pull_from_pull_stack():
+    """Pull a card from the deck and hit the current hand"""
+    log_function_call("handle_pull_from_pull_stack")
+    
+    # Check if deck is empty
+    if not game_state["deck"]:
+        await broadcast({"action": "error", "message": "Deck is empty"})
+        return
+    
+    # Pull a card from the deck
+    card = game_state["deck"].pop()
+    print(f"[handle_pull_from_pull_stack] Pulled card: {card}")
+    
+    # Get the current selected hand
+    selected_hand = game_state.get("selected_hand")
+    if not selected_hand:
+        await broadcast({"action": "error", "message": "No hand selected"})
+        return
+    
+    player_id = selected_hand["player_id"]
+    hand_index = selected_hand["hand_index"]
+    split_level = selected_hand["split_level"]
+    
+    # Call handle_hit_player with the pulled card
+    await handle_hit_player(player_id, hand_index, card)
+    
+    await broadcast({
+        "action": "pull_stack_used",
+        "card": card,
+        "player_id": player_id,
+        "hand_index": hand_index,
+        "split_level": split_level,
+        "message": f"Pulled {card} from pull stack for {player_id}",
+        "game_state": serialize_game_state()
+    })
 
 def set_live_function_player(player_id, value=""):
     """Set the live_function_player for a given player."""

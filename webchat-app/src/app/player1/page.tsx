@@ -1059,28 +1059,30 @@ const GameMenu = () => {
                                     >
                                       Hit
                                     </button>
-                                    <button
-                                      onClick={() => {
-                                        if (gameState?.mode === 'live') {
+                                    {gameState.players.player1.hands[0]?.cards?.length === 2 && (
+                                      <button
+                                        onClick={() => {
+                                          if (gameState?.mode === 'live') {
+                                            sendWebSocketMessage({
+                                              action: 'set_live_function_hand',
+                                              player_id: 'player1',
+                                              split_level: 0,
+                                              hand_index: 0,
+                                              value: 'Double'
+                                            })
+                                          }
                                           sendWebSocketMessage({
-                                            action: 'set_live_function_hand',
+                                            action: 'double_player',
                                             player_id: 'player1',
-                                            split_level: 0,
-                                            hand_index: 0,
-                                            value: 'Double'
+                                            hand_index: 0
                                           })
-                                        }
-                                        sendWebSocketMessage({
-                                          action: 'double_player',
-                                          player_id: 'player1',
-                                          hand_index: 0
-                                        })
-                                        clearInsuranceForHand('player1', 0, 0)
-                                      }}
-                                      className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                    >
-                                      Double
-                                    </button>
+                                          clearInsuranceForHand('player1', 0, 0)
+                                        }}
+                                        className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                      >
+                                        Double
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => {
                                         if (gameState?.mode === 'live') {
@@ -1233,19 +1235,21 @@ const GameMenu = () => {
                                         >
                                           Hit
                                         </button>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'double_player',
-                                              player_id: 'player1',
-                                              hand_index: 0
-                                            })
-                                            clearInsuranceForHand('player1', 0, 1)
-                                          }}
-                                          className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
-                                        >
-                                          Double
-                                        </button>
+                                        {gameState.players.player1.split1[0]?.cards?.length === 2 && (
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'double_player',
+                                                player_id: 'player1',
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand('player1', 0, 1)
+                                            }}
+                                            className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
+                                          >
+                                            Double
+                                          </button>
+                                        )}
                                         <button
                                           onClick={() => {
                                             sendWebSocketMessage({
@@ -1391,19 +1395,21 @@ const GameMenu = () => {
                                         >
                                           Hit
                                         </button>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'double_player',
-                                              player_id: 'player1',
-                                              hand_index: 0
-                                            })
-                                            clearInsuranceForHand('player1', 0, 2)
-                                          }}
-                                          className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
-                                        >
-                                          Double
-                                        </button>
+                                        {gameState.players.player1.split2[0]?.cards?.length === 2 && (
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'double_player',
+                                                player_id: 'player1',
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand('player1', 0, 2)
+                                            }}
+                                            className='px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
+                                          >
+                                            Double
+                                          </button>
+                                        )}
                                         <button
                                           onClick={() => {
                                             sendWebSocketMessage({
@@ -1613,38 +1619,40 @@ const GameMenu = () => {
                                           >
                                             Hit
                                           </button>
-                                          <button
-                                            onClick={() => {
-                                              if (gameState?.mode === 'live') {
-                                                sendWebSocketMessage({
-                                                  action:
-                                                    'set_live_function_hand',
-                                                  player_id: 'player1',
-                                                  split_level: 1,
-                                                  hand_index: 0,
-                                                  value: 'Double'
-                                                })
-                                              }
-                                              if (
-                                                gameState?.mode === 'auto' ||
-                                                gameState?.mode === 'manual'
-                                              ) {
-                                                sendWebSocketMessage({
-                                                  action: 'double_player',
-                                                  player_id: 'player1',
-                                                  hand_index: 0
-                                                })
-                                                clearInsuranceForHand(
-                                                  'player1',
-                                                  0,
-                                                  1
-                                                )
-                                              }
-                                            }}
-                                            className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                          >
-                                            Double
-                                          </button>
+                                          {gameState.players.player1.split1[0]?.cards?.length === 2 && (
+                                            <button
+                                              onClick={() => {
+                                                if (gameState?.mode === 'live') {
+                                                  sendWebSocketMessage({
+                                                    action:
+                                                      'set_live_function_hand',
+                                                    player_id: 'player1',
+                                                    split_level: 1,
+                                                    hand_index: 0,
+                                                    value: 'Double'
+                                                  })
+                                                }
+                                                if (
+                                                  gameState?.mode === 'auto' ||
+                                                  gameState?.mode === 'manual'
+                                                ) {
+                                                  sendWebSocketMessage({
+                                                    action: 'double_player',
+                                                    player_id: 'player1',
+                                                    hand_index: 0
+                                                  })
+                                                  clearInsuranceForHand(
+                                                    'player1',
+                                                    0,
+                                                    1
+                                                  )
+                                                }
+                                              }}
+                                              className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                            >
+                                              Double
+                                            </button>
+                                          )}
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === 'live') {
@@ -1873,38 +1881,40 @@ const GameMenu = () => {
                                           >
                                             Hit
                                           </button>
-                                          <button
-                                            onClick={() => {
-                                              if (gameState?.mode === 'live') {
-                                                sendWebSocketMessage({
-                                                  action:
-                                                    'set_live_function_hand',
-                                                  player_id: 'player1',
-                                                  split_level: 2,
-                                                  hand_index: 0,
-                                                  value: 'Double'
-                                                })
-                                              }
-                                              if (
-                                                gameState?.mode === 'auto' ||
-                                                gameState?.mode === 'manual'
-                                              ) {
-                                                sendWebSocketMessage({
-                                                  action: 'double_player',
-                                                  player_id: 'player1',
-                                                  hand_index: 0
-                                                })
-                                                clearInsuranceForHand(
-                                                  'player1',
-                                                  0,
-                                                  2
-                                                )
-                                              }
-                                            }}
-                                            className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
-                                          >
-                                            Double
-                                          </button>
+                                          {gameState.players.player1.split2[0]?.cards?.length === 2 && (
+                                            <button
+                                              onClick={() => {
+                                                if (gameState?.mode === 'live') {
+                                                  sendWebSocketMessage({
+                                                    action:
+                                                      'set_live_function_hand',
+                                                    player_id: 'player1',
+                                                    split_level: 2,
+                                                    hand_index: 0,
+                                                    value: 'Double'
+                                                  })
+                                                }
+                                                if (
+                                                  gameState?.mode === 'auto' ||
+                                                  gameState?.mode === 'manual'
+                                                ) {
+                                                  sendWebSocketMessage({
+                                                    action: 'double_player',
+                                                    player_id: 'player1',
+                                                    hand_index: 0
+                                                  })
+                                                  clearInsuranceForHand(
+                                                    'player1',
+                                                    0,
+                                                    2
+                                                  )
+                                                }
+                                              }}
+                                              className='px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors'
+                                            >
+                                              Double
+                                            </button>
+                                          )}
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === 'live') {

@@ -452,6 +452,41 @@ const GameMenu = () => {
     }
   }, [isConnected, sendWebSocketMessage, gameState?.mode])
 
+  // Auto pull from pull stack when conditions are met
+  useEffect(() => {
+    if (
+      gameState?.mode === 'auto' &&
+      gameState?.round_number === 1 &&
+      gameState?.current_player &&
+      gameState.current_player !== 'dealer' &&
+      gameState?.selected_hand
+    ) {
+      // Get the selected hand and check if it has exactly 1 card
+      const selectedHand = gameState.selected_hand
+      const playerId = selectedHand.player_id
+      const splitLevel = selectedHand.split_level
+      const handIndex = selectedHand.hand_index
+      
+      let hand = null
+      if (gameState.players[playerId]) {
+        if (splitLevel === 0) {
+          hand = gameState.players[playerId].hands[handIndex]
+        } else if (splitLevel === 1) {
+          hand = gameState.players[playerId].split1[handIndex]
+        } else if (splitLevel === 2) {
+          hand = gameState.players[playerId].split2[handIndex]
+        }
+      }
+      
+      if (hand && hand.cards && hand.cards.length === 1) {
+        console.log('Auto pulling from pull stack - conditions met (1 card in hand)')
+        sendWebSocketMessage({
+          action: 'pull_from_pull_stack'
+        })
+      }
+    }
+  }, [gameState?.mode, gameState?.round_number, gameState?.current_player, gameState?.selected_hand, sendWebSocketMessage])
+
   // Add this new function to get active players
   const getActivePlayers = () => {
     if (!gameState) return []
