@@ -47,6 +47,7 @@ interface GameState {
   current_player?: string
   evaluate_game: boolean
   mode: string
+  round_number?: number
 }
 
 const isHandSelected = (
@@ -91,6 +92,9 @@ const GameMenu = () => {
   const [showResultPopup, setShowResultPopup] = useState(false)
   const [playerResult, setPlayerResult] = useState<string>('')
   const [resultPopupDismissed, setResultPopupDismissed] = useState(false)
+  const [pairType, setPairType] = useState<string>('')
+  const [showPairPopup, setShowPairPopup] = useState(false)
+  const [shownPairCards, setShownPairCards] = useState<string>('')
 
   useEffect(() => {
     let ws: WebSocket | null = null
@@ -346,8 +350,95 @@ const GameMenu = () => {
       gameState?.game_phase === 'dealing'
     ) {
       setResultPopupDismissed(false)
+      setShownPairCards('') // Reset shown pair cards for new rounds
     }
   }, [gameState?.game_phase])
+
+  // Pair checking functions
+  const getCardSuit = (card: string): string => {
+    return card.slice(-1) // Last character is the suit
+  }
+
+  const getCardRank = (card: string): string => {
+    return card.slice(0, -1) // Everything except last character is the rank
+  }
+
+  const isRedSuit = (suit: string): boolean => {
+    return suit === 'H' || suit === 'D' // Hearts and Diamonds are red
+  }
+
+  const isBlackSuit = (suit: string): boolean => {
+    return suit === 'S' || suit === 'C' // Spades and Clubs are black
+  }
+
+  const checkPairType = (cards: string[]): string => {
+    if (cards.length !== 2) return ''
+
+    const card1 = cards[0]
+    const card2 = cards[1]
+
+    const rank1 = getCardRank(card1)
+    const rank2 = getCardRank(card2)
+    const suit1 = getCardSuit(card1)
+    const suit2 = getCardSuit(card2)
+
+    // Check if same rank
+    if (rank1 !== rank2) return ''
+
+    // Royale Pair (Perfect Pair) - Same rank, same suit
+    if (suit1 === suit2) {
+      return 'Royale Pair'
+    }
+
+    // Coloured Pair - Same rank, same color (different suit)
+    const isRed1 = isRedSuit(suit1)
+    const isRed2 = isRedSuit(suit2)
+    const isBlack1 = isBlackSuit(suit1)
+    const isBlack2 = isBlackSuit(suit2)
+
+    if ((isRed1 && isRed2) || (isBlack1 && isBlack2)) {
+      return 'Coloured Pair'
+    }
+
+    // Mixed Pair - Same rank, red + black
+    if ((isRed1 && isBlack2) || (isBlack1 && isRed2)) {
+      return 'Mixed Pair'
+    }
+
+    return ''
+  }
+
+  // useEffect to check for pairs
+  useEffect(() => {
+    if (!gameState?.players?.player1?.hands?.[0]?.cards) return
+
+    const mainHandCards = gameState.players.player1.hands[0].cards
+
+    // Only check main hand when round_number is 0 and exactly 2 cards
+    if (gameState?.round_number === 0 && mainHandCards.length === 2) {
+      const pairType = checkPairType(mainHandCards)
+      const cardsString = mainHandCards.sort().join(',')
+
+      if (pairType && !showPairPopup && cardsString !== shownPairCards) {
+        setPairType(pairType)
+        setShownPairCards(cardsString)
+        sendWebSocketMessage({
+          action:
+            'set_live_function_hand',
+          player_id: 'player1',
+          split_level: 0,
+          hand_index: 0,
+          value: `${pairType}`
+        })
+        setShowPairPopup(true)
+      }
+    }
+  }, [
+    gameState?.players?.player1?.hands?.[0]?.cards,
+    gameState?.round_number,
+    showPairPopup,
+    shownPairCards
+  ])
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -579,21 +670,12 @@ const GameMenu = () => {
     setSelectedSuit(null)
   }
 
-  const handleInsurance = (
-    playerId: string,
-    handIndex: number,
-    splitLevel: number = 0
-  ) => {
+  const handleInsurance = (playerId: string) => {
     sendWebSocketMessage({
-      action: 'handle_insurance',
-      player_id: playerId,
-      hand_index: handIndex,
-      split_level: splitLevel
+      action: 'handle_insurence',
+      player_id: playerId
     })
-    setInsuranceState(prev => ({
-      ...prev,
-      [`${playerId}_${handIndex}_${splitLevel}`]: true
-    }))
+    setInsuranceState(prev => ({ ...prev, [playerId]: true }))
   }
 
   const clearInsuranceForHand = (
@@ -617,6 +699,8 @@ const GameMenu = () => {
     result?: string
   ) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
+    if (result === 'surrender')
+      return 'bg-blue-500 border-2 border-blue-700 text-white'
     if (result === 'fail')
       return 'bg-red-500 border-2 border-red-700 text-white'
     if (result === 'win')
@@ -863,10 +947,10 @@ const GameMenu = () => {
                                     Your Hand
                                     {gameState.players.player1.insurence ===
                                       1 && (
-                                      <span className='ml-3 text-yellow-400 text-base font-semibold'>
-                                        Insured
-                                      </span>
-                                    )}
+                                        <span className='ml-3 text-yellow-400 text-base font-semibold'>
+                                          Insured
+                                        </span>
+                                      )}
                                   </div>
                                 </div>
                               </div>
@@ -894,18 +978,17 @@ const GameMenu = () => {
                           <div
                             className={`rounded-xl p-4 relative ${getHandBoxColor(
                               isHandSelected(gameState, 'player1', 0, 0) &&
-                                gameState?.current_player === 'player1',
+                              gameState?.current_player === 'player1',
                               gameState.players.player1.status === 1,
                               gameState.players.player1.hands[0]?.result
                             )}`}
                           >
                             <div className='text-left mb-1'>
                               <div
-                                className={`text-lg font-medium ${
-                                  isHandSelected(gameState, 'player1', 0, 0)
+                                className={`text-lg font-medium ${isHandSelected(gameState, 'player1', 0, 0)
                                     ? 'text-gray-950'
                                     : 'text-white'
-                                }`}
+                                  }`}
                               >
                                 Main Hand
                               </div>
@@ -937,8 +1020,8 @@ const GameMenu = () => {
                                     Math.max(
                                       0,
                                       2 -
-                                        (gameState.players.player1.hands[0]
-                                          ?.cards?.length ?? 0)
+                                      (gameState.players.player1.hands[0]
+                                        ?.cards?.length ?? 0)
                                     )
                                   )
                                 ].map((_, index) => (
@@ -968,7 +1051,7 @@ const GameMenu = () => {
                                   gameState.players.player1.hands[0].cards
                                 ) &&
                                 gameState.players.player1.hands[0].status ===
-                                  'playing' && (
+                                'playing' && (
                                   <button
                                     onClick={() => {
                                       if (gameState?.mode === 'live') {
@@ -1012,7 +1095,7 @@ const GameMenu = () => {
                                       gameState.players.player1.hands[0]?.cards
                                         ?.length === 2 &&
                                       gameState.players.player1.insurence !==
-                                        1 && (
+                                      1 && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === 'live') {
@@ -1029,7 +1112,7 @@ const GameMenu = () => {
                                               gameState?.mode === 'auto' ||
                                               gameState?.mode === 'manual'
                                             ) {
-                                              handleInsurance('player1', 0, 0)
+                                              handleInsurance('player1')
                                             }
                                           }}
                                           className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
@@ -1105,6 +1188,37 @@ const GameMenu = () => {
                                     >
                                       Stand
                                     </button>
+                                    {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                    {gameState?.players?.player1?.hands[0]?.cards?.length === 2 &&
+                                      gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                        <button
+                                          onClick={() => {
+                                            if (gameState?.mode === 'live') {
+                                              sendWebSocketMessage({
+                                                action: 'set_live_function_hand',
+                                                player_id: 'player1',
+                                                split_level: 0,
+                                                hand_index: 0,
+                                                value: 'Surrender'
+                                              })
+                                            }
+                                            if (
+                                              gameState?.mode === 'auto' ||
+                                              gameState?.mode === 'manual'
+                                            ) {
+                                              sendWebSocketMessage({
+                                                action: 'surrender_player',
+                                                player_id: 'player1',
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand('player1', 0, 0)
+                                            }
+                                          }}
+                                          className='px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors'
+                                        >
+                                          Surrender
+                                        </button>
+                                      )}
                                   </>
                                 )}
                             </div>
@@ -1122,7 +1236,7 @@ const GameMenu = () => {
                                       0,
                                       1
                                     ) &&
-                                      gameState?.current_player === 'player1',
+                                    gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
@@ -1215,7 +1329,7 @@ const GameMenu = () => {
                                             .insurence && (
                                             <button
                                               onClick={() =>
-                                                handleInsurance('player1', 0, 1)
+                                                handleInsurance('player1')
                                               }
                                               className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
                                             >
@@ -1282,7 +1396,7 @@ const GameMenu = () => {
                                       0,
                                       2
                                     ) &&
-                                      gameState?.current_player === 'player1',
+                                    gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
@@ -1375,7 +1489,7 @@ const GameMenu = () => {
                                             .insurence && (
                                             <button
                                               onClick={() =>
-                                                handleInsurance('player1', 0, 2)
+                                                handleInsurance('player1')
                                               }
                                               className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
                                             >
@@ -1433,7 +1547,7 @@ const GameMenu = () => {
                           {/* Split1 Hand (auto mode: show if cards exist) */}
                           {gameState.mode !== 'manual' &&
                             gameState.players.player1.split1[0]?.cards?.length >
-                              0 && (
+                            0 && (
                               <div className='mt-4'>
                                 <div
                                   className={`rounded-xl p-4 relative ${getHandBoxColor(
@@ -1443,7 +1557,7 @@ const GameMenu = () => {
                                       0,
                                       1
                                     ) &&
-                                      gameState?.current_player === 'player1',
+                                    gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
@@ -1481,8 +1595,8 @@ const GameMenu = () => {
                                         Math.max(
                                           0,
                                           2 -
-                                            (gameState.players.player1.split1[0]
-                                              .cards.length ?? 0)
+                                          (gameState.players.player1.split1[0]
+                                            .cards.length ?? 0)
                                         )
                                       )
                                     ].map((_, index) => (
@@ -1553,7 +1667,7 @@ const GameMenu = () => {
                                       1
                                     ) &&
                                       gameState?.current_player ===
-                                        'player1' && (
+                                      'player1' && (
                                         <>
                                           {gameState?.dealer
                                             ?.cards?.[0]?.[0] === 'A' &&
@@ -1572,14 +1686,10 @@ const GameMenu = () => {
                                                 onClick={() => {
                                                   if (
                                                     gameState?.mode ===
-                                                      'auto' ||
+                                                    'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
-                                                    handleInsurance(
-                                                      'player1',
-                                                      0,
-                                                      1
-                                                    )
+                                                    handleInsurance('player1')
                                                   }
                                                 }}
                                                 className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
@@ -1685,6 +1795,41 @@ const GameMenu = () => {
                                           >
                                             Stand
                                           </button>
+                                          {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                          {gameState?.players?.player1?.split1?.[0]?.cards?.length === 2 &&
+                                            gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                              <button
+                                                onClick={() => {
+                                                  if (gameState?.mode === 'live') {
+                                                    sendWebSocketMessage({
+                                                      action: 'set_live_function_hand',
+                                                      player_id: 'player1',
+                                                      split_level: 1,
+                                                      hand_index: 0,
+                                                      value: 'Surrender'
+                                                    })
+                                                  }
+                                                  if (
+                                                    gameState?.mode === 'auto' ||
+                                                    gameState?.mode === 'manual'
+                                                  ) {
+                                                    sendWebSocketMessage({
+                                                      action: 'surrender_player',
+                                                      player_id: 'player1',
+                                                      hand_index: 0
+                                                    })
+                                                    clearInsuranceForHand(
+                                                      'player1',
+                                                      0,
+                                                      1
+                                                    )
+                                                  }
+                                                }}
+                                                className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+                                              >
+                                                Surrender
+                                              </button>
+                                            )}
                                         </>
                                       )}
                                   </div>
@@ -1695,7 +1840,7 @@ const GameMenu = () => {
                           {/* Split2 Hand (auto mode: show if cards exist) */}
                           {gameState.mode !== 'manual' &&
                             gameState.players.player1.split2[0]?.cards?.length >
-                              0 && (
+                            0 && (
                               <div className='mt-4'>
                                 <div
                                   className={`rounded-xl p-4 relative ${getHandBoxColor(
@@ -1705,7 +1850,7 @@ const GameMenu = () => {
                                       0,
                                       2
                                     ) &&
-                                      gameState?.current_player === 'player1',
+                                    gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
@@ -1743,8 +1888,8 @@ const GameMenu = () => {
                                         Math.max(
                                           0,
                                           2 -
-                                            (gameState.players.player1.split2[0]
-                                              .cards.length ?? 0)
+                                          (gameState.players.player1.split2[0]
+                                            .cards.length ?? 0)
                                         )
                                       )
                                     ].map((_, index) => (
@@ -1815,7 +1960,7 @@ const GameMenu = () => {
                                       2
                                     ) &&
                                       gameState?.current_player ===
-                                        'player1' && (
+                                      'player1' && (
                                         <>
                                           {gameState?.dealer
                                             ?.cards?.[0]?.[0] === 'A' &&
@@ -1834,14 +1979,10 @@ const GameMenu = () => {
                                                 onClick={() => {
                                                   if (
                                                     gameState?.mode ===
-                                                      'auto' ||
+                                                    'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
-                                                    handleInsurance(
-                                                      'player1',
-                                                      0,
-                                                      2
-                                                    )
+                                                    handleInsurance('player1')
                                                   }
                                                 }}
                                                 className='px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors'
@@ -1947,6 +2088,41 @@ const GameMenu = () => {
                                           >
                                             Stand
                                           </button>
+                                          {/* Surrender Button for Split2 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                          {gameState?.players?.player1?.split2?.[0]?.cards?.length === 2 &&
+                                            gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                              <button
+                                                onClick={() => {
+                                                  if (gameState?.mode === 'live') {
+                                                    sendWebSocketMessage({
+                                                      action: 'set_live_function_hand',
+                                                      player_id: 'player1',
+                                                      split_level: 2,
+                                                      hand_index: 0,
+                                                      value: 'Surrender'
+                                                    })
+                                                  }
+                                                  if (
+                                                    gameState?.mode === 'auto' ||
+                                                    gameState?.mode === 'manual'
+                                                  ) {
+                                                    sendWebSocketMessage({
+                                                      action: 'surrender_player',
+                                                      player_id: 'player1',
+                                                      hand_index: 0
+                                                    })
+                                                    clearInsuranceForHand(
+                                                      'player1',
+                                                      0,
+                                                      2
+                                                    )
+                                                  }
+                                                }}
+                                                className='px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors'
+                                              >
+                                                Surrender
+                                              </button>
+                                            )}
                                         </>
                                       )}
                                   </div>
@@ -1996,6 +2172,45 @@ const GameMenu = () => {
               <div className='bg-gradient-to-r from-red-800 to-red-700 border border-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-xl'>
                 <div className='w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse'></div>
                 <span className='font-medium text-lg'>{popupMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Pair Type Popup */}
+          {showPairPopup && (
+            <div className='fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm'>
+              <div className='bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 border-4 border-blue-400 text-white p-8 rounded-3xl shadow-2xl max-w-lg w-full mx-4 relative overflow-hidden'>
+                {/* Decorative corners */}
+                <div className='absolute top-2 left-2 w-6 h-6 border-l-4 border-t-4 border-blue-400 rounded-tl-lg'></div>
+                <div className='absolute top-2 right-2 w-6 h-6 border-r-4 border-t-4 border-blue-400 rounded-tr-lg'></div>
+                <div className='absolute bottom-2 left-2 w-6 h-6 border-l-4 border-b-4 border-blue-400 rounded-bl-lg'></div>
+                <div className='absolute bottom-2 right-2 w-6 h-6 border-r-4 border-b-4 border-blue-400 rounded-br-lg'></div>
+
+                <div className='text-center relative z-10'>
+                  {/* Main content with dramatic styling */}
+                  <div className='mb-6'>
+                    <div className='text-8xl mb-4 animate-bounce'>
+                      🎯
+                    </div>
+                    <h2 className='text-4xl font-bold mb-4 text-blue-200 drop-shadow-lg tracking-wider'>
+                      CONGRATULATION!🎊
+                    </h2>
+                    <div className='text-3xl font-bold text-yellow-300 mb-4'>
+                      {pairType}
+                    </div>
+                    <div className='text-xl text-blue-100 opacity-90'>
+                      Congratulations on your pair!
+                    </div>
+                  </div>
+
+                  {/* OK Button */}
+                  <button
+                    onClick={() => setShowPairPopup(false)}
+                    className='px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xl font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg border-2 border-blue-300'
+                  >
+                    OK
+                  </button>
+                </div>
               </div>
             </div>
           )}

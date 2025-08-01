@@ -647,6 +647,8 @@ const GameMenu = () => {
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
     if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
+    if (result === 'surrender')
+      return 'bg-blue-500 border-2 border-blue-700 text-white'
     if (result === 'fail')
       return 'bg-red-500 border-2 border-red-700 text-white'
     if (result === 'win')
@@ -1075,7 +1077,7 @@ const GameMenu = () => {
                                   }
                                   className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
                                 >
-                                  MAKE TIE
+                                  MAKE PUSH
                                 </button>
                                 <button
                                   onClick={() =>
@@ -1088,8 +1090,22 @@ const GameMenu = () => {
                                   }
                                   className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
                                 >
-                                  Default
+                                  DEFAULT
                                 </button>
+                                {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                <button
+                                        onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'manual_make_surrender',
+                                              player_id: playerId,
+                                              split_level: 0,
+                                              hand_index: 0
+                                            })
+                                        }}
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                      >
+                                        SURRENDER
+                                      </button>
                               </>
                             </div>
                           </div>
@@ -1166,7 +1182,7 @@ const GameMenu = () => {
                                       }
                                       className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
                                     >
-                                      MAKE TIE
+                                      MAKE PUSH
                                     </button>
                                     <button
                                       onClick={() =>
@@ -1179,8 +1195,22 @@ const GameMenu = () => {
                                       }
                                       className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
                                     >
-                                      Default
+                                      DEFAULT
                                     </button>
+                                    {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                    <button
+                                        onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'manual_make_surrender',
+                                              player_id: playerId,
+                                              split_level: 1,
+                                              hand_index: 0
+                                            })
+                                        }}
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                      >
+                                        SURRENDER
+                                      </button>
                                   </>
                                 </div>
                               </div>
@@ -1275,7 +1305,7 @@ const GameMenu = () => {
                                       }
                                       className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
                                     >
-                                      MAKE TIE
+                                      MAKE PUSH
                                     </button>
                                     <button
                                       onClick={() =>
@@ -1288,8 +1318,22 @@ const GameMenu = () => {
                                       }
                                       className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
                                     >
-                                      Default
+                                      DEFAULT
                                     </button>
+                                    
+                                    <button
+                                        onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'manual_make_surrender',
+                                              player_id: playerId,
+                                              split_level: 2,
+                                              hand_index: 0
+                                            })
+                                        }}
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                      >
+                                        SURRENDER
+                                      </button>
                                     {/* <button
                                       onClick={() =>
                                         sendWebSocketMessage({
