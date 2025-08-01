@@ -158,9 +158,16 @@ const BlackJackHand = ({
     return (
       <div className='flex flex-col items-center space-y-1'>
         <div className='text-yellow-500 text-2xl font-bold'>DEALER</div>
-        <div className='flex space-x-1'>
+        <div className='relative flex'>
           {cards.map((card: string, index: number) => (
-            <div key={index} className='w-16 h-28'>
+            <div
+              key={index}
+              className='w-32 h-48 relative'
+              style={{
+                marginLeft: index > 0 ? '-110px' : '0',
+                zIndex: index
+              }}
+            >
               <img
                 src={
                   showDealerHole || index === 0
@@ -203,84 +210,112 @@ const BlackJackHand = ({
   const activeHands = [mainHand, split1Hand, split2Hand].filter(Boolean)
   const handCount = activeHands.length
 
-  // Dynamic card sizing based on number of active hands
-  let cardSize = 'w-16 h-28' // Default size for single hand
-  if (handCount === 2) {
-    cardSize = 'w-12 h-20' // Medium size for 2 hands
-  } else if (handCount === 3) {
-    cardSize = 'w-10 h-16' // Small size for 3 hands
+  // Dynamic card sizing and overlap based on number of active hands
+  let cardSize = 'w-28 h-36' // Default size for single hand
+  let overlapAmount = '-97px' // Default overlap
+
+  if (handCount === 3) {
+    cardSize = 'w-24 h-32'
+    overlapAmount = '-82px'
   }
 
   return (
-    <div className='flex flex-wrap items-center space-x-2'>
-      {/* Main Hand */}
-      {mainHand && (
-        <div className='flex flex-col items-center space-y-1'>
-          <div className='text-yellow-500 text-xs font-bold'>Main</div>
-          <div className='flex space-x-1'>
-            {mainHand.cards?.map((card: string, index: number) => (
-              <div key={index} className={cardSize}>
-                <img
-                  src={`/cards/${card}.png`}
-                  alt={card}
-                  className='w-full h-full object-contain'
-                  onError={e => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/cards/back.png'
+    <div className='flex items-center justify-center relative overflow-visible'>
+      <div className='flex gap-2'>
+        {/* Main Hand */}
+        {mainHand && (
+          <div className='flex flex-col items-center space-y-1'>
+            <div className='text-yellow-500 text-xs font-bold'>MAIN</div>
+            <div className='relative flex'>
+              {mainHand.cards?.map((card: string, index: number) => (
+                <div
+                  key={`main-${index}`}
+                  className={`${cardSize} relative`}
+                  style={{
+                    marginLeft: index > 0 ? overlapAmount : '0',
+                    zIndex: index
                   }}
-                />
-              </div>
-            ))}
+                >
+                  <img
+                    src={`/cards/${card}.png`}
+                    alt={card}
+                    className='w-full h-full object-contain'
+                    onError={e => {
+                      const target = e.target as HTMLImageElement
+                      target.src = '/cards/back.png'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className='text-yellow-500 text-xs'>{mainHand.total || 0}</div>
           </div>
-          <div className='text-yellow-500 text-xs'>{mainHand.total || 0}</div>
-        </div>
-      )}
+        )}
 
-      {/* Split1 Hand */}
-      {split1Hand && (
-        <div className='flex flex-col items-center space-y-1'>
-          <div className='text-yellow-500 text-xs font-bold'>S1</div>
-          <div className='flex space-x-1'>
-            {split1Hand.cards?.map((card: string, index: number) => (
-              <div key={index} className={cardSize}>
-                <img
-                  src={`/cards/${card}.png`}
-                  alt={card}
-                  className='w-full h-full object-contain'
-                  onError={e => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/cards/back.png'
+        {/* Split1 Hand */}
+        {split1Hand && (
+          <div className='flex flex-col items-center space-y-1'>
+            <div className='text-yellow-500 text-xs font-bold'>S1</div>
+            <div className='relative flex'>
+              {split1Hand.cards?.map((card: string, index: number) => (
+                <div
+                  key={`split1-${index}`}
+                  className={`${cardSize} relative`}
+                  style={{
+                    marginLeft: index > 0 ? overlapAmount : '0',
+                    zIndex: index
                   }}
-                />
-              </div>
-            ))}
+                >
+                  <img
+                    src={`/cards/${card}.png`}
+                    alt={card}
+                    className='w-full h-full object-contain'
+                    onError={e => {
+                      const target = e.target as HTMLImageElement
+                      target.src = '/cards/back.png'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className='text-yellow-500 text-xs'>
+              {split1Hand.total || 0}
+            </div>
           </div>
-          <div className='text-yellow-500 text-xs'>{split1Hand.total || 0}</div>
-        </div>
-      )}
+        )}
 
-      {/* Split2 Hand */}
-      {split2Hand && (
-        <div className='flex flex-col items-center space-y-1'>
-          <div className='text-yellow-500 text-xs font-bold'>S2</div>
-          <div className='flex space-x-1'>
-            {split2Hand.cards?.map((card: string, index: number) => (
-              <div key={index} className={cardSize}>
-                <img
-                  src={`/cards/${card}.png`}
-                  alt={card}
-                  className='w-full h-full object-contain'
-                  onError={e => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/cards/back.png'
+        {/* Split2 Hand */}
+        {split2Hand && (
+          <div className='flex flex-col items-center space-y-1'>
+            <div className='text-yellow-500 text-xs font-bold'>S2</div>
+            <div className='relative flex'>
+              {split2Hand.cards?.map((card: string, index: number) => (
+                <div
+                  key={`split2-${index}`}
+                  className={`${cardSize} relative`}
+                  style={{
+                    marginLeft: index > 0 ? overlapAmount : '0',
+                    zIndex: index
                   }}
-                />
-              </div>
-            ))}
+                >
+                  <img
+                    src={`/cards/${card}.png`}
+                    alt={card}
+                    className='w-full h-full object-contain'
+                    onError={e => {
+                      const target = e.target as HTMLImageElement
+                      target.src = '/cards/back.png'
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className='text-yellow-500 text-xs'>
+              {split2Hand.total || 0}
+            </div>
           </div>
-          <div className='text-yellow-500 text-xs'>{split2Hand.total || 0}</div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
@@ -402,10 +437,14 @@ const DisplayPage = () => {
           />
 
           {/* Right Button */}
-          <div className='flex flex-col items-end justify-center z-10'>
-            <h1 className='text-yellow-500 text-3xl'>Bets: </h1>
-            <span className='text-yellow-500 text-2xl'>min: {gameState.min_bet ?? 0}</span>
-            <span className='text-yellow-500 text-2xl'>max: {gameState.max_bet ?? 0}</span>
+          <div className='flex flex-col items-center justify-center z-10'>
+            <h1 className='text-yellow-500 text-3xl font-bold'>Bets</h1>
+            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+              Min: {gameState?.min_bet ?? 'N/A'}
+            </span>
+            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+              Max: {gameState?.max_bet ?? 'N/A'}
+            </span>
           </div>
         </nav>
 
@@ -456,26 +495,26 @@ const DisplayPage = () => {
             const imgSrc = stateToImg[state]
             const overlay = stateToOverlay[state]
 
-            // Check if player has any splits active to hide button
-            const hasSplit1 = player?.split1_status === 1
-            const hasSplit2 = player?.split2_status === 1
-            const hasAnySplit = hasSplit1 || hasSplit2
-
             return (
               <div key={playerId} className={gridClass}>
-                <div className='w-[17vw] h-[17vh] flex flex-row items-center justify-center'>
-                  <div className='flex-1 flex justify-center'>
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center relative'>
+                  {/* Cards container - positioned absolutely to the left of player image */}
+                  <div className='absolute right-[8vw] top-1/2 -translate-y-1/2 flex justify-end pr-4'>
                     <BlackJackHand playerId={playerId} player={player} />
                   </div>
-                  <div className='relative w-[8vw] h-[14vh] flex items-center justify-center ml-2 flex-shrink-0'>
+
+                  {/* Player image - fixed position on the right */}
+                  <div className='absolute right-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center'>
                     <img
                       src={imgSrc}
                       alt='Player State'
                       className='w-full h-full object-contain'
                     />
-                    <div className='absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center'>
-                      <div className='font-bold text-3xl'>{idx + 1}</div>
-                      <div className='text-sm'>{overlay}</div>
+                    <div className='absolute inset-0 flex items-center justify-center text-white text-lg'>
+                      <div className='flex flex-col items-center'>
+                        <div className='font-bold text-3xl'>{idx + 1}</div>
+                        <div className='text-2xl'>{overlay}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -490,26 +529,26 @@ const DisplayPage = () => {
             const imgSrc = stateToImg[state]
             const overlay = stateToOverlay[state]
 
-            // Check if player has any splits active to hide button
-            const hasSplit1 = player?.split1_status === 1
-            const hasSplit2 = player?.split2_status === 1
-            const hasAnySplit = hasSplit1 || hasSplit2
-
             return (
               <div key={playerId} className={gridClass}>
-                <div className='w-[17vw] h-[17vh] flex flex-row items-center justify-center'>
-                  <div className='relative w-[8vw] h-[14vh] flex items-center justify-center mr-2 flex-shrink-0'>
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center relative'>
+                  {/* Player image - fixed position on the left */}
+                  <div className='absolute left-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center'>
                     <img
                       src={imgSrc}
                       alt='Player State'
                       className='w-full h-full object-contain'
                     />
-                    <div className='absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 text-white px-4 py-2 text-2xl flex flex-col items-center'>
-                      <div className='font-bold text-3xl'>{idx + 4}</div>
-                      <div className='text-sm'>{overlay}</div>
+                    <div className='absolute inset-0 flex items-center justify-center text-white text-lg'>
+                      <div className='flex flex-col items-center'>
+                        <div className='font-bold text-3xl'>{idx + 4}</div>
+                        <div className='text-2xl'>{overlay}</div>
+                      </div>
                     </div>
                   </div>
-                  <div className='flex-1 flex justify-center'>
+
+                  {/* Cards container - positioned absolutely to the right of player image */}
+                  <div className='absolute left-[8vw] top-1/2 -translate-y-1/2 flex justify-start pl-4'>
                     <BlackJackHand playerId={playerId} player={player} />
                   </div>
                 </div>
@@ -575,9 +614,19 @@ const DisplayPage = () => {
         </div>
       </div> */}
 
-      <div className='absolute bottom-0 text-center text-black'>
-        This is the BlackJack display screen. All table results and management
-        decisions will be final.
+      {/* Bottom disclaimer - Marquee */}
+      <div className='absolute bottom-0 w-full text-xl py-1 text-black overflow-hidden'>
+        <div className='whitespace-nowrap animate-marquee'>
+          THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
+          DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE OF
+          ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS
+          IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT DECISION
+          WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE OF
+          ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+        </div>
       </div>
     </div>
   )

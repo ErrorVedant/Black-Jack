@@ -783,7 +783,7 @@ const GameMenu = () => {
                   </h2>
 
                   {/* Status Display */}
-                  <div className='flex justify-center'>
+                  {/* <div className='flex justify-center'>
                     <div className='inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-[#7a1105] text-white font-semibold rounded shadow-md'>
                       <span className='font-semibold'>Status: </span>
                       <span className='text-yellow-300'>
@@ -801,7 +801,7 @@ const GameMenu = () => {
                         </>
                       )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Dealer Section */}
@@ -1844,8 +1844,8 @@ const GameMenu = () => {
                     </div>
                     <h2 className='text-4xl font-bold mb-2 text-yellow-300 drop-shadow-lg tracking-wider'>
                       {playerResult === 'win' && 'YOU WIN'}
-                      {playerResult === 'lose' && 'DEALER WINS'}
-                      {playerResult === 'tie' && 'TIE'}
+                      {playerResult === 'lose' && 'YOU LOSE'}
+                      {playerResult === 'tie' && 'PUSH'}
                     </h2>
                     <div className='text-xl text-yellow-100 opacity-90'>
                       {playerResult === 'win' && 'Congratulations!'}
@@ -1894,7 +1894,7 @@ const GameMenu = () => {
                             }
                           case 'tie':
                             return {
-                              text: 'TIE',
+                              text: 'PUSH',
                               color: 'text-yellow-300',
                               bg: 'bg-yellow-700/30'
                             }
@@ -1986,6 +1986,20 @@ const GameMenu = () => {
               </div>
             </div>
           )}
+          {/* Bottom disclaimer - Marquee */}
+          <div className='fixed bottom-0 w-full text-xl py-1 overflow-hidden'>
+            <div className='whitespace-nowrap animate-marquee'>
+              THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
+              DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE
+              OF ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
+              DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE
+              OF ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+            </div>
+          </div>
         </div>
       ) : (
         <div className='fixed inset-0 w-screen h-screen flex justify-center items-center z-50'>

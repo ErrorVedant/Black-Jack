@@ -423,8 +423,7 @@ const GameMenu = () => {
         setPairType(pairType)
         setShownPairCards(cardsString)
         sendWebSocketMessage({
-          action:
-            'set_live_function_hand',
+          action: 'set_live_function_hand',
           player_id: 'player1',
           split_level: 0,
           hand_index: 0,
@@ -834,7 +833,7 @@ const GameMenu = () => {
                   </h2>
 
                   {/* Status Display */}
-                  <div className='flex justify-center'>
+                  {/* <div className='flex justify-center'>
                     <div className='inline-block px-4 sm:px-6 py-1.5 sm:py-2 bg-[#7a1105] text-white font-semibold rounded shadow-md'>
                       <span className='font-semibold'>Status: </span>
                       <span className='text-yellow-300'>
@@ -851,7 +850,7 @@ const GameMenu = () => {
                           </span>
                         </>
                       )}
-                      {/* {gameState?.mode && (
+                      {gameState?.mode && (
                         <>
                           <span className='mx-2'>|</span>
                           <span className='font-semibold'>Mode: </span>
@@ -859,9 +858,9 @@ const GameMenu = () => {
                             {gameState.mode}
                           </span>
                         </>
-                      )} */}
+                      )}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Dealer Section */}
@@ -947,10 +946,10 @@ const GameMenu = () => {
                                     Your Hand
                                     {gameState.players.player1.insurence ===
                                       1 && (
-                                        <span className='ml-3 text-yellow-400 text-base font-semibold'>
-                                          Insured
-                                        </span>
-                                      )}
+                                      <span className='ml-3 text-yellow-400 text-base font-semibold'>
+                                        Insured
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -978,17 +977,18 @@ const GameMenu = () => {
                           <div
                             className={`rounded-xl p-4 relative ${getHandBoxColor(
                               isHandSelected(gameState, 'player1', 0, 0) &&
-                              gameState?.current_player === 'player1',
+                                gameState?.current_player === 'player1',
                               gameState.players.player1.status === 1,
                               gameState.players.player1.hands[0]?.result
                             )}`}
                           >
                             <div className='text-left mb-1'>
                               <div
-                                className={`text-lg font-medium ${isHandSelected(gameState, 'player1', 0, 0)
+                                className={`text-lg font-medium ${
+                                  isHandSelected(gameState, 'player1', 0, 0)
                                     ? 'text-gray-950'
                                     : 'text-white'
-                                  }`}
+                                }`}
                               >
                                 Main Hand
                               </div>
@@ -1020,8 +1020,8 @@ const GameMenu = () => {
                                     Math.max(
                                       0,
                                       2 -
-                                      (gameState.players.player1.hands[0]
-                                        ?.cards?.length ?? 0)
+                                        (gameState.players.player1.hands[0]
+                                          ?.cards?.length ?? 0)
                                     )
                                   )
                                 ].map((_, index) => (
@@ -1051,7 +1051,7 @@ const GameMenu = () => {
                                   gameState.players.player1.hands[0].cards
                                 ) &&
                                 gameState.players.player1.hands[0].status ===
-                                'playing' && (
+                                  'playing' && (
                                   <button
                                     onClick={() => {
                                       if (gameState?.mode === 'live') {
@@ -1095,7 +1095,7 @@ const GameMenu = () => {
                                       gameState.players.player1.hands[0]?.cards
                                         ?.length === 2 &&
                                       gameState.players.player1.insurence !==
-                                      1 && (
+                                        1 && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === 'live') {
@@ -1142,7 +1142,8 @@ const GameMenu = () => {
                                     >
                                       Hit
                                     </button>
-                                    {gameState.players.player1.hands[0]?.cards?.length === 2 && (
+                                    {gameState.players.player1.hands[0]?.cards
+                                      ?.length === 2 && (
                                       <button
                                         onClick={() => {
                                           if (gameState?.mode === 'live') {
@@ -1189,13 +1190,16 @@ const GameMenu = () => {
                                       Stand
                                     </button>
                                     {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                    {gameState?.players?.player1?.hands[0]?.cards?.length === 2 &&
-                                      gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                    {gameState?.players?.player1?.hands[0]
+                                      ?.cards?.length === 2 &&
+                                      gameState?.dealer?.cards?.[0]?.[0] !==
+                                        'A' && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === 'live') {
                                               sendWebSocketMessage({
-                                                action: 'set_live_function_hand',
+                                                action:
+                                                  'set_live_function_hand',
                                                 player_id: 'player1',
                                                 split_level: 0,
                                                 hand_index: 0,
@@ -1211,7 +1215,11 @@ const GameMenu = () => {
                                                 player_id: 'player1',
                                                 hand_index: 0
                                               })
-                                              clearInsuranceForHand('player1', 0, 0)
+                                              clearInsuranceForHand(
+                                                'player1',
+                                                0,
+                                                0
+                                              )
                                             }
                                           }}
                                           className='px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors'
@@ -1236,7 +1244,7 @@ const GameMenu = () => {
                                       0,
                                       1
                                     ) &&
-                                    gameState?.current_player === 'player1',
+                                      gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
@@ -1396,7 +1404,7 @@ const GameMenu = () => {
                                       0,
                                       2
                                     ) &&
-                                    gameState?.current_player === 'player1',
+                                      gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
@@ -1547,7 +1555,7 @@ const GameMenu = () => {
                           {/* Split1 Hand (auto mode: show if cards exist) */}
                           {gameState.mode !== 'manual' &&
                             gameState.players.player1.split1[0]?.cards?.length >
-                            0 && (
+                              0 && (
                               <div className='mt-4'>
                                 <div
                                   className={`rounded-xl p-4 relative ${getHandBoxColor(
@@ -1557,7 +1565,7 @@ const GameMenu = () => {
                                       0,
                                       1
                                     ) &&
-                                    gameState?.current_player === 'player1',
+                                      gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split1[0]?.result
                                   )}`}
@@ -1595,8 +1603,8 @@ const GameMenu = () => {
                                         Math.max(
                                           0,
                                           2 -
-                                          (gameState.players.player1.split1[0]
-                                            .cards.length ?? 0)
+                                            (gameState.players.player1.split1[0]
+                                              .cards.length ?? 0)
                                         )
                                       )
                                     ].map((_, index) => (
@@ -1667,7 +1675,7 @@ const GameMenu = () => {
                                       1
                                     ) &&
                                       gameState?.current_player ===
-                                      'player1' && (
+                                        'player1' && (
                                         <>
                                           {gameState?.dealer
                                             ?.cards?.[0]?.[0] === 'A' &&
@@ -1686,7 +1694,7 @@ const GameMenu = () => {
                                                 onClick={() => {
                                                   if (
                                                     gameState?.mode ===
-                                                    'auto' ||
+                                                      'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
                                                     handleInsurance('player1')
@@ -1729,10 +1737,13 @@ const GameMenu = () => {
                                           >
                                             Hit
                                           </button>
-                                          {gameState.players.player1.split1[0]?.cards?.length === 2 && (
+                                          {gameState.players.player1.split1[0]
+                                            ?.cards?.length === 2 && (
                                             <button
                                               onClick={() => {
-                                                if (gameState?.mode === 'live') {
+                                                if (
+                                                  gameState?.mode === 'live'
+                                                ) {
                                                   sendWebSocketMessage({
                                                     action:
                                                       'set_live_function_hand',
@@ -1796,13 +1807,19 @@ const GameMenu = () => {
                                             Stand
                                           </button>
                                           {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                          {gameState?.players?.player1?.split1?.[0]?.cards?.length === 2 &&
-                                            gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                          {gameState?.players?.player1
+                                            ?.split1?.[0]?.cards?.length ===
+                                            2 &&
+                                            gameState?.dealer
+                                              ?.cards?.[0]?.[0] !== 'A' && (
                                               <button
                                                 onClick={() => {
-                                                  if (gameState?.mode === 'live') {
+                                                  if (
+                                                    gameState?.mode === 'live'
+                                                  ) {
                                                     sendWebSocketMessage({
-                                                      action: 'set_live_function_hand',
+                                                      action:
+                                                        'set_live_function_hand',
                                                       player_id: 'player1',
                                                       split_level: 1,
                                                       hand_index: 0,
@@ -1810,11 +1827,13 @@ const GameMenu = () => {
                                                     })
                                                   }
                                                   if (
-                                                    gameState?.mode === 'auto' ||
+                                                    gameState?.mode ===
+                                                      'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
                                                     sendWebSocketMessage({
-                                                      action: 'surrender_player',
+                                                      action:
+                                                        'surrender_player',
                                                       player_id: 'player1',
                                                       hand_index: 0
                                                     })
@@ -1840,7 +1859,7 @@ const GameMenu = () => {
                           {/* Split2 Hand (auto mode: show if cards exist) */}
                           {gameState.mode !== 'manual' &&
                             gameState.players.player1.split2[0]?.cards?.length >
-                            0 && (
+                              0 && (
                               <div className='mt-4'>
                                 <div
                                   className={`rounded-xl p-4 relative ${getHandBoxColor(
@@ -1850,7 +1869,7 @@ const GameMenu = () => {
                                       0,
                                       2
                                     ) &&
-                                    gameState?.current_player === 'player1',
+                                      gameState?.current_player === 'player1',
                                     gameState.players.player1.status === 1,
                                     gameState.players.player1.split2[0]?.result
                                   )}`}
@@ -1888,8 +1907,8 @@ const GameMenu = () => {
                                         Math.max(
                                           0,
                                           2 -
-                                          (gameState.players.player1.split2[0]
-                                            .cards.length ?? 0)
+                                            (gameState.players.player1.split2[0]
+                                              .cards.length ?? 0)
                                         )
                                       )
                                     ].map((_, index) => (
@@ -1960,7 +1979,7 @@ const GameMenu = () => {
                                       2
                                     ) &&
                                       gameState?.current_player ===
-                                      'player1' && (
+                                        'player1' && (
                                         <>
                                           {gameState?.dealer
                                             ?.cards?.[0]?.[0] === 'A' &&
@@ -1979,7 +1998,7 @@ const GameMenu = () => {
                                                 onClick={() => {
                                                   if (
                                                     gameState?.mode ===
-                                                    'auto' ||
+                                                      'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
                                                     handleInsurance('player1')
@@ -2022,10 +2041,13 @@ const GameMenu = () => {
                                           >
                                             Hit
                                           </button>
-                                          {gameState.players.player1.split2[0]?.cards?.length === 2 && (
+                                          {gameState.players.player1.split2[0]
+                                            ?.cards?.length === 2 && (
                                             <button
                                               onClick={() => {
-                                                if (gameState?.mode === 'live') {
+                                                if (
+                                                  gameState?.mode === 'live'
+                                                ) {
                                                   sendWebSocketMessage({
                                                     action:
                                                       'set_live_function_hand',
@@ -2089,13 +2111,19 @@ const GameMenu = () => {
                                             Stand
                                           </button>
                                           {/* Surrender Button for Split2 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                          {gameState?.players?.player1?.split2?.[0]?.cards?.length === 2 &&
-                                            gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
+                                          {gameState?.players?.player1
+                                            ?.split2?.[0]?.cards?.length ===
+                                            2 &&
+                                            gameState?.dealer
+                                              ?.cards?.[0]?.[0] !== 'A' && (
                                               <button
                                                 onClick={() => {
-                                                  if (gameState?.mode === 'live') {
+                                                  if (
+                                                    gameState?.mode === 'live'
+                                                  ) {
                                                     sendWebSocketMessage({
-                                                      action: 'set_live_function_hand',
+                                                      action:
+                                                        'set_live_function_hand',
                                                       player_id: 'player1',
                                                       split_level: 2,
                                                       hand_index: 0,
@@ -2103,11 +2131,13 @@ const GameMenu = () => {
                                                     })
                                                   }
                                                   if (
-                                                    gameState?.mode === 'auto' ||
+                                                    gameState?.mode ===
+                                                      'auto' ||
                                                     gameState?.mode === 'manual'
                                                   ) {
                                                     sendWebSocketMessage({
-                                                      action: 'surrender_player',
+                                                      action:
+                                                        'surrender_player',
                                                       player_id: 'player1',
                                                       hand_index: 0
                                                     })
@@ -2189,9 +2219,7 @@ const GameMenu = () => {
                 <div className='text-center relative z-10'>
                   {/* Main content with dramatic styling */}
                   <div className='mb-6'>
-                    <div className='text-8xl mb-4 animate-bounce'>
-                      🎯
-                    </div>
+                    <div className='text-8xl mb-4 animate-bounce'>🎯</div>
                     <h2 className='text-4xl font-bold mb-4 text-blue-200 drop-shadow-lg tracking-wider'>
                       CONGRATULATION!🎊
                     </h2>
@@ -2235,8 +2263,8 @@ const GameMenu = () => {
                     </div>
                     <h2 className='text-4xl font-bold mb-2 text-yellow-300 drop-shadow-lg tracking-wider'>
                       {playerResult === 'win' && 'YOU WIN'}
-                      {playerResult === 'lose' && 'DEALER WINS'}
-                      {playerResult === 'tie' && 'TIE'}
+                      {playerResult === 'lose' && 'YOU LOSE'}
+                      {playerResult === 'tie' && 'PUSH'}
                     </h2>
                     <div className='text-xl text-yellow-100 opacity-90'>
                       {playerResult === 'win' && 'Congratulations!'}
@@ -2344,6 +2372,20 @@ const GameMenu = () => {
             <h2 className='font-bold text-yellow-300 mb-2'>Game State Debug</h2>
             <pre>{JSON.stringify(gameState, null, 2)}</pre>
           </div> */}
+          {/* Bottom disclaimer - Marquee */}
+          <div className='fixed bottom-0 w-full text-xl py-1 overflow-hidden'>
+            <div className='whitespace-nowrap animate-marquee'>
+              THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
+              DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE
+              OF ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; • &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+              THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
+              DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; THIS IS AN ELECTRONIC GAME INCASE
+              OF ANY GRIEVANCES THE MANAGEMENT DECISION WILL BE FINAL
+            </div>
+          </div>
         </div>
       ) : (
         <div className='fixed inset-0 w-screen h-screen flex justify-center items-center z-50'>
