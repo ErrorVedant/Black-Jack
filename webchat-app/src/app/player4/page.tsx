@@ -954,7 +954,8 @@ const GameMenu = () => {
 
                             {/* Action Buttons */}
                             <div className='flex justify-center gap-2 flex-wrap mt-2 mb-4'>
-                              {isHandSelected(gameState, 'player4', 0, 0) &&
+                              {gameState?.round_number !== 0 &&
+                                isHandSelected(gameState, 'player4', 0, 0) &&
                                 gameState?.current_player === 'player4' &&
                                 gameState.players.player4.hands[0]?.cards
                                   ?.length === 2 &&
@@ -962,7 +963,8 @@ const GameMenu = () => {
                                   gameState.players.player4.hands[0].cards
                                 ) &&
                                 gameState.players.player4.hands[0].status ===
-                                  'playing' && (
+                                  'playing' &&
+                                (gameState.players.player4.split1_status === 0 || gameState.players.player4.split2_status === 0) && (
                                   <button
                                     onClick={() => {
                                       if (gameState?.mode === 'live') {
@@ -991,7 +993,8 @@ const GameMenu = () => {
                                 )}
 
                               {/* Main Hand Action Buttons for Player 4 */}
-                              {isHandSelected(gameState, 'player4', 0, 0) &&
+                              {gameState?.round_number !== 0 &&
+                                isHandSelected(gameState, 'player4', 0, 0) &&
                                 gameState?.current_player === 'player4' && (
                                   <>
                                     {gameState?.dealer?.cards?.[0]?.[0] ===
@@ -1272,12 +1275,13 @@ const GameMenu = () => {
 
                                   {/* Split1 Hand Action Buttons for Player 4 */}
                                   <div className='flex justify-center gap-2 flex-wrap mt-2 mb-4'>
-                                    {isHandSelected(
-                                      gameState,
-                                      'player4',
-                                      0,
-                                      1
-                                    ) &&
+                                    {gameState?.round_number !== 0 &&
+                                      isHandSelected(
+                                        gameState,
+                                        'player4',
+                                        0,
+                                        1
+                                      ) &&
                                       gameState?.current_player === 'player4' &&
                                       gameState.players.player4.split1[0]?.cards
                                         ?.length === 2 &&
@@ -1286,7 +1290,8 @@ const GameMenu = () => {
                                           .cards
                                       ) &&
                                       gameState.players.player4.split1[0]
-                                        .status === 'playing' && (
+                                        .status === 'playing' &&
+                                      (gameState.players.player4.split1_status === 0 || gameState.players.player4.split2_status === 0) && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === 'live') {
@@ -1315,12 +1320,13 @@ const GameMenu = () => {
                                         </button>
                                       )}
 
-                                    {isHandSelected(
-                                      gameState,
-                                      'player4',
-                                      0,
-                                      1
-                                    ) &&
+                                    {gameState?.round_number !== 0 &&
+                                      isHandSelected(
+                                        gameState,
+                                        'player4',
+                                        0,
+                                        1
+                                      ) &&
                                       gameState?.current_player ===
                                         'player4' && (
                                         <>
@@ -1577,12 +1583,13 @@ const GameMenu = () => {
 
                                   {/* Split2 Hand Action Buttons for Player 4 */}
                                   <div className='flex justify-center gap-2 flex-wrap mt-8'>
-                                    {isHandSelected(
-                                      gameState,
-                                      'player4',
-                                      0,
-                                      2
-                                    ) &&
+                                    {gameState?.round_number !== 0 &&
+                                      isHandSelected(
+                                        gameState,
+                                        'player4',
+                                        0,
+                                        2
+                                      ) &&
                                       gameState?.current_player === 'player4' &&
                                       gameState.players.player4.split2[0]?.cards
                                         ?.length === 2 &&
@@ -1591,7 +1598,8 @@ const GameMenu = () => {
                                           .cards
                                       ) &&
                                       gameState.players.player4.split2[0]
-                                        .status === 'playing' && (
+                                        .status === 'playing' &&
+                                      (gameState.players.player4.split1_status === 0 || gameState.players.player4.split2_status === 0) && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === 'live') {
@@ -1620,12 +1628,13 @@ const GameMenu = () => {
                                         </button>
                                       )}
 
-                                    {isHandSelected(
-                                      gameState,
-                                      'player4',
-                                      0,
-                                      2
-                                    ) &&
+                                    {gameState?.round_number !== 0 &&
+                                      isHandSelected(
+                                        gameState,
+                                        'player4',
+                                        0,
+                                        2
+                                      ) &&
                                       gameState?.current_player ===
                                         'player4' && (
                                         <>
@@ -1872,16 +1881,19 @@ const GameMenu = () => {
                       {playerResult === 'win' && '🏆'}
                       {playerResult === 'lose' && '💸'}
                       {playerResult === 'tie' && '🤝'}
+                      {playerResult === 'surrender' && '🏳️'}
                     </div>
                     <h2 className='text-4xl font-bold mb-2 text-yellow-300 drop-shadow-lg tracking-wider'>
                       {playerResult === 'win' && 'YOU WIN'}
                       {playerResult === 'lose' && 'YOU LOSE'}
                       {playerResult === 'tie' && 'PUSH'}
+                      {playerResult === 'surrender' && 'SURRENDER'}
                     </h2>
                     <div className='text-xl text-yellow-100 opacity-90'>
                       {playerResult === 'win' && 'Congratulations!'}
                       {playerResult === 'lose' && 'Better luck next time'}
                       {playerResult === 'tie' && 'Nobody wins this round'}
+                      {playerResult === 'surrender' && 'You surrendered this hand'}
                     </div>
                   </div>
 
@@ -1928,6 +1940,12 @@ const GameMenu = () => {
                               text: 'PUSH',
                               color: 'text-yellow-300',
                               bg: 'bg-yellow-700/30'
+                            }
+                          case 'surrender':
+                            return {
+                              text: 'SURRENDER',
+                              color: 'text-blue-300',
+                              bg: 'bg-blue-700/30'
                             }
                           default:
                             return null

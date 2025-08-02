@@ -1382,10 +1382,29 @@ const GameMenu = () => {
                                       gameState?.current_player ===
                                         playerId && (
                                         <>
+                                          {/* Split Button */}
+                                          {gameState?.round_number !== 0 &&
+                                            gameState?.players?.[playerId]?.hands?.[0]?.cards?.length === 2 &&
+                                            canSplit(gameState.players[playerId].hands[0].cards) &&
+                                            gameState.players[playerId].hands[0].status === 'playing' &&
+                                            (gameState.players[playerId].split1_status === 0 ||
+                                              gameState.players[playerId].split2_status === 0) && (
+                                              <button
+                                                onClick={() =>
+                                                  sendWebSocketMessage({
+                                                    action: 'split_player_live',
+                                                    player_id: playerId
+                                                  })
+                                                }
+                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                              >
+                                                Split
+                                              </button>
+                                            )}
                                           {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                          {gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
-                                            !gameState.players[playerId]
-                                              .hands[0].insurence &&
+                                          {gameState?.round_number !== 0 &&
+                                            gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
+                                            !gameState.players[playerId].hands[0].insurence &&
                                             gameState.players[playerId].split1_status === 0 &&
                                             gameState.players[playerId].split2_status === 0 &&
                                             gameState.players[playerId].hands[0]?.cards?.length === 2 &&
@@ -1399,7 +1418,7 @@ const GameMenu = () => {
                                                 Insurance
                                               </button>
                                             )}
-                                          <button
+                                          {/* <button
                                             onClick={() => {
                                               sendWebSocketMessage({
                                                 action: 'hit_player',
@@ -1434,26 +1453,29 @@ const GameMenu = () => {
                                             >
                                               Double
                                             </button>
+                                          )} */}
+                                          {gameState?.round_number !== 0 && (
+                                            <button
+                                              onClick={() => {
+                                                sendWebSocketMessage({
+                                                  action: 'next_turn',
+                                                  player_id: playerId,
+                                                  hand_index: 0
+                                                })
+                                                clearInsuranceForHand(
+                                                  playerId,
+                                                  0,
+                                                  0
+                                                )
+                                              }}
+                                              className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
+                                            >
+                                              Stand
+                                            </button>
                                           )}
-                                          <button
-                                            onClick={() => {
-                                              sendWebSocketMessage({
-                                                action: 'next_turn',
-                                                player_id: playerId,
-                                                hand_index: 0
-                                              })
-                                              clearInsuranceForHand(
-                                                playerId,
-                                                0,
-                                                0
-                                              )
-                                            }}
-                                            className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                          >
-                                            Stand
-                                          </button>
                                           {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                          {gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
+                                          {gameState?.round_number !== 0 &&
+                                            gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
                                             gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
                                             <button
                                               onClick={() => {
@@ -1474,34 +1496,6 @@ const GameMenu = () => {
                                             </button>
                                           )}
                                         </>
-                                      )}
-                                    {/* Main hand split button */}
-                                    {isHandSelected(
-                                      gameState,
-                                      playerId,
-                                      0,
-                                      0
-                                    ) &&
-                                      gameState?.current_player === playerId &&
-                                      gameState?.players?.[playerId]?.hands?.[0]
-                                        ?.cards?.length === 2 &&
-                                      canSplit(
-                                        gameState.players[playerId].hands[0]
-                                          .cards
-                                      ) &&
-                                      gameState.players[playerId].hands[0]
-                                        .status === 'playing' && (
-                                        <button
-                                          onClick={() =>
-                                            sendWebSocketMessage({
-                                              action: 'split_player_live',
-                                              player_id: playerId
-                                            })
-                                          }
-                                          className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                        >
-                                          Split
-                                        </button>
                                       )}
                                   </div>
                                 </div>
@@ -1642,7 +1636,32 @@ const GameMenu = () => {
                                             gameState?.current_player ===
                                               playerId && (
                                               <>
-                                                <button
+                                                {/* Split Button for Split1 */}
+                                                {gameState?.round_number !== 0 &&
+                                                  gameState?.players?.[playerId]?.split1?.[0]?.cards?.length ===
+                                                    2 &&
+                                                  canSplit(
+                                                    gameState.players[playerId]
+                                                      .split1[0].cards
+                                                  ) &&
+                                                  gameState.players[playerId]
+                                                    .split1[0].status ===
+                                                    'playing' &&
+                                                  (gameState.players[playerId].split1_status === 0 ||
+                                                    gameState.players[playerId].split2_status === 0) && (
+                                                    <button
+                                                      onClick={() =>
+                                                        sendWebSocketMessage({
+                                                          action: 'split_player_live',
+                                                          player_id: playerId
+                                                        })
+                                                      }
+                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                                    >
+                                                      Split
+                                                    </button>
+                                                  )}
+                                                {/* <button
                                                   onClick={() =>
                                                     sendWebSocketMessage({
                                                       action: 'hit_player',
@@ -1667,7 +1686,8 @@ const GameMenu = () => {
                                                   >
                                                     Double
                                                   </button>
-                                                )}
+                                                )} */}
+                                                {gameState?.round_number !== 0 &&
                                                 <button
                                                   onClick={() =>
                                                     sendWebSocketMessage({
@@ -1680,8 +1700,10 @@ const GameMenu = () => {
                                                 >
                                                   Stand
                                                 </button>
+                                                }
                                                 {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                                {gameState?.players?.[playerId]?.split1?.[0]?.cards?.length === 2 &&
+                                                {gameState?.round_number !== 0 &&
+                                                  gameState?.players?.[playerId]?.split1?.[0]?.cards?.length === 2 &&
                                                   gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
                                                   <button
                                                     onClick={() => {
@@ -1702,37 +1724,6 @@ const GameMenu = () => {
                                                   </button>
                                                 )}
                                               </>
-                                            )}
-                                          {/* Split1 split button */}
-                                          {isHandSelected(
-                                            gameState,
-                                            playerId,
-                                            0,
-                                            1
-                                          ) &&
-                                            gameState?.current_player ===
-                                              playerId &&
-                                            gameState?.players?.[playerId]
-                                              ?.split1?.[0]?.cards?.length ===
-                                              2 &&
-                                            canSplit(
-                                              gameState.players[playerId]
-                                                .split1[0].cards
-                                            ) &&
-                                            gameState.players[playerId]
-                                              .split1[0].status ===
-                                              'playing' && (
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'split_player_live',
-                                                    player_id: playerId
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                              >
-                                                Split
-                                              </button>
                                             )}
                                         </div>
                                       </div>
@@ -1875,7 +1866,32 @@ const GameMenu = () => {
                                             gameState?.current_player ===
                                               playerId && (
                                               <>
-                                                <button
+                                                {/* Split Button for Split2 */}
+                                                {gameState?.round_number !== 0 &&
+                                                  gameState?.players?.[playerId]?.split2?.[0]?.cards?.length ===
+                                                    2 &&
+                                                  canSplit(
+                                                    gameState.players[playerId]
+                                                      .split2[0].cards
+                                                  ) &&
+                                                  gameState.players[playerId]
+                                                    .split2[0].status ===
+                                                    'playing' &&
+                                                  (gameState.players[playerId].split1_status === 0 ||
+                                                    gameState.players[playerId].split2_status === 0) && (
+                                                    <button
+                                                      onClick={() =>
+                                                        sendWebSocketMessage({
+                                                          action: 'split_player_live',
+                                                          player_id: playerId
+                                                        })
+                                                      }
+                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                                    >
+                                                      Split
+                                                    </button>
+                                                  )}
+                                                {/* <button
                                                   onClick={() =>
                                                     sendWebSocketMessage({
                                                       action: 'hit_player',
@@ -1900,7 +1916,7 @@ const GameMenu = () => {
                                                   >
                                                     Double
                                                   </button>
-                                                )}
+                                                )} */}
                                                 <button
                                                   onClick={() =>
                                                     sendWebSocketMessage({
@@ -1914,7 +1930,8 @@ const GameMenu = () => {
                                                   Stand
                                                 </button>
                                                 {/* Surrender Button for Split2 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                                {gameState?.players?.[playerId]?.split2?.[0]?.cards?.length === 2 &&
+                                                {gameState?.round_number !== 0 &&
+                                                  gameState?.players?.[playerId]?.split2?.[0]?.cards?.length === 2 &&
                                                   gameState?.dealer?.cards?.[0]?.[0] !== 'A' && (
                                                   <button
                                                     onClick={() => {
@@ -1935,37 +1952,6 @@ const GameMenu = () => {
                                                   </button>
                                                 )}
                                               </>
-                                            )}
-                                          {/* Split2 split button */}
-                                          {isHandSelected(
-                                            gameState,
-                                            playerId,
-                                            0,
-                                            2
-                                          ) &&
-                                            gameState?.current_player ===
-                                              playerId &&
-                                            gameState?.players?.[playerId]
-                                              ?.split2?.[0]?.cards?.length ===
-                                              2 &&
-                                            canSplit(
-                                              gameState.players[playerId]
-                                                .split2[0].cards
-                                            ) &&
-                                            gameState.players[playerId]
-                                              .split2[0].status ===
-                                              'playing' && (
-                                              <button
-                                                onClick={() =>
-                                                  sendWebSocketMessage({
-                                                    action: 'split_player_live',
-                                                    player_id: playerId
-                                                  })
-                                                }
-                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
-                                              >
-                                                Split
-                                              </button>
                                             )}
                                         </div>
                                       </div>

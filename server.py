@@ -643,6 +643,13 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             if hand["status"] == "waiting":
                 hand["status"] = "playing"
             
+            # Check for split Ace hands with 2 cards - auto-advance turn
+            if ((player["split1_status"] == 1 or player["split2_status"] == 1) and 
+                len(hand["cards"]) > 0 and hand["cards"][0][:-1] == 'A' and 
+                len(hand["cards"]) == 2 and hand["total"] != 21):
+                print(f"[DEBUG] Auto-advancing turn for {player_id} (split Ace hand with 2 cards)")
+                await handle_next_turn()
+            
             if is_bust(hand["cards"]):
                 hand["status"] = "bust"
                 hand["result"] = "fail"
@@ -654,7 +661,12 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 hand["status"] = "blackjack"
                 hand["result"] = "win"
                 if game_state["mode"] == "live":
-                    set_live_function_hand(player_id, split_level, hand_index, "blackjack")
+                    # Check if this is a split Ace hand
+                    if ((player["split1_status"] == 1 or player["split2_status"] == 1) and 
+                        len(hand["cards"]) > 0 and hand["cards"][0][:-1] == 'A'):
+                        set_live_function_hand(player_id, split_level, hand_index, "21")
+                    else:
+                        set_live_function_hand(player_id, split_level, hand_index, "blackjack")
                 print(f"Blackjack!")
                 if game_state["round_number"] == 1:
                     await handle_next_turn()
@@ -920,6 +932,20 @@ async def handle_split_player_live(player_id):
     #         new_card = game_state["deck"].pop()
     #         hand["cards"].append(new_card)
     #         hand["total"] = calculate_hand_value(hand["cards"])
+    
+    # Reset live_function_hand for the selected hand after split completion
+    if split_level == 0:
+        # Main hand
+        if len(player_data["hands"]) > 0:
+            player_data["hands"][0]["live_function_hand"] = ""
+    elif split_level == 1:
+        # Split1 hand
+        if player_data["split1"] and len(player_data["split1"]) > 0:
+            player_data["split1"][0]["live_function_hand"] = ""
+    elif split_level == 2:
+        # Split2 hand
+        if player_data["split2"] and len(player_data["split2"]) > 0:
+            player_data["split2"][0]["live_function_hand"] = ""
     
     await broadcast({
         "action": "player_split",
@@ -1650,107 +1676,149 @@ async def evaluate_game():
         if player_data["status"] == 1:
             # Main hand
             hand = player_data["hands"][0]
-            # Skip evaluation if hand is already surrendered
-            if hand.get("result") == "surrender":
-                continue
-                
-            if dealer_bust:
-                if hand["total"] <= 21:
-                    hand["result"] = "win"
-                else:
-                    hand["result"] = "fail"
-            else:
-                # Special case: both dealer and player have 21
-                if dealer_total == 21 and hand["total"] == 21:
-                    player_cards_count = len(hand["cards"])
-                    if dealer_cards_count == 2 and player_cards_count > 2:
-                        # Dealer has 2 cards, player has >2 cards: dealer wins
-                        hand["result"] = "fail"
-                    elif dealer_cards_count == player_cards_count:
-                        # Same number of cards: tie
-                        hand["result"] = "tie"
-                    elif player_cards_count == 2 and dealer_cards_count > 2:
-                        # Player has 2 cards, dealer has >2 cards: player wins
+            # Only evaluate if hand is not surrendered
+            if hand.get("result") != "surrender":
+                # Check if this is a split Ace hand (split1_status or split2_status is 1 and first card is Ace)
+                is_split_ace_hand = ((player_data["split1_status"] == 1 or player_data["split2_status"] == 1) and 
+                                    len(hand["cards"]) > 0 and hand["cards"][0][:-1] == 'A')
+                    
+                if dealer_bust:
+                    if hand["total"] <= 21:
                         hand["result"] = "win"
                     else:
-                        # Default tie for 21 vs 21
-                        hand["result"] = "tie"
-                elif hand["total"] > dealer_total and hand["total"] <= 21:
-                    hand["result"] = "win"
-                elif hand["total"] == dealer_total and hand["total"] <= 21:
-                    hand["result"] = "tie"
+                        hand["result"] = "fail"
                 else:
-                    hand["result"] = "fail"
+                    # Special case: both dealer and player have 21
+                    if dealer_total == 21 and hand["total"] == 21:
+                        player_cards_count = len(hand["cards"])
+                        # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                        if is_split_ace_hand and player_cards_count == 2:
+                            # Split Ace hand with 21: treat as regular 21, not blackjack
+                            if dealer_cards_count == 2:
+                                # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                hand["result"] = "fail"
+                            elif dealer_cards_count > 2:
+                                # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                hand["result"] = "tie"
+                            else:
+                                # Default tie for 21 vs 21
+                                hand["result"] = "tie"
+                        elif dealer_cards_count == 2 and player_cards_count > 2:
+                            # Dealer has 2 cards, player has >2 cards: dealer wins
+                            hand["result"] = "fail"
+                        elif dealer_cards_count == player_cards_count:
+                            # Same number of cards: tie
+                            hand["result"] = "tie"
+                        elif player_cards_count == 2 and dealer_cards_count > 2:
+                            # Player has 2 cards, dealer has >2 cards: player wins
+                            hand["result"] = "win"
+                        else:
+                            # Default tie for 21 vs 21
+                            hand["result"] = "tie"
+                    elif hand["total"] > dealer_total and hand["total"] <= 21:
+                        hand["result"] = "win"
+                    elif hand["total"] == dealer_total and hand["total"] <= 21:
+                        hand["result"] = "tie"
+                    else:
+                        hand["result"] = "fail"
             
             # Split1
             if player_data["split1_status"] == 1 and player_data["split1"]:
                 split1_hand = player_data["split1"][0]
-                # Skip evaluation if hand is already surrendered
-                if split1_hand.get("result") == "surrender":
-                    continue
-                    
-                if dealer_bust:
-                    if split1_hand["total"] <= 21:
-                        split1_hand["result"] = "win"
-                    else:
-                        split1_hand["result"] = "fail"
-                else:
-                    # Special case: both dealer and player have 21
-                    if dealer_total == 21 and split1_hand["total"] == 21:
-                        player_cards_count = len(split1_hand["cards"])
-                        if dealer_cards_count == 2 and player_cards_count > 2:
-                            # Dealer has 2 cards, player has >2 cards: dealer wins
-                            split1_hand["result"] = "fail"
-                        elif dealer_cards_count == player_cards_count:
-                            # Same number of cards: tie
-                            split1_hand["result"] = "tie"
-                        elif player_cards_count == 2 and dealer_cards_count > 2:
-                            # Player has 2 cards, dealer has >2 cards: player wins
+                # Only evaluate if hand is not surrendered
+                if split1_hand.get("result") != "surrender":
+                    # Check if this is a split Ace hand (split1_status is 1 and first card is Ace)
+                    is_split_ace_hand = (player_data["split1_status"] == 1 and 
+                                       len(split1_hand["cards"]) > 0 and split1_hand["cards"][0][:-1] == 'A')
+                        
+                    if dealer_bust:
+                        if split1_hand["total"] <= 21:
                             split1_hand["result"] = "win"
                         else:
-                            # Default tie for 21 vs 21
-                            split1_hand["result"] = "tie"
-                    elif split1_hand["total"] > dealer_total and split1_hand["total"] <= 21:
-                        split1_hand["result"] = "win"
-                    elif split1_hand["total"] == dealer_total and split1_hand["total"] <= 21:
-                        split1_hand["result"] = "tie"
+                            split1_hand["result"] = "fail"
                     else:
-                        split1_hand["result"] = "fail"
+                        # Special case: both dealer and player have 21
+                        if dealer_total == 21 and split1_hand["total"] == 21:
+                            player_cards_count = len(split1_hand["cards"])
+                            # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                            if is_split_ace_hand and player_cards_count == 2:
+                                # Split Ace hand with 21: treat as regular 21, not blackjack
+                                if dealer_cards_count == 2:
+                                    # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                    split1_hand["result"] = "fail"
+                                elif dealer_cards_count > 2:
+                                    # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                    split1_hand["result"] = "tie"
+                                else:
+                                    # Default tie for 21 vs 21
+                                    split1_hand["result"] = "tie"
+                            elif dealer_cards_count == 2 and player_cards_count > 2:
+                                # Dealer has 2 cards, player has >2 cards: dealer wins
+                                split1_hand["result"] = "fail"
+                            elif dealer_cards_count == player_cards_count:
+                                # Same number of cards: tie
+                                split1_hand["result"] = "tie"
+                            elif player_cards_count == 2 and dealer_cards_count > 2:
+                                # Player has 2 cards, dealer has >2 cards: player wins
+                                split1_hand["result"] = "win"
+                            else:
+                                # Default tie for 21 vs 21
+                                split1_hand["result"] = "tie"
+                        elif split1_hand["total"] > dealer_total and split1_hand["total"] <= 21:
+                            split1_hand["result"] = "win"
+                        elif split1_hand["total"] == dealer_total and split1_hand["total"] <= 21:
+                            split1_hand["result"] = "tie"
+                        else:
+                            split1_hand["result"] = "fail"
             
             # Split2
             if player_data["split2_status"] == 1 and player_data["split2"]:
                 split2_hand = player_data["split2"][0]
-                # Skip evaluation if hand is already surrendered
-                if split2_hand.get("result") == "surrender":
-                    continue
-                    
-                if dealer_bust:
-                    if split2_hand["total"] <= 21:
-                        split2_hand["result"] = "win"
-                    else:
-                        split2_hand["result"] = "fail"
-                else:
-                    # Special case: both dealer and player have 21
-                    if dealer_total == 21 and split2_hand["total"] == 21:
-                        player_cards_count = len(split2_hand["cards"])
-                        if dealer_cards_count == 2 and player_cards_count > 2:
-                            # Dealer has 2 cards, player has >2 cards: dealer wins
-                            split2_hand["result"] = "fail"
-                        elif dealer_cards_count == player_cards_count:
-                            # Same number of cards: tie
-                            split2_hand["result"] = "tie"
-                        elif player_cards_count == 2 and dealer_cards_count > 2:
-                            # Player has 2 cards, dealer has >2 cards: player wins
+                # Only evaluate if hand is not surrendered
+                if split2_hand.get("result") != "surrender":
+                    # Check if this is a split Ace hand (split2_status is 1 and first card is Ace)
+                    is_split_ace_hand = (player_data["split2_status"] == 1 and 
+                                       len(split2_hand["cards"]) > 0 and split2_hand["cards"][0][:-1] == 'A')
+                        
+                    if dealer_bust:
+                        if split2_hand["total"] <= 21:
                             split2_hand["result"] = "win"
                         else:
-                            # Default tie for 21 vs 21
-                            split2_hand["result"] = "tie"
-                    elif split2_hand["total"] > dealer_total and split2_hand["total"] <= 21:
-                        split2_hand["result"] = "win"
-                    elif split2_hand["total"] == dealer_total and split2_hand["total"] <= 21:
-                        split2_hand["result"] = "tie"
+                            split2_hand["result"] = "fail"
                     else:
-                        split2_hand["result"] = "fail"
+                        # Special case: both dealer and player have 21
+                        if dealer_total == 21 and split2_hand["total"] == 21:
+                            player_cards_count = len(split2_hand["cards"])
+                            # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                            if is_split_ace_hand and player_cards_count == 2:
+                                # Split Ace hand with 21: treat as regular 21, not blackjack
+                                if dealer_cards_count == 2:
+                                    # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                    split2_hand["result"] = "fail"
+                                elif dealer_cards_count > 2:
+                                    # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                    split2_hand["result"] = "tie"
+                                else:
+                                    # Default tie for 21 vs 21
+                                    split2_hand["result"] = "tie"
+                            elif dealer_cards_count == 2 and player_cards_count > 2:
+                                # Dealer has 2 cards, player has >2 cards: dealer wins
+                                split2_hand["result"] = "fail"
+                            elif dealer_cards_count == player_cards_count:
+                                # Same number of cards: tie
+                                split2_hand["result"] = "tie"
+                            elif player_cards_count == 2 and dealer_cards_count > 2:
+                                # Player has 2 cards, dealer has >2 cards: player wins
+                                split2_hand["result"] = "win"
+                            else:
+                                # Default tie for 21 vs 21
+                                split2_hand["result"] = "tie"
+                        elif split2_hand["total"] > dealer_total and split2_hand["total"] <= 21:
+                            split2_hand["result"] = "win"
+                        elif split2_hand["total"] == dealer_total and split2_hand["total"] <= 21:
+                            split2_hand["result"] = "tie"
+                        else:
+                            split2_hand["result"] = "fail"
     
     await broadcast({
         "action": "game_evaluated",
