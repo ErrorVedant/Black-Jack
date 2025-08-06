@@ -24,6 +24,8 @@ interface PlayerData {
   split2: Hand[]
   split2_status: number
   insurence?: number
+  surrender?: number
+  even_money?: number
 }
 
 interface Players {
@@ -52,6 +54,7 @@ interface GameState {
   round_number: number
   manual_distribution_count: number
   next_manual_counter: number
+  all_done?: number
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -438,7 +441,7 @@ const GameMenu = () => {
     } else {
       setPopupMessage('⚠️ Not connected to server6')
       setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
+      setTimeout(() => setShowPopup(false), 10)
     }
   }
 
@@ -663,7 +666,7 @@ const GameMenu = () => {
 
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
-    if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
+    if (selected && gameState?.all_done === 1) return 'bg-yellow-300 border-2 border-yellow-500'
     if (result === 'surrender')
       return 'bg-blue-500 border-2 border-blue-700 text-white'
     if (result === 'fail')
@@ -1097,6 +1100,12 @@ const GameMenu = () => {
                                       Insured
                                     </span>
                                   )}
+                                {gameState?.players?.[playerId]?.even_money ===
+                                  1 && (
+                                    <span className='ml-2 text-purple-400 font-semibold text-base'>
+                                      Even Money
+                                    </span>
+                                  )}
                               </div>
                               {/* <div
                               className={`text-sm ${
@@ -1218,6 +1227,107 @@ const GameMenu = () => {
                                   ?.total ?? 0}
                               </span> */}
                                 <div className='flex flex-wrap justify-center items-center gap-1'>
+                                  {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
+                                  {gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
+                                    !gameState.players[playerId].hands[0].insurence &&
+                                    gameState.players[playerId].split1_status === 0 &&
+                                    gameState.players[playerId].split2_status === 0 &&
+                                    gameState.players[playerId].hands[0]?.cards?.length === 2 &&
+                                    gameState.players[playerId].hands[0]?.total !== 21 &&
+                                    gameState.players[playerId].insurence === 0 &&
+                                    gameState?.round_number !== 0 && (
+                                      <>
+                                        <button
+                                          onClick={() =>
+                                            handleInsurance(playerId)
+                                          }
+                                          className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
+                                        >
+                                          Insurance
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'no_for_player_insurence',
+                                              player_id: playerId
+                                            })
+                                          }}
+                                          className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
+                                        >
+                                          No Insurance
+                                        </button>
+                                      </>
+                                    )}
+                                  {/* Even Money Button: Only show if dealer's first card is Ace, hand has 2 cards, total is 21, and even money not taken */}
+                                  {gameState?.round_number !== 0 &&
+                                    gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
+                                    gameState.players[playerId].split1_status === 0 &&
+                                    gameState.players[playerId].split2_status === 0 &&
+                                    gameState.players[playerId].hands[0]?.cards?.length === 2 &&
+                                    gameState.players[playerId].hands[0]?.total === 21 &&
+                                    gameState.players[playerId].even_money === 0 && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'yes_for_player_even_money',
+                                              player_id: playerId
+                                            })
+                                          }}
+                                          className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                        >
+                                          Even Money
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'no_for_player_even_money',
+                                              player_id: playerId
+                                            })
+                                          }}
+                                          className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
+                                        >
+                                          No Even Money
+                                        </button>
+                                      </>
+                                    )}
+                                  {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
+                                  {gameState?.round_number !== 0 &&
+                                    gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
+                                    gameState?.dealer?.cards?.[0]?.[0] !== 'A' &&
+                                    gameState.players[playerId].surrender === 0 && (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'surrender_player',
+                                              player_id: playerId,
+                                              hand_index: 0
+                                            })
+                                            clearInsuranceForHand(
+                                              playerId,
+                                              0,
+                                              0
+                                            )
+                                          }}
+                                          className='px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors'
+                                        >
+                                          Surrender
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            sendWebSocketMessage({
+                                              action: 'no_for_player_surrender',
+                                              player_id: playerId
+                                            })
+                                          }}
+                                          className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
+                                        >
+                                          No Surrender
+                                        </button>
+                                      </>
+                                    )}
+                                  {/* Main Game Action Buttons - Only show when player is selected and all_done === 1 */}
                                   {isHandSelected(gameState, playerId, 0, 0) &&
                                     gameState?.current_player === playerId && (
                                       <>
@@ -1231,7 +1341,7 @@ const GameMenu = () => {
                                             .status === 'playing' &&
                                           (gameState.players[playerId].split1_status === 0 ||
                                             gameState.players[playerId].split2_status === 0) &&
-                                          gameState?.round_number !== 0 && (
+                                          gameState?.round_number !== 0 && gameState.all_done === 1 && (
                                             <button
                                               onClick={() =>
                                                 sendWebSocketMessage({
@@ -1244,25 +1354,7 @@ const GameMenu = () => {
                                               Split
                                             </button>
                                           )}
-                                        {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
-                                        {gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
-                                          !gameState.players[playerId]
-                                            .insurence &&
-                                          gameState.players[playerId].split1_status === 0 &&
-                                          gameState.players[playerId].split2_status === 0 &&
-                                          gameState.players[playerId].hands[0]?.cards?.length === 2 &&
-                                          gameState.players[playerId].insurence !== 1 &&
-                                          gameState?.round_number !== 0 && (
-                                            <button
-                                              onClick={() =>
-                                                handleInsurance(playerId)
-                                              }
-                                              className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
-                                            >
-                                              Insurance
-                                            </button>
-                                          )}
-                                        {gameState?.round_number !== 0 && (
+                                        {gameState?.round_number !== 0 && gameState.all_done === 1 && (
                                           <button
                                             onClick={() => {
                                               sendWebSocketMessage({
@@ -1282,7 +1374,7 @@ const GameMenu = () => {
                                           </button>
                                         )}
                                         {gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
-                                          gameState?.round_number !== 0 && (
+                                          gameState?.round_number !== 0 && gameState.all_done === 1 && (
                                             <button
                                               onClick={() => {
                                                 sendWebSocketMessage({
@@ -1301,7 +1393,7 @@ const GameMenu = () => {
                                               Double
                                             </button>
                                           )}
-                                        {gameState?.round_number !== 0 && (
+                                        {gameState?.round_number !== 0 && gameState.all_done === 1 && (
                                           <button
                                             onClick={() => {
                                               sendWebSocketMessage({
@@ -1320,28 +1412,6 @@ const GameMenu = () => {
                                             Stand
                                           </button>
                                         )}
-                                        {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                        {gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
-                                          gameState?.dealer?.cards?.[0]?.[0] !== 'A' &&
-                                          gameState?.round_number !== 0 && (
-                                            <button
-                                              onClick={() => {
-                                                sendWebSocketMessage({
-                                                  action: 'surrender_player',
-                                                  player_id: playerId,
-                                                  hand_index: 0
-                                                })
-                                                clearInsuranceForHand(
-                                                  playerId,
-                                                  0,
-                                                  0
-                                                )
-                                              }}
-                                              className='px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors'
-                                            >
-                                              Surrender
-                                            </button>
-                                          )}
                                       </>
                                     )}
                                 </div>
