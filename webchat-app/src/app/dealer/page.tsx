@@ -287,11 +287,30 @@ const GameMenu = () => {
       gameState?.mode === 'live' &&
       gameState?.round_number === 1 &&
       gameState?.selected_hand?.player_id === 'dealer' &&
-      gameState?.dealer.total >= 17 &&
       !gameState?.evaluate_game
     ) {
-      if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ action: 'evaluate_game' }))
+      const dealer = gameState.dealer
+      const dealerCards = dealer?.cards || []
+      const dealerTotal = dealer?.total ?? 0
+      const hasAce = dealerCards.some(card => card[0] === 'A')
+      const isTwoCardSoft17A6 =
+        dealerCards.length === 2 &&
+        dealerTotal === 17 &&
+        hasAce &&
+        dealerCards.some(card => card[0] === '6')
+
+      if (dealerTotal === 17 && hasAce) {
+        if (isTwoCardSoft17A6) {
+          console.log('Dealer soft 17 (A+6, 2 cards): backend will hit')
+        } else if (dealerCards.length > 2) {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ action: 'evaluate_game' }))
+          }
+        }
+      } else if (dealerTotal >= 17) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ action: 'evaluate_game' }))
+        }
       }
     }
   }, [gameState, socket])

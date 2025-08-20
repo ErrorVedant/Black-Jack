@@ -23,6 +23,7 @@ interface PlayerData {
   split2: Hand[]
   split2_status: number
   insurence?: number
+  even_money?: number
 }
 
 interface Players {
@@ -976,24 +977,51 @@ const GameMenu = () => {
                             </div> */}
                           </div>
                           {isActive && (
-                            <button
-                              onClick={e => {
-                                e.stopPropagation()
-                                sendWebSocketMessage({
-                                  action: 'handle_manual_insurance',
-                                  player_id: playerId
-                                })
-                              }}
-                              className={`px-1 py-0.5 rounded transition-colors text-sm ${
-                                gameState?.players?.[playerId]?.insurence === 1
-                                  ? 'bg-gray-500 text-white hover:bg-gray-600'
-                                  : 'bg-yellow-500 text-white hover:bg-yellow-600'
-                              }`}
-                            >
-                              {gameState?.players?.[playerId]?.insurence === 1
-                                ? 'Cancel Insurance'
-                                : 'Insurance'}
-                            </button>
+                            <>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  sendWebSocketMessage({
+                                    action: 'handle_manual_insurance',
+                                    player_id: playerId
+                                  })
+                                }}
+                                className={`px-1 py-0.5 rounded transition-colors text-sm ${
+                                  gameState?.players?.[playerId]?.insurence === 1
+                                    ? 'bg-gray-500 text-white hover:bg-gray-600'
+                                    : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                }`}
+                              >
+                                {gameState?.players?.[playerId]?.insurence === 1
+                                  ? 'Cancel Insurance'
+                                  : 'Insurance'}
+                              </button>
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  if (gameState?.players?.[playerId]?.even_money === 1) {
+                                    sendWebSocketMessage({
+                                      action: 'no_for_player_even_money',
+                                      player_id: playerId
+                                    })
+                                  } else {
+                                    sendWebSocketMessage({
+                                      action: 'yes_for_player_even_money',
+                                      player_id: playerId
+                                    })
+                                  }
+                                }}
+                                className={`px-1 py-0.5 rounded transition-colors text-sm ${
+                                  gameState?.players?.[playerId]?.even_money === 1
+                                    ? 'bg-gray-500 text-white hover:bg-gray-600'
+                                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                                }`}
+                              >
+                                {gameState?.players?.[playerId]?.even_money === 1
+                                  ? 'Cancel Even Money'
+                                  : 'Even Money'}
+                              </button>
+                            </>
                           )}
                         </div>
                         {/* {!isActive ? (

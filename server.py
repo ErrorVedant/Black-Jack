@@ -137,6 +137,7 @@ game_state = {
     "selected_hand": None,   
     "game_phase": "waiting",
     "table_number": 1,
+    "auto_split_draw_card": 0,
     "rounds_played_in_game": 1,
     "mode": "live",
     "action_history": [],
@@ -170,6 +171,20 @@ def calculate_hand_value(cards):
 def is_blackjack(cards):
     log_function_call("is_blackjack", cards=cards)
     return len(cards) == 2 and calculate_hand_value(cards) == 21
+
+def is_split_hand(player_data, split_level=0):
+    """Check if a hand is a result of a split"""
+    log_function_call("is_split_hand", player_data=player_data, split_level=split_level)
+    if split_level == 0:
+        # Main hand - check if any splits are active
+        return player_data.get("split1_status") == 1 or player_data.get("split2_status") == 1
+    elif split_level == 1:
+        # Split1 hand
+        return player_data.get("split1_status") == 1
+    elif split_level == 2:
+        # Split2 hand
+        return player_data.get("split2_status") == 1
+    return False
 
 def is_bust(cards):
     log_function_call("is_bust", cards=cards)
@@ -247,6 +262,7 @@ def serialize_game_state():
         "max_bet": game_state["max_bet"],
         "mode": game_state["mode"],
         "rounds_played_in_game": game_state["rounds_played_in_game"],
+        "auto_split_draw_card": game_state["auto_split_draw_card"],
         "evaluate_game": game_state["evaluate_game"],
         "split_fire_state": game_state["split_fire_state"],
         "split_call_live_previous_counter": game_state["split_call_live_previous_counter"],
@@ -350,6 +366,7 @@ async def handle_connection(websocket):
         "yes_for_player_insurence": lambda d: yes_for_player(d.get("player_id"), 'insurence'),
         "yes_for_player_surrender": lambda d: yes_for_player(d.get("player_id"), 'surrender'),
         "yes_for_player_even_money": lambda d: yes_for_player(d.get("player_id"), 'even_money'),
+        "pull_from_pull_stack_1_hand_card": lambda d: pull_from_pull_stack_1_hand_card(),
     }
 
     try:
@@ -542,13 +559,13 @@ async def check_all_done():
                 game_state["selected_hand"] = selected_hand
                 game_state["current_player"] = selected_hand["player_id"]
             else:
-                # Fallback to first active hand if no suitable hand found
-                first_active_hand = get_first_active_player_hand()
-                if first_active_hand:
-                    game_state["selected_hand"] = first_active_hand
-                    game_state["current_player"] = first_active_hand["player_id"]
-                else:
-                    game_state["current_player"] = None
+                # Fallback to dealer if no suitable hand found
+                game_state["current_player"] = "dealer"
+                game_state["selected_hand"] = {
+                        "player_id": "dealer",
+                        "hand_index": 0,
+                        "split_level": 0
+                }
             
             print(f"Selected hand: {selected_hand}")
             print(f"Current player: {game_state['current_player']}")
@@ -671,6 +688,16 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
     print(f"Input parameters - player_id: {player_id}, hand_index: {hand_index}, card: {card}")
     
     try:
+        # Block hits after the game has been evaluated
+        if game_state.get("evaluate_game"):
+            print("[DEBUG] hit_player blocked: game already over")
+            await broadcast({
+                "action": "error",
+                "message": "game already over",
+                "game_state": serialize_game_state()
+            })
+            return
+
         total_cards_in_play = count_total_cards_in_play()
         print(f"[DEBUG] Mode: {game_state['mode']}, Total cards in play: {total_cards_in_play}")
         
@@ -864,15 +891,15 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 print(f"Hand busted with total {hand['total']}")
                 await handle_next_turn()
             elif is_blackjack(hand["cards"]):
-                hand["status"] = "blackjack"
-                hand["result"] = "win"
-                if game_state["mode"] == "live":
-                    # Check if this is a split Ace hand
-                    if ((player["split1_status"] == 1 or player["split2_status"] == 1) and 
-                        len(hand["cards"]) > 0 and hand["cards"][0][:-1] == 'A'):
+                if game_state["mode"] == "live" or game_state["mode"] == "auto":
+                    # Check if this is a split hand (any split, not just Ace)
+                    if is_split_hand(player, split_level):
                         set_live_function_hand(player_id, split_level, hand_index, "21")
                     else:
                         set_live_function_hand(player_id, split_level, hand_index, "blackjack")
+                        hand["status"] = "blackjack"
+                        hand["result"] = "win"
+                        player["surrender"] = -1
                 print(f"Blackjack!")
                 if game_state["round_number"] == 1:
                     await handle_next_turn()
@@ -908,6 +935,17 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             print("\n=== HANDLE HIT PLAYER COMPLETED ===")
             print("Updated player state:", game_state["players"][player_id])
             log_game_state()
+
+            # If all players are bust or surrendered, mark evaluation complete
+            try:
+                if all_players_bust_or_surrender():
+                    game_state["evaluate_game"] = True
+                    await broadcast({
+                        "action": "game_evaluated",
+                        "game_state": serialize_game_state()
+                    })
+            except Exception as _e:
+                print(f"[WARN] all_players_bust_or_surrender check failed: {_e}")
 
             # Check if mode is live and round_number is 1, and live_function_hand was "Hit"
             if game_state["mode"] == "live" and game_state["round_number"] == 1:
@@ -997,8 +1035,10 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     double_status = player["hands"][hand_index]["double_status"]
                 
                 if double_status == "1" and game_state["mode"] == "live":
-                    print(f"[DEBUG] Auto-advancing turn for {player_id} (double down, live mode)")
-                    await handle_next_turn()                    
+                    # Avoid double-advancing if we've already advanced due to bust/blackjack/21
+                    if hand.get("status") not in ["bust", "blackjack"] and hand.get("total") != 21:
+                        print(f"[DEBUG] Auto-advancing turn for {player_id} (double down, live mode)")
+                        await handle_next_turn()                    
 
                 
     except Exception as e:
@@ -1316,6 +1356,7 @@ async def handle_reset_round():
         "evaluate_game": False,  # Reset evaluate_game flag
         "split_fire_state": 0,
         "split_current_pointer": 0,
+        "auto_split_draw_card": 0,
         "split_call_live_previous_counter": 0,
         "next_manual_counter": 0,
         "manual_distribution_count": 0,
@@ -1408,6 +1449,7 @@ async def handle_reset_game():
         "action_history": [],
         # "mode": "",  # Reset to default game mode
         "table_number": 1,
+        "auto_split_draw_card": 0,
         "evaluate_game": False,  # Reset evaluate_game flag
         "all_done": 0
     })
@@ -1476,6 +1518,8 @@ def get_all_player_hands():
 
 async def handle_next_turn():
     """Handle moving to the next turn"""
+    if (game_state["auto_split_draw_card"] == 1):
+        game_state["auto_split_draw_card"] = 0;
     async def maybe_auto_skip_blackjack():
         player_id = game_state["current_player"]
         selected = game_state["selected_hand"]
@@ -1882,13 +1926,44 @@ async def handle_distribute_cards_auto():
         print("cards exist")
 
 async def handle_dealer_value_less_then_17():
-    """Keep hitting dealer until dealer's total is >= 17"""
+    """Keep hitting dealer until dealer's total is >= 17.
+    Only treat soft 17 as a hit when it's exactly a two-card A+6 hand.
+    Do not hit on 17 when dealer has more than two cards.
+    """
     print('handle_dealer_value_less_then_17()')
-    while game_state["dealer"]["total"] < 17:
-        await handle_hit_player("dealer", 0)
-        await asyncio.sleep(0.2)
-    # Evaluate the game after dealer is done
-    await evaluate_game()
+    already_over = 0
+    # Continue only if at least one player hand is still relevant
+    for player in game_state["players"].values():
+        if (player["status"] == 1 and player["hands"][0]["status"] == "playing" and player["surrender"] != 1):
+            for hand in player["hands"]:
+                if hand["status"] != "bust":
+                    already_over += 1
+    if already_over != 0:
+        while True:
+            dealer_cards = game_state["dealer"]["cards"]
+            dealer_total = game_state["dealer"]["total"]
+
+            # Only two-card A+6 counts as soft 17 that requires a hit
+            is_two_card_soft_17 = False
+            if len(dealer_cards) == 2 and dealer_total == 17:
+                ranks = [c[0] for c in dealer_cards]
+                is_two_card_soft_17 = ("A" in ranks and "6" in ranks)
+
+            should_hit = dealer_total < 17 or is_two_card_soft_17
+            if not should_hit:
+                break
+
+            await handle_hit_player("dealer", 0)
+            await asyncio.sleep(0.2)
+        # Evaluate the game after dealer is done
+        await evaluate_game()
+    else:
+        # If no relevant player hands remain, mark game evaluated immediately
+        game_state["evaluate_game"] = True
+        await broadcast({
+            "action": "game_evaluated",
+            "game_state": serialize_game_state()
+        })
 
 async def evaluate_game():
     """Evaluate all active hands: if dealer bust, all hands <= 21 win, >21 fail; else if hand > dealer and <= 21, win; if hand == dealer and <= 21, tie; else fail."""
@@ -1907,9 +1982,8 @@ async def evaluate_game():
             hand = player_data["hands"][0]
             # Only evaluate if hand is not surrendered
             if hand.get("result") != "surrender" and player_data["even_money"] != 1:
-                # Check if this is a split Ace hand (split1_status or split2_status is 1 and first card is Ace)
-                is_split_ace_hand = ((player_data["split1_status"] == 1 or player_data["split2_status"] == 1) and 
-                                    len(hand["cards"]) > 0 and hand["cards"][0][:-1] == 'A')
+                # Check if this is a split hand (any split is active)
+                is_split_hand_main = is_split_hand(player_data, 0)
                     
                 if dealer_bust:
                     if hand["total"] <= 21:
@@ -1920,14 +1994,14 @@ async def evaluate_game():
                     # Special case: both dealer and player have 21
                     if dealer_total == 21 and hand["total"] == 21:
                         player_cards_count = len(hand["cards"])
-                        # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
-                        if is_split_ace_hand and player_cards_count == 2:
-                            # Split Ace hand with 21: treat as regular 21, not blackjack
+                        # For split hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                        if is_split_hand_main and player_cards_count == 2:
+                            # Split hand with 21: treat as regular 21, not blackjack
                             if dealer_cards_count == 2:
-                                # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                # Dealer has blackjack (2 cards), player has split 21: dealer wins
                                 hand["result"] = "fail"
                             elif dealer_cards_count > 2:
-                                # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                # Dealer has regular 21 (>2 cards), player has split 21: tie
                                 hand["result"] = "tie"
                             else:
                                 # Default tie for 21 vs 21
@@ -1956,9 +2030,8 @@ async def evaluate_game():
                 split1_hand = player_data["split1"][0]
                 # Only evaluate if hand is not surrendered
                 if split1_hand.get("result") != "surrender":
-                    # Check if this is a split Ace hand (split1_status is 1 and first card is Ace)
-                    is_split_ace_hand = (player_data["split1_status"] == 1 and 
-                                       len(split1_hand["cards"]) > 0 and split1_hand["cards"][0][:-1] == 'A')
+                    # Check if this is a split hand (split1_status is 1)
+                    is_split_hand_split1 = is_split_hand(player_data, 1)
                         
                     if dealer_bust:
                         if split1_hand["total"] <= 21:
@@ -1969,14 +2042,14 @@ async def evaluate_game():
                         # Special case: both dealer and player have 21
                         if dealer_total == 21 and split1_hand["total"] == 21:
                             player_cards_count = len(split1_hand["cards"])
-                            # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
-                            if is_split_ace_hand and player_cards_count == 2:
-                                # Split Ace hand with 21: treat as regular 21, not blackjack
+                            # For split hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                            if is_split_hand_split1 and player_cards_count == 2:
+                                # Split hand with 21: treat as regular 21, not blackjack
                                 if dealer_cards_count == 2:
-                                    # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                    # Dealer has blackjack (2 cards), player has split 21: dealer wins
                                     split1_hand["result"] = "fail"
                                 elif dealer_cards_count > 2:
-                                    # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                    # Dealer has regular 21 (>2 cards), player has split 21: tie
                                     split1_hand["result"] = "tie"
                                 else:
                                     # Default tie for 21 vs 21
@@ -2005,9 +2078,8 @@ async def evaluate_game():
                 split2_hand = player_data["split2"][0]
                 # Only evaluate if hand is not surrendered
                 if split2_hand.get("result") != "surrender":
-                    # Check if this is a split Ace hand (split2_status is 1 and first card is Ace)
-                    is_split_ace_hand = (player_data["split2_status"] == 1 and 
-                                       len(split2_hand["cards"]) > 0 and split2_hand["cards"][0][:-1] == 'A')
+                    # Check if this is a split hand (split2_status is 1)
+                    is_split_hand_split2 = is_split_hand(player_data, 2)
                         
                     if dealer_bust:
                         if split2_hand["total"] <= 21:
@@ -2018,14 +2090,14 @@ async def evaluate_game():
                         # Special case: both dealer and player have 21
                         if dealer_total == 21 and split2_hand["total"] == 21:
                             player_cards_count = len(split2_hand["cards"])
-                            # For split Ace hands, treat 21 as regular 21 (not blackjack) even with 2 cards
-                            if is_split_ace_hand and player_cards_count == 2:
-                                # Split Ace hand with 21: treat as regular 21, not blackjack
+                            # For split hands, treat 21 as regular 21 (not blackjack) even with 2 cards
+                            if is_split_hand_split2 and player_cards_count == 2:
+                                # Split hand with 21: treat as regular 21, not blackjack
                                 if dealer_cards_count == 2:
-                                    # Dealer has blackjack (2 cards), player has split Ace 21: dealer wins
+                                    # Dealer has blackjack (2 cards), player has split 21: dealer wins
                                     split2_hand["result"] = "fail"
                                 elif dealer_cards_count > 2:
-                                    # Dealer has regular 21 (>2 cards), player has split Ace 21: tie
+                                    # Dealer has regular 21 (>2 cards), player has split 21: tie
                                     split2_hand["result"] = "tie"
                                 else:
                                     # Default tie for 21 vs 21
@@ -2415,6 +2487,39 @@ def count_total_cards_in_play():
     print(f"[count_total_cards_in_play] Total cards in play: {total}")
     return total
 
+def all_players_bust_or_surrender() -> bool:
+    """Return True if every active player's relevant hands are bust or surrendered."""
+    for player_id, player_data in game_state["players"].items():
+        if player_data.get("status") != 1:
+            continue
+        # If player-level surrender is set, they are done
+        if player_data.get("surrender") == 1:
+            continue
+
+        def hand_done(hand: dict) -> bool:
+            if not hand or len(hand.get("cards", [])) == 0:
+                return False
+            if hand.get("status") == "bust":
+                return True
+            if hand.get("result") == "surrender":
+                return True
+            return False
+
+        main_hand = player_data["hands"][0] if player_data.get("hands") else None
+        if main_hand and not hand_done(main_hand):
+            return False
+
+        if player_data.get("split1_status") == 1 and player_data.get("split1"):
+            split1_hand = player_data["split1"][0]
+            if split1_hand and not hand_done(split1_hand):
+                return False
+
+        if player_data.get("split2_status") == 1 and player_data.get("split2"):
+            split2_hand = player_data["split2"][0]
+            if split2_hand and not hand_done(split2_hand):
+                return False
+    return True
+
 def get_first_active_player_hand():
     """Return the first active player (not dealer) in the format for selected_hand, skipping blackjacks and surrendered players."""
     for player_id, player_data in game_state["players"].items():
@@ -2632,6 +2737,16 @@ async def handle_surrender(player_id, hand_index=0):
         "split_level": split_level,
         "game_state": serialize_game_state()
     })
+    # If all players are bust or surrendered, mark evaluation complete
+    try:
+        if all_players_bust_or_surrender():
+            game_state["evaluate_game"] = True
+            await broadcast({
+                "action": "game_evaluated",
+                "game_state": serialize_game_state()
+            })
+    except Exception as _e:
+        print(f"[WARN] all_players_bust_or_surrender check failed: {_e}")
              
 
 async def handle_pull_from_pull_stack():
@@ -2656,10 +2771,12 @@ async def handle_pull_from_pull_stack():
     player_id = selected_hand["player_id"]
     hand_index = selected_hand["hand_index"]
     split_level = selected_hand["split_level"]
-    
+        
     # Call handle_hit_player with the pulled card
     await handle_hit_player(player_id, hand_index, card)
     
+    print("yumomomo")
+
     await broadcast({
         "action": "pull_stack_used",
         "card": card,
@@ -2670,6 +2787,29 @@ async def handle_pull_from_pull_stack():
         "game_state": serialize_game_state()
     })
 
+
+async def pull_from_pull_stack_1_hand_card():
+    """Pull a card from the deck and hit the current hand"""
+    log_function_call("pull_from_pull_stack_1_hand_card")
+
+    selected_hand = game_state.get("selected_hand")
+    print("DEBUG: game_state['mode']:", game_state.get('mode'))
+    print("DEBUG: selected_hand:", selected_hand)
+    if selected_hand:
+        print("DEBUG: hand cards:", game_state['players'][selected_hand['player_id']]['hands'][selected_hand['hand_index']]['cards'])
+    print("DEBUG: auto_split_draw_card:", game_state.get('auto_split_draw_card'))
+    number_of_cards = 0  # Initialize the variable
+    if (selected_hand['split_level'] == 0):
+        number_of_cards = len(game_state["players"][selected_hand["player_id"]]["hands"][selected_hand["hand_index"]]["cards"])
+    elif (selected_hand['split_level'] == 1):
+        number_of_cards = len(game_state["players"][selected_hand["player_id"]]["split1"][selected_hand["hand_index"]]["cards"])
+    elif (selected_hand['split_level'] == 2):
+        number_of_cards = len(game_state["players"][selected_hand["player_id"]]["split2"][selected_hand["hand_index"]]["cards"])
+    print("DEBUG: number_of_cards:", number_of_cards)
+    if (number_of_cards == 1 and game_state["auto_split_draw_card"] == 0):
+        game_state["auto_split_draw_card"] = 1
+        print("DEBUG: auto_split_draw_card set to 1")
+        await handle_pull_from_pull_stack()
 
 def set_live_function_player(player_id, value=""):
     """Set the live_function_player for a given player."""

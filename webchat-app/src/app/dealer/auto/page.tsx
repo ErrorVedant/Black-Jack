@@ -55,6 +55,7 @@ interface GameState {
   manual_distribution_count: number
   next_manual_counter: number
   all_done?: number
+  auto_split_draw_card: number
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -482,10 +483,10 @@ const GameMenu = () => {
         }
       }
 
-      if (hand && hand.cards && hand.cards.length === 1) {
+      if (hand && hand.cards && hand.cards.length === 1 && gameState.auto_split_draw_card === 0) {
         console.log('Auto pulling from pull stack - conditions met (1 card in hand)')
         sendWebSocketMessage({
-          action: 'pull_from_pull_stack'
+          action: 'pull_from_pull_stack_1_hand_card'
         })
       }
     }
