@@ -141,7 +141,7 @@ const GameMenu = () => {
     const RECONNECT_DELAY = 3000
 
     const connect = () => {
-      ws = new WebSocket('ws://localhost:6790')
+      ws = new WebSocket('ws://192.168.2.190:6790')
 
       ws.onopen = () => {
         console.log('Connected to server')
@@ -933,7 +933,7 @@ const GameMenu = () => {
                 return (
                   <div
                     key={playerId}
-                    className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                    className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
                       'bg-[#C1351D] text-gray-200 border border-red-500/30'
                       // isCurrentHand
                       //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
@@ -1047,7 +1047,7 @@ const GameMenu = () => {
                         )} */}
                       </div>
                       {isActive && (
-                        <div className='space-y-4'>
+                        <div className='space-y-2'>
                           {/* Main Hand */}
                           <div
                             className={`rounded-lg p-2 ${getHandBoxColor(
@@ -1077,7 +1077,7 @@ const GameMenu = () => {
                                       hand_index: 0
                                     })
                                   }
-                                  className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white'
+                                  className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
                                 >
                                   MAKE WIN
                                 </button>
@@ -1090,7 +1090,7 @@ const GameMenu = () => {
                                       hand_index: 0
                                     })
                                   }
-                                  className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white'
+                                  className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
                                 >
                                   MAKE LOSE
                                 </button>
@@ -1103,7 +1103,7 @@ const GameMenu = () => {
                                       hand_index: 0
                                     })
                                   }
-                                  className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
+                                  className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
                                 >
                                   MAKE PUSH
                                 </button>
@@ -1116,7 +1116,7 @@ const GameMenu = () => {
                                       hand_index: 0
                                     })
                                   }
-                                  className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                  className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
                                 >
                                   DEFAULT
                                 </button>
@@ -1130,7 +1130,7 @@ const GameMenu = () => {
                                               hand_index: 0
                                             })
                                         }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
                                       >
                                         SURRENDER
                                       </button>
@@ -1166,7 +1166,7 @@ const GameMenu = () => {
                                         player_id: playerId
                                       })
                                     }
-                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
                                   >
                                     Deactivate Split
                                   </button>
@@ -1182,7 +1182,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE WIN
                                     </button>
@@ -1195,7 +1195,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE LOSE
                                     </button>
@@ -1208,7 +1208,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE PUSH
                                     </button>
@@ -1221,7 +1221,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
                                     >
                                       DEFAULT
                                     </button>
@@ -1235,7 +1235,7 @@ const GameMenu = () => {
                                               hand_index: 0
                                             })
                                         }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
                                       >
                                         SURRENDER
                                       </button>
@@ -1253,7 +1253,7 @@ const GameMenu = () => {
                                     player_id: playerId
                                   })
                                 }}
-                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                               >
                                 Activate Split1
                               </button>
@@ -1288,7 +1288,7 @@ const GameMenu = () => {
                                         player_id: playerId
                                       })
                                     }
-                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
                                   >
                                     Deactivate Split
                                   </button>
@@ -1305,7 +1305,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE WIN
                                     </button>
@@ -1318,7 +1318,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE LOSE
                                     </button>
@@ -1331,7 +1331,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
                                     >
                                       MAKE PUSH
                                     </button>
@@ -1344,7 +1344,7 @@ const GameMenu = () => {
                                           hand_index: 0
                                         })
                                       }
-                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white'
+                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
                                     >
                                       DEFAULT
                                     </button>
@@ -1358,7 +1358,7 @@ const GameMenu = () => {
                                               hand_index: 0
                                             })
                                         }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white'
+                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
                                       >
                                         SURRENDER
                                       </button>
@@ -1387,7 +1387,7 @@ const GameMenu = () => {
                                     player_id: playerId
                                   })
                                 }}
-                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                               >
                                 Activate Split2
                               </button>
@@ -1404,7 +1404,7 @@ const GameMenu = () => {
                               e.stopPropagation()
                               handleNextTurn()
                             }}
-                            className='px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm'
+                            className='px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-lg'
                           >
                             <svg
                               className='w-4 h-4'

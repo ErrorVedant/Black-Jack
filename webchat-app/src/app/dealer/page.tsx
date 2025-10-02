@@ -543,7 +543,7 @@ const GameMenu = () => {
       setIsDealerSelected(false)
       return
     }
-    
+
     if (
       !gameState?.selected_hand?.player_id ||
       !selectedCard ||
@@ -652,7 +652,8 @@ const GameMenu = () => {
 
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
-    if (selected && gameState?.all_done === 1) return 'bg-yellow-300 border-2 border-yellow-500'
+    if (selected && gameState?.all_done === 1)
+      return 'bg-yellow-300 border-2 border-yellow-500'
     if (result === 'surrender')
       return 'bg-blue-500 border-2 border-blue-700 text-white'
     if (result === 'fail')
@@ -663,7 +664,6 @@ const GameMenu = () => {
       return 'bg-purple-500 border-2 border-purple-700 text-white'
     return 'bg-black/20'
   }
-
 
   // useEffect(() => {
   //   if (
@@ -726,8 +726,6 @@ const GameMenu = () => {
   //   // No timeout to clean up
   // }, [gameState])
 
-
-
   useEffect(() => {
     if (
       isConnected &&
@@ -752,7 +750,7 @@ const GameMenu = () => {
 
   // Set game mode when component loads
   useEffect(() => {
-    if (isConnected && sendWebSocketMessage && (gameState?.mode !== 'live')) {
+    if (isConnected && sendWebSocketMessage && gameState?.mode !== 'live') {
       sendWebSocketMessage({
         action: 'set_game_mode',
         mode: 'live'
@@ -763,7 +761,7 @@ const GameMenu = () => {
 
   // Check if first_active_player_hand has surrendered and call next_turn
   // useEffect(() => {
-  //   if (gameState?.first_active_player_hand && 
+  //   if (gameState?.first_active_player_hand &&
   //       gameState.first_active_player_hand.player_id !== 'dealer' &&
   //       gameState.current_player === gameState.first_active_player_hand.player_id) {
   //     const { player_id } = gameState.first_active_player_hand
@@ -1063,7 +1061,7 @@ const GameMenu = () => {
       <div className='pt-[14vh] p-8'>
         <div className='border-2 border-yellow-500 bg-[#911606] mx-auto flex gap-6 p-4 relative z-10'>
           {/* Left Section - 70% width for Dealer and Players */}
-          <div className='w-[70%] space-y-2'>
+          <div className='w-[70%] space-y-1'>
             {/* Dealer Window */}
             <div className='flex justify-center'>
               <div
@@ -1124,21 +1122,21 @@ const GameMenu = () => {
                   </div>
                 </div> */}
 
-                <div className='bg-black/20 rounded-lg p-2 border-2 border-yellow-500 border-dashed'>
+                <div className='bg-black/20 rounded-lg border-2 border-yellow-500 border-dashed'>
                   {/* Main horizontal layout */}
-                  <div className='flex items-start justify-between mb-4'>
+                  <div className='flex items-start justify-between mt-1 mb-1'>
                     {/* Left: Dealer's Cards text */}
-                    <div className='text-base font-medium text-white flex-shrink-0'>
+                    <div className='text-base font-medium text-white flex-shrink-0 ml-2'>
                       Dealer's Cards
                     </div>
 
                     {/* Center: Cards */}
-                    <div className='flex justify-center space-x-3 flex-1 mt-4'>
+                    <div className='flex justify-center space-x-3 flex-1'>
                       {gameState?.dealer?.cards?.map(
                         (card: string, index: number) => (
                           <div
                             key={index}
-                            className='w-16 h-24 transform hover:scale-110 transition-transform duration-200'
+                            className='w-24 h-32 transform hover:scale-110 transition-transform duration-200'
                           >
                             <img
                               src={`/cards/${card}.png`}
@@ -1159,7 +1157,7 @@ const GameMenu = () => {
                       ].map((_, index) => (
                         <div
                           key={`empty-${index}`}
-                          className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50 transform hover:scale-110 transition-transform duration-200'
+                          className='w-24 h-32 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50 transform hover:scale-110 transition-transform duration-200'
                         >
                           <span className='text-gray-400 text-xs'>Empty</span>
                         </div>
@@ -1167,7 +1165,7 @@ const GameMenu = () => {
                     </div>
 
                     {/* Right: Total */}
-                    <div className='flex flex-col items-end gap-y-2 flex-shrink-0'>
+                    <div className='flex flex-col items-end gap-y-2 flex-shrink-0 mr-2 mt-2'>
                       <div className='text-base font-medium bg-[#911606] text-yellow-500 rounded-2xl px-2 border border-yellow-500'>
                         Total:{' '}
                         <span
@@ -1216,7 +1214,7 @@ const GameMenu = () => {
                   return (
                     <div
                       key={playerId}
-                      className={`p-5 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
+                      className={`p-1 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
                         'bg-[#C1351D] text-gray-200 border border-red-500/30'
                         // isCurrentHand
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
@@ -1248,18 +1246,18 @@ const GameMenu = () => {
                                 {playerId.replace('player', 'Player ')}
                                 {gameState?.players?.[playerId]?.insurence ===
                                   1 && (
-                                  <span className='ml-2 text-yellow-400 font-semibold text-base'>
+                                  <span className='ml-2 text-yellow-400 font-semibold text-lg'>
                                     Insured
                                   </span>
                                 )}
                                 {gameState?.players?.[playerId]?.even_money ===
                                   1 && (
-                                  <span className='ml-2 text-purple-400 font-semibold text-base'>
+                                  <span className='ml-2 text-purple-400 font-semibold text-lg'>
                                     Even Money
                                   </span>
                                 )}
                               </div>
-                              
+
                               {/* <div
                                 className={`text-sm ${
                                   isCurrentHand ? 'text-gray-700' : 'opacity-75'
@@ -1324,10 +1322,10 @@ const GameMenu = () => {
 
                         {isActive && (
                           <>
-                            <div className='space-y-4'>
+                            <div className='space-y-1'>
                               {/* Cards Display */}
                               <div
-                                className={`rounded-lg p-3 ${getHandBoxColor(
+                                className={`rounded-lg p-1 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 0) &&
                                     gameState?.current_player === playerId,
                                   gameState?.players?.[playerId]?.hands?.[0]
@@ -1356,8 +1354,8 @@ const GameMenu = () => {
                                   )}
                                 </span>
 
-                                <div className='flex items-center justify-between mb-2'>
-                                  {/* <div
+                                {/* <div className='flex items-center justify-between'>
+                                  <div
                                   className={`text-sm font-medium ${
                                     isCurrentHand
                                       ? 'text-gray-900'
@@ -1365,16 +1363,16 @@ const GameMenu = () => {
                                   }`}
                                 >
                                   Cards:
-                                </div> */}
                                 </div>
-                                <div className='flex justify-center space-x-2 mb-2'>
+                                </div> */}
+                                <div className='flex justify-center space-x-1'>
                                   {gameState?.players?.[
                                     playerId
                                   ]?.hands?.[0]?.cards?.map(
                                     (card: string, index: number) => (
                                       <div
                                         key={index}
-                                        className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                        className='relative w-24 h-32 transform hover:scale-110 transition-transform duration-200 group'
                                       >
                                         <img
                                           src={`/cards/${card}.png`}
@@ -1402,7 +1400,7 @@ const GameMenu = () => {
                                   ].map((_, index) => (
                                     <div
                                       key={`empty-${index}`}
-                                      className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                      className={`w-24 h-32 border-2 border-dashed rounded-lg ${
                                         isCurrentHand
                                           ? 'border-yellow-400/50 bg-yellow-500/10'
                                           : 'border-gray-400 bg-gray-800/50'
@@ -1410,40 +1408,48 @@ const GameMenu = () => {
                                     />
                                   ))}
                                 </div>
-                                <div className='mt-2 flex items-center justify-between'>
+                                <div className='flex items-center justify-between'>
                                   {/* <span
                                   className={'text-lg font-bold text-blue-400'}
                                 >
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.total ?? 0}
                                 </span> */}
-                                  <div className='flex flex-wrap justify-center items-center gap-1'>
+                                  <div className='flex flex-wrap justify-center items-center gap-x-1'>
                                     {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
                                     {gameState?.round_number !== 0 &&
-                                      gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
-                                      !gameState.players[playerId].hands[0].insurence &&
-                                      gameState.players[playerId].split1_status === 0 &&
-                                      gameState.players[playerId].split2_status === 0 &&
-                                      gameState.players[playerId].hands[0]?.cards?.length === 2 &&
-                                      gameState.players[playerId].hands[0]?.total !== 21 &&
-                                      gameState.players[playerId].insurence === 0 && (
+                                      gameState?.dealer?.cards?.[0]?.[0] ===
+                                        'A' &&
+                                      !gameState.players[playerId].hands[0]
+                                        .insurence &&
+                                      gameState.players[playerId]
+                                        .split1_status === 0 &&
+                                      gameState.players[playerId]
+                                        .split2_status === 0 &&
+                                      gameState.players[playerId].hands[0]
+                                        ?.cards?.length === 2 &&
+                                      gameState.players[playerId].hands[0]
+                                        ?.total !== 21 &&
+                                      gameState.players[playerId].insurence ===
+                                        0 && (
                                         <>
                                           <button
                                             onClick={() =>
                                               handleInsurance(playerId)
                                             }
-                                            className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors'
+                                            className='px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors text-lg'
                                           >
                                             Insurance
                                           </button>
                                           <button
                                             onClick={() => {
                                               sendWebSocketMessage({
-                                                action: 'no_for_player_insurence',
+                                                action:
+                                                  'no_for_player_insurence',
                                                 player_id: playerId
                                               })
                                             }}
-                                            className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
+                                            className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-lg'
                                           >
                                             No Insurance
                                           </button>
@@ -1451,32 +1457,40 @@ const GameMenu = () => {
                                       )}
                                     {/* Even Money Button: Only show if dealer's first card is Ace, hand has 2 cards, total is 21, and even money not taken */}
                                     {gameState?.round_number !== 0 &&
-                                      gameState?.dealer?.cards?.[0]?.[0] === 'A' &&
-                                      gameState.players[playerId].split1_status === 0 &&
-                                      gameState.players[playerId].split2_status === 0 &&
-                                      gameState.players[playerId].hands[0]?.cards?.length === 2 &&
-                                      gameState.players[playerId].hands[0]?.total === 21 &&
-                                      gameState.players[playerId].even_money === 0 && (
+                                      gameState?.dealer?.cards?.[0]?.[0] ===
+                                        'A' &&
+                                      gameState.players[playerId]
+                                        .split1_status === 0 &&
+                                      gameState.players[playerId]
+                                        .split2_status === 0 &&
+                                      gameState.players[playerId].hands[0]
+                                        ?.cards?.length === 2 &&
+                                      gameState.players[playerId].hands[0]
+                                        ?.total === 21 &&
+                                      gameState.players[playerId].even_money ===
+                                        0 && (
                                         <>
                                           <button
                                             onClick={() => {
                                               sendWebSocketMessage({
-                                                action: 'yes_for_player_even_money',
+                                                action:
+                                                  'yes_for_player_even_money',
                                                 player_id: playerId
                                               })
                                             }}
-                                            className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                            className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                                           >
                                             Even Money
                                           </button>
                                           <button
                                             onClick={() => {
                                               sendWebSocketMessage({
-                                                action: 'no_for_player_even_money',
+                                                action:
+                                                  'no_for_player_even_money',
                                                 player_id: playerId
                                               })
                                             }}
-                                            className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
+                                            className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-lg'
                                           >
                                             No Even Money
                                           </button>
@@ -1484,40 +1498,44 @@ const GameMenu = () => {
                                       )}
                                     {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
                                     {gameState?.round_number !== 0 &&
-                                      gameState?.players?.[playerId]?.hands[0]?.cards?.length === 2 &&
-                                      gameState?.dealer?.cards?.[0]?.[0] !== 'A' &&
-                                      gameState.players[playerId].surrender === 0 && (
-                                      <>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'surrender_player',
-                                              player_id: playerId,
-                                              hand_index: 0
-                                            })
-                                            clearInsuranceForHand(
-                                              playerId,
-                                              0,
-                                              0
-                                            )
-                                          }}
-                                          className='px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors'
-                                        >
-                                          Surrender
-                                        </button>
-                                        <button
-                                          onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'no_for_player_surrender',
-                                              player_id: playerId
-                                            })
-                                          }}
-                                          className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors'
-                                        >
-                                          No Surrender
-                                        </button>
-                                      </>
-                                    )}
+                                      gameState?.players?.[playerId]?.hands[0]
+                                        ?.cards?.length === 2 &&
+                                      gameState?.dealer?.cards?.[0]?.[0] !==
+                                        'A' &&
+                                      gameState.players[playerId].surrender ===
+                                        0 && (
+                                        <>
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action: 'surrender_player',
+                                                player_id: playerId,
+                                                hand_index: 0
+                                              })
+                                              clearInsuranceForHand(
+                                                playerId,
+                                                0,
+                                                0
+                                              )
+                                            }}
+                                            className='px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-lg'
+                                          >
+                                            Surrender
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              sendWebSocketMessage({
+                                                action:
+                                                  'no_for_player_surrender',
+                                                player_id: playerId
+                                              })
+                                            }}
+                                            className='px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-lg'
+                                          >
+                                            No Surrender
+                                          </button>
+                                        </>
+                                      )}
                                     {isHandSelected(
                                       gameState,
                                       playerId,
@@ -1529,11 +1547,19 @@ const GameMenu = () => {
                                         <>
                                           {/* Split Button */}
                                           {gameState?.round_number !== 0 &&
-                                            gameState?.players?.[playerId]?.hands?.[0]?.cards?.length === 2 &&
-                                            canSplit(gameState.players[playerId].hands[0].cards) &&
-                                            gameState.players[playerId].hands[0].status === 'playing' &&
-                                            (gameState.players[playerId].split1_status === 0 ||
-                                              gameState.players[playerId].split2_status === 0) &&
+                                            gameState?.players?.[playerId]
+                                              ?.hands?.[0]?.cards?.length ===
+                                              2 &&
+                                            canSplit(
+                                              gameState.players[playerId]
+                                                .hands[0].cards
+                                            ) &&
+                                            gameState.players[playerId].hands[0]
+                                              .status === 'playing' &&
+                                            (gameState.players[playerId]
+                                              .split1_status === 0 ||
+                                              gameState.players[playerId]
+                                                .split2_status === 0) &&
                                             gameState.all_done === 1 && (
                                               <button
                                                 onClick={() =>
@@ -1542,7 +1568,7 @@ const GameMenu = () => {
                                                     player_id: playerId
                                                   })
                                                 }
-                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                                               >
                                                 Split
                                               </button>
@@ -1585,24 +1611,24 @@ const GameMenu = () => {
                                           )} */}
                                           {gameState?.round_number !== 0 &&
                                             gameState.all_done === 1 && (
-                                            <button
-                                              onClick={() => {
-                                                sendWebSocketMessage({
-                                                  action: 'next_turn',
-                                                  player_id: playerId,
-                                                  hand_index: 0
-                                                })
-                                                clearInsuranceForHand(
-                                                  playerId,
-                                                  0,
-                                                  0
-                                                )
-                                              }}
-                                              className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                            >
-                                              Stand
-                                            </button>
-                                          )}
+                                              <button
+                                                onClick={() => {
+                                                  sendWebSocketMessage({
+                                                    action: 'next_turn',
+                                                    player_id: playerId,
+                                                    hand_index: 0
+                                                  })
+                                                  clearInsuranceForHand(
+                                                    playerId,
+                                                    0,
+                                                    0
+                                                  )
+                                                }}
+                                                className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-lg'
+                                              >
+                                                Stand
+                                              </button>
+                                            )}
                                         </>
                                       )}
                                   </div>
@@ -1615,9 +1641,9 @@ const GameMenu = () => {
                               ) &&
                                 gameState?.players?.[playerId]?.split1[0]?.cards
                                   ?.length > 0 && (
-                                  <div className='mt-4'>
+                                  <div className='mt-1'>
                                     <div
-                                      className={`rounded-lg p-3 ${getHandBoxColor(
+                                      className={`rounded-lg p-1 ${getHandBoxColor(
                                         isHandSelected(
                                           gameState,
                                           playerId,
@@ -1630,7 +1656,7 @@ const GameMenu = () => {
                                           .result
                                       )}`}
                                     >
-                                      <div className='flex items-center justify-between mb-2'>
+                                      <div className='flex items-center justify-between'>
                                         {/* <div
                                         className={`text-sm font-medium ${
                                           isCurrentSplit1Hand
@@ -1684,13 +1710,13 @@ const GameMenu = () => {
                                           </span>
                                         </div>
                                       </div>
-                                      <div className='flex justify-center gap-2 mb-2'>
+                                      <div className='flex justify-center gap-x-2'>
                                         {gameState.players[
                                           playerId
                                         ].split1[0].cards.map((card, index) => (
                                           <div
                                             key={index}
-                                            className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                            className='relative w-24 h-32 transform hover:scale-110 transition-transform duration-200 group'
                                           >
                                             <img
                                               src={`/cards/${card}.png`}
@@ -1717,7 +1743,7 @@ const GameMenu = () => {
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${
                                               isCurrentSplit1Hand
                                                 ? 'border-yellow-400/50 bg-yellow-500/10'
                                                 : 'border-gray-400 bg-gray-800/50'
@@ -1725,7 +1751,7 @@ const GameMenu = () => {
                                           />
                                         ))}
                                       </div>
-                                      <div className='mt-2 flex items-center justify-between'>
+                                      <div className=' flex items-center justify-between'>
                                         {/* <span
                                         className={
                                           'text-lg font-bold text-blue-400'
@@ -1745,9 +1771,11 @@ const GameMenu = () => {
                                               playerId && (
                                               <>
                                                 {/* Split Button for Split1 */}
-                                                {gameState?.round_number !== 0 &&
-                                                  gameState?.players?.[playerId]?.split1?.[0]?.cards?.length ===
-                                                    2 &&
+                                                {gameState?.round_number !==
+                                                  0 &&
+                                                  gameState?.players?.[playerId]
+                                                    ?.split1?.[0]?.cards
+                                                    ?.length === 2 &&
                                                   canSplit(
                                                     gameState.players[playerId]
                                                       .split1[0].cards
@@ -1755,17 +1783,20 @@ const GameMenu = () => {
                                                   gameState.players[playerId]
                                                     .split1[0].status ===
                                                     'playing' &&
-                                                  (gameState.players[playerId].split1_status === 0 ||
-                                                    gameState.players[playerId].split2_status === 0) &&
+                                                  (gameState.players[playerId]
+                                                    .split1_status === 0 ||
+                                                    gameState.players[playerId]
+                                                      .split2_status === 0) &&
                                                   gameState.all_done === 1 && (
                                                     <button
                                                       onClick={() =>
                                                         sendWebSocketMessage({
-                                                          action: 'split_player_live',
+                                                          action:
+                                                            'split_player_live',
                                                           player_id: playerId
                                                         })
                                                       }
-                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                                                     >
                                                       Split
                                                     </button>
@@ -1796,21 +1827,22 @@ const GameMenu = () => {
                                                     Double
                                                   </button>
                                                 )} */}
-                                                {gameState?.round_number !== 0 &&
+                                                {gameState?.round_number !==
+                                                  0 &&
                                                   gameState.all_done === 1 && (
-                                                <button
-                                                  onClick={() =>
-                                                    sendWebSocketMessage({
-                                                      action: 'next_turn',
-                                                      player_id: playerId,
-                                                      hand_index: 0
-                                                    })
-                                                  }
-                                                  className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                                >
-                                                  Stand
-                                                </button>
-                                                )}
+                                                    <button
+                                                      onClick={() =>
+                                                        sendWebSocketMessage({
+                                                          action: 'next_turn',
+                                                          player_id: playerId,
+                                                          hand_index: 0
+                                                        })
+                                                      }
+                                                      className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-lg'
+                                                    >
+                                                      Stand
+                                                    </button>
+                                                  )}
                                               </>
                                             )}
                                         </div>
@@ -1825,9 +1857,9 @@ const GameMenu = () => {
                               ) &&
                                 gameState?.players?.[playerId]?.split2[0]?.cards
                                   ?.length > 0 && (
-                                  <div className='mt-4'>
+                                  <div className='mt-1'>
                                     <div
-                                      className={`rounded-lg p-3 ${getHandBoxColor(
+                                      className={`rounded-lg p-1 ${getHandBoxColor(
                                         isHandSelected(
                                           gameState,
                                           playerId,
@@ -1840,7 +1872,7 @@ const GameMenu = () => {
                                           .result
                                       )}`}
                                     >
-                                      <div className='flex items-center justify-between mb-2'>
+                                      <div className='flex items-center justify-between'>
                                         {/* <div
                                         className={`text-sm font-medium ${
                                           isCurrentSplit2Hand
@@ -1894,13 +1926,13 @@ const GameMenu = () => {
                                           </span>
                                         </div>
                                       </div>
-                                      <div className='flex justify-center gap-2 mb-2'>
+                                      <div className='flex justify-center gap-2'>
                                         {gameState.players[
                                           playerId
                                         ].split2[0].cards.map((card, index) => (
                                           <div
                                             key={index}
-                                            className='relative w-12 h-16 transform hover:scale-110 transition-transform duration-200 group'
+                                            className='relative w-24 h-32 transform hover:scale-110 transition-transform duration-200 group'
                                           >
                                             <img
                                               src={`/cards/${card}.png`}
@@ -1927,7 +1959,7 @@ const GameMenu = () => {
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-12 h-16 border-2 border-dashed rounded-lg ${
+                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${
                                               isCurrentSplit2Hand
                                                 ? 'border-yellow-400/50 bg-yellow-500/10'
                                                 : 'border-gray-400 bg-gray-800/50'
@@ -1955,9 +1987,11 @@ const GameMenu = () => {
                                               playerId && (
                                               <>
                                                 {/* Split Button for Split2 */}
-                                                {gameState?.round_number !== 0 &&
-                                                  gameState?.players?.[playerId]?.split2?.[0]?.cards?.length ===
-                                                    2 &&
+                                                {gameState?.round_number !==
+                                                  0 &&
+                                                  gameState?.players?.[playerId]
+                                                    ?.split2?.[0]?.cards
+                                                    ?.length === 2 &&
                                                   canSplit(
                                                     gameState.players[playerId]
                                                       .split2[0].cards
@@ -1965,17 +1999,20 @@ const GameMenu = () => {
                                                   gameState.players[playerId]
                                                     .split2[0].status ===
                                                     'playing' &&
-                                                  (gameState.players[playerId].split1_status === 0 ||
-                                                    gameState.players[playerId].split2_status === 0) &&
+                                                  (gameState.players[playerId]
+                                                    .split1_status === 0 ||
+                                                    gameState.players[playerId]
+                                                      .split2_status === 0) &&
                                                   gameState.all_done === 1 && (
                                                     <button
                                                       onClick={() =>
                                                         sendWebSocketMessage({
-                                                          action: 'split_player_live',
+                                                          action:
+                                                            'split_player_live',
                                                           player_id: playerId
                                                         })
                                                       }
-                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors'
+                                                      className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
                                                     >
                                                       Split
                                                     </button>
@@ -2006,21 +2043,22 @@ const GameMenu = () => {
                                                     Double
                                                   </button>
                                                 )} */}
-                                                {gameState?.round_number !== 0 &&
+                                                {gameState?.round_number !==
+                                                  0 &&
                                                   gameState.all_done === 1 && (
-                                                <button
-                                                  onClick={() =>
-                                                    sendWebSocketMessage({
-                                                      action: 'next_turn',
-                                                      player_id: playerId,
-                                                      hand_index: 0
-                                                    })
-                                                  }
-                                                  className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors'
-                                                >
-                                                  Stand
-                                                </button>
-                                                )}
+                                                    <button
+                                                      onClick={() =>
+                                                        sendWebSocketMessage({
+                                                          action: 'next_turn',
+                                                          player_id: playerId,
+                                                          hand_index: 0
+                                                        })
+                                                      }
+                                                      className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-lg'
+                                                    >
+                                                      Stand
+                                                    </button>
+                                                  )}
                                               </>
                                             )}
                                         </div>
@@ -2041,7 +2079,7 @@ const GameMenu = () => {
                               e.stopPropagation()
                               handleNextTurn()
                             }}
-                            className='px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-sm'
+                            className='px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-lg'
                           >
                             <svg
                               className='w-4 h-4'
@@ -2086,10 +2124,10 @@ const GameMenu = () => {
                 </svg>
                 Game Actions
               </h2> */}
-            <div className='space-y-2 flex-shrink-0'>
+            <div className='space-y-1 flex-shrink-0'>
               <button
                 onClick={() => sendWebSocketMessage({ action: 'undo_last' })}
-                className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
+                className='w-full bg-white hover:bg-gray-100 text-black py-3 px-4 rounded font-semibold text-sm'
               >
                 <span>Undo Last Action</span>
               </button>
@@ -2118,7 +2156,7 @@ const GameMenu = () => {
                 </button> */}
               <button
                 onClick={() => sendWebSocketMessage({ action: 'reset_game' })}
-                className='w-full bg-white hover:bg-gray-100 text-black py-2 px-4 rounded font-semibold text-sm'
+                className='w-full bg-white hover:bg-gray-100 text-black py-3 px-4 rounded font-semibold text-sm'
               >
                 <span>Delete all wins</span>
               </button>
@@ -2126,11 +2164,11 @@ const GameMenu = () => {
 
             {/* Deal Card Section (existing, now only for dealing cards) */}
             {/* Card Values */}
-            <div className='grid grid-cols-3 gap-2 flex-shrink-0 mt-4'>
+            <div className='grid grid-cols-3 gap-2 flex-shrink-0 mt-1'>
               {/* First row - Ace in center */}
               <div></div>
               <button
-                className={`p-1.5 rounded font-bold text-base ${
+                className={`py-3 rounded font-bold text-xl ${
                   selectedCard === 'A'
                     ? 'bg-red-800 text-white'
                     : 'bg-white hover:bg-gray-100 text-black'
@@ -2145,7 +2183,7 @@ const GameMenu = () => {
               {cardValues.slice(1).map(value => (
                 <button
                   key={value}
-                  className={`p-1.5 rounded font-bold text-base ${
+                  className={`py-3 rounded font-bold text-xl ${
                     selectedCard === value
                       ? 'bg-red-800 text-white'
                       : 'bg-white hover:bg-gray-100 text-black'
@@ -2158,11 +2196,11 @@ const GameMenu = () => {
             </div>
 
             {/* Suits */}
-            <div className='grid grid-cols-2 gap-2 flex-shrink-0 mt-4'>
+            <div className='grid grid-cols-2 gap-2 flex-shrink-0 mt-1'>
               {suits.map(suit => (
                 <button
                   key={suit.value}
-                  className={`p-2 rounded text-2xl ${
+                  className={`py-3 rounded text-3xl ${
                     selectedSuit === suit.value
                       ? 'bg-red-800 text-white'
                       : 'bg-white hover:bg-gray-100'
@@ -2175,10 +2213,10 @@ const GameMenu = () => {
             </div>
 
             {/* Preview and Assign Button */}
-            <div className='flex space-x-2 flex-shrink-0 mt-4'>
+            <div className='flex space-x-2 flex-shrink-0 mt-1'>
               <button
                 onClick={assignCard}
-                className={`flex-1 p-2 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
+                className={`flex-1 py-3 bg-yellow-600 hover:bg-yellow-700 text-black rounded font-bold text-sm`}
               >
                 <span>Send Card</span>
               </button>
@@ -2201,8 +2239,6 @@ const GameMenu = () => {
           </div>
         </div>
       )}
-
-
     </div>
   )
 }

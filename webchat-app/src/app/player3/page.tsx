@@ -819,7 +819,7 @@ const GameMenu = () => {
                         (card: string, index: number) => (
                           <div
                             key={index}
-                            className='w-16 h-24 transform hover:scale-110 transition-transform duration-200'
+                            className='w-36 h-52 transform hover:scale-110 transition-transform duration-200'
                           >
                             <img
                               src={`/cards/${card}.png`}
@@ -840,7 +840,7 @@ const GameMenu = () => {
                       ].map((_, index) => (
                         <div
                           key={`empty-${index}`}
-                          className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50 transform hover:scale-110 transition-transform duration-200'
+                          className='w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50 transform hover:scale-110 transition-transform duration-200'
                         >
                           <span className='text-gray-400 text-xs'>Empty</span>
                         </div>
@@ -918,7 +918,7 @@ const GameMenu = () => {
                                 (card: string, index: number) => (
                                   <div
                                     key={index}
-                                    className='relative w-16 h-24 transform hover:scale-110 transition-transform duration-200 group'
+                                    className='relative w-36 h-52 transform hover:scale-110 transition-transform duration-200 group'
                                   >
                                     <img
                                       src={`/cards/${card}.png`}
@@ -947,7 +947,7 @@ const GameMenu = () => {
                                 ].map((_, index) => (
                                   <div
                                     key={`empty-${index}`}
-                                    className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
+                                    className='w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
                                   />
                                 ))}
                             </div>
@@ -1275,7 +1275,7 @@ const GameMenu = () => {
                                       (card, index) => (
                                         <div
                                           key={index}
-                                          className='relative w-16 h-24 transform hover:scale-110 transition-transform duration-200 group'
+                                          className='relative w-36 h-52 transform hover:scale-110 transition-transform duration-200 group'
                                         >
                                           <img
                                             src={`/cards/${card}.png`}
@@ -1302,7 +1302,7 @@ const GameMenu = () => {
                                     ].map((_, index) => (
                                       <div
                                         key={`empty-${index}`}
-                                        className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
+                                        className='w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
                                       />
                                     ))}
                                   </div>
@@ -1571,7 +1571,7 @@ const GameMenu = () => {
                                       (card, index) => (
                                         <div
                                           key={index}
-                                          className='relative w-16 h-24 transform hover:scale-110 transition-transform duration-200 group'
+                                          className='relative w-36 h-52 transform hover:scale-110 transition-transform duration-200 group'
                                         >
                                           <img
                                             src={`/cards/${card}.png`}
@@ -1598,7 +1598,7 @@ const GameMenu = () => {
                                     ].map((_, index) => (
                                       <div
                                         key={`empty-${index}`}
-                                        className='w-16 h-24 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
+                                        className='w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-800/50'
                                       />
                                     ))}
                                   </div>

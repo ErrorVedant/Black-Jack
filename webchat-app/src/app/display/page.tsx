@@ -157,12 +157,12 @@ const BlackJackHand = ({
 
     return (
       <div className='flex flex-col items-center space-y-1'>
-        <div className='text-yellow-500 text-2xl font-bold'>DEALER</div>
+        <div className='text-yellow-500 text-5xl font-bold'>DEALER</div>
         <div className='relative flex'>
           {cards.map((card: string, index: number) => (
             <div
               key={index}
-              className='w-32 h-48 relative'
+              className='w-36 h-52 relative'
               style={{
                 marginLeft: index > 0 ? '-110px' : '0',
                 zIndex: index
@@ -211,12 +211,12 @@ const BlackJackHand = ({
   const handCount = activeHands.length
 
   // Dynamic card sizing and overlap based on number of active hands
-  let cardSize = 'w-28 h-36' // Default size for single hand
-  let overlapAmount = '-97px' // Default overlap
+  let cardSize = 'w-36 h-44' // Default size for single hand
+  let overlapAmount = '-120px' // Default overlap
 
   if (handCount === 3) {
-    cardSize = 'w-24 h-32'
-    overlapAmount = '-82px'
+    cardSize = 'w-32 h-48'
+    overlapAmount = '-100px'
   }
 
   return (
@@ -419,8 +419,8 @@ const DisplayPage = () => {
 
           {/* Left Button */}
           <div className='relative top-4 flex items-center justify-center z-10'>
-            <div className='text-3xl text-yellow-500'>Table:&nbsp;</div>
-            <div className='text-2xl text-yellow-500'>
+            <div className='text-5xl text-yellow-500'>Table:&nbsp;</div>
+            <div className='text-5xl text-yellow-500'>
               {gameState.table_number}
             </div>
           </div>
@@ -438,11 +438,11 @@ const DisplayPage = () => {
 
           {/* Right Button */}
           <div className='flex flex-col items-center justify-center z-10'>
-            <h1 className='text-yellow-500 text-3xl font-bold'>Bets</h1>
-            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+            <h1 className='text-yellow-500 text-5xl font-bold'>Bets</h1>
+            <span className='text-yellow-300 text-2xl mt-1'>
               Min: {gameState?.min_bet ?? 'N/A'}
             </span>
-            <span className='text-yellow-300 text-xs sm:text-sm lg:text-base mt-1'>
+            <span className='text-yellow-300 text-2xl mt-1'>
               Max: {gameState?.max_bet ?? 'N/A'}
             </span>
           </div>
@@ -573,8 +573,8 @@ const DisplayPage = () => {
               className='absolute inset-0 w-full h-full object-cover rotate-180 z-0'
             />
             <div className='relative top-4 flex items-center justify-center z-10 mx-8'>
-              <div className='text-3xl text-yellow-500'>Games:&nbsp;</div>
-              <div className='text-2xl text-yellow-500'>
+              <div className='text-5xl text-yellow-500'>Games:&nbsp;</div>
+              <div className='text-5xl text-yellow-500'>
                 {gameState.rounds_played_in_game ?? 0}
               </div>
             </div>
