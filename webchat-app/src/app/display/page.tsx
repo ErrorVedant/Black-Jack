@@ -157,7 +157,7 @@ const BlackJackHand = ({
 
     return (
       <div className='flex flex-col items-center space-y-1'>
-        <div className='text-yellow-500 text-5xl font-bold'>DEALER</div>
+        {/* <div className='text-yellow-500 text-5xl font-bold'>DEALER</div> */}
         <div className='relative flex'>
           {cards.map((card: string, index: number) => (
             <div
@@ -175,7 +175,7 @@ const BlackJackHand = ({
                     : '/cards/back.png'
                 }
                 alt={showDealerHole || index === 0 ? card : 'Hidden'}
-                className='w-full h-full object-contain'
+                className='w-full h-full object-contain scale-110'
                 onError={e => {
                   const target = e.target as HTMLImageElement
                   target.src = '/cards/back.png'
@@ -225,7 +225,7 @@ const BlackJackHand = ({
         {/* Main Hand */}
         {mainHand && (
           <div className='flex flex-col items-center space-y-1'>
-            <div className='text-yellow-500 text-xs font-bold'>MAIN</div>
+            {/* <div className='text-yellow-500 text-xs font-bold'>MAIN</div> */}
             <div className='relative flex'>
               {mainHand.cards?.map((card: string, index: number) => (
                 <div
@@ -239,7 +239,7 @@ const BlackJackHand = ({
                   <img
                     src={`/cards/${card}.png`}
                     alt={card}
-                    className='w-full h-full object-contain'
+                    className='w-full h-full object-contain scale-105 mt-1'
                     onError={e => {
                       const target = e.target as HTMLImageElement
                       target.src = '/cards/back.png'
@@ -248,7 +248,7 @@ const BlackJackHand = ({
                 </div>
               ))}
             </div>
-            <div className='text-yellow-500 text-xs'>{mainHand.total || 0}</div>
+            <div className='text-yellow-500 text-xl pt-0.5'>{mainHand.total || 0}</div>
           </div>
         )}
 
@@ -334,7 +334,7 @@ const DisplayPage = () => {
     const RECONNECT_DELAY = 3000
 
     const connect = () => {
-      ws = new WebSocket('ws://192.168.2.190:6790')
+      ws = new WebSocket('ws://10.16.23.9:6790')
 
       ws.onopen = () => {
         console.log('Display connected to server')
@@ -615,7 +615,7 @@ const DisplayPage = () => {
       </div> */}
 
       {/* Bottom disclaimer - Marquee */}
-      <div className='absolute bottom-0 w-full text-xl py-1 text-black overflow-hidden'>
+      <div className='absolute bottom-0 w-full text-xl py-1 text-red-800 overflow-hidden'>
         <div className='whitespace-nowrap animate-marquee'>
           THIS IS AN ELECTRONIC GAME INCASE OF ANY GRIEVANCES THE MANAGEMENT
           DECISION WILL BE FINAL &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; •

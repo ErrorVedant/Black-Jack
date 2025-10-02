@@ -1,58 +1,58 @@
-'use client'
-import { useState, useEffect, useRef } from 'react'
-import Image from 'next/image'
-import { usePathname } from 'next/navigation'
-import DealerNavbar from '@/components/DealerNavbar'
-import BetTableModal from '@/components/BetTableModal'
-import GameMenuModal from '@/components/GameMenuModal'
+"use client";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import DealerNavbar from "@/components/DealerNavbar";
+import BetTableModal from "@/components/BetTableModal";
+import GameMenuModal from "@/components/GameMenuModal";
 
 interface Hand {
-  cards: string[]
-  total: number
-  status: string
-  result?: string
-  bet?: number
-  insurence?: number
+  cards: string[];
+  total: number;
+  status: string;
+  result?: string;
+  bet?: number;
+  insurence?: number;
 }
 
 interface PlayerData {
-  status: number
-  hands: Hand[]
-  split1: Hand[]
-  split1_status: number
-  split2: Hand[]
-  split2_status: number
-  insurence?: number
-  even_money?: number
+  status: number;
+  hands: Hand[];
+  split1: Hand[];
+  split1_status: number;
+  split2: Hand[];
+  split2_status: number;
+  insurence?: number;
+  even_money?: number;
 }
 
 interface Players {
-  [key: string]: PlayerData
+  [key: string]: PlayerData;
 }
 
 interface GameState {
-  deck_count: number
-  game_mode: string
+  deck_count: number;
+  game_mode: string;
   dealer: {
-    cards: string[]
-    total: number
-    status: string
-  }
-  players: Players
-  game_phase: string
-  table_number: number
-  current_turn: string
+    cards: string[];
+    total: number;
+    status: string;
+  };
+  players: Players;
+  game_phase: string;
+  table_number: number;
+  current_turn: string;
   selected_hand?: {
-    player_id: string
-    hand_index: number
-    split_level: number
-  }
-  current_player?: string
-  mode: string
-  round_number: number
-  evaluate_game: boolean
-  manual_distribution_count: number
-  next_manual_counter: number
+    player_id: string;
+    hand_index: number;
+    split_level: number;
+  };
+  current_player?: string;
+  mode: string;
+  round_number: number;
+  evaluate_game: boolean;
+  manual_distribution_count: number;
+  next_manual_counter: number;
 }
 
 // Add these helper functions at the top of the file, after the interfaces
@@ -66,87 +66,85 @@ const isHandSelected = (
     gameState?.selected_hand?.player_id === playerId &&
     gameState?.selected_hand?.hand_index === handIndex &&
     gameState?.selected_hand?.split_level === splitLevel
-  )
-}
+  );
+};
 
 const canSplit = (cards: string[]): boolean => {
-  if (cards.length !== 2) return false
+  if (cards.length !== 2) return false;
   // Only compare the rank (first character)
-  return cards[0][0] === cards[1][0]
-}
+  return cards[0][0] === cards[1][0];
+};
 
 const DebugPanel = ({ gameState }: { gameState: GameState | null }) => {
-  if (!gameState) return null
+  if (!gameState) return null;
 
   // Group players into rows of 3
-  const playerEntries = Object.entries(gameState.players)
-  const playerRows = []
+  const playerEntries = Object.entries(gameState.players);
+  const playerRows = [];
   for (let i = 0; i < playerEntries.length; i += 3) {
-    playerRows.push(playerEntries.slice(i, i + 3))
+    playerRows.push(playerEntries.slice(i, i + 3));
   }
 
-  return <></>
-}
+  return <></>;
+};
 
 const GameMenu = () => {
-  const [socket, setSocket] = useState<WebSocket | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [gameState, setGameState] = useState<GameState | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [isGameStarted, setIsGameStarted] = useState(false)
-  const [isRoundFinished, setIsRoundFinished] = useState(false)
-  const [showNextButton, setShowNextButton] = useState(false)
-  const [showPopup, setShowPopup] = useState(false)
-  const [popupMessage, setPopupMessage] = useState('')
-  const [isDealerSelected, setIsDealerSelected] = useState(false)
-  const [selectedCard, setSelectedCard] = useState<string | null>(null)
-  const [selectedSuit, setSelectedSuit] = useState<string | null>(null)
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [isRoundFinished, setIsRoundFinished] = useState(false);
+  const [showNextButton, setShowNextButton] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [isDealerSelected, setIsDealerSelected] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<string | null>(null);
+  const [selectedSuit, setSelectedSuit] = useState<string | null>(null);
   const [insuranceState, setInsuranceState] = useState<{
-    [key: string]: boolean
-  }>({})
+    [key: string]: boolean;
+  }>({});
   const [lastPlayerTotal, setLastPlayerTotal] = useState<{
-    [key: string]: number
-  }>({})
-  const lastDealerTotalRef = useRef(0)
-  const lastPlayerTotalRef = useRef<{ [key: string]: number }>({})
-  const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({})
-  const [waitingForServer, setWaitingForServer] = useState(false)
+    [key: string]: number;
+  }>({});
+  const lastDealerTotalRef = useRef(0);
+  const lastPlayerTotalRef = useRef<{ [key: string]: number }>({});
+  const nextTurnCalledRef = useRef<{ [key: string]: boolean }>({});
+  const [waitingForServer, setWaitingForServer] = useState(false);
   const lastAutoTurnRef = useRef<{
-    playerId: string | null
-    round: number
-    count: number
-  }>({ playerId: null, round: -1, count: -1 })
-  const [betMenuOpen, setBetMenuOpen] = useState(false)
-  const [pendingTableNumber, setPendingTableNumber] = useState(0)
-  const [pendingMinBet, setPendingMinBet] = useState(0)
-  const [pendingMaxBet, setPendingMaxBet] = useState(0)
-  const [gameMenuOpen, setGameMenuOpen] = useState(false)
-  const pathname = usePathname()
+    playerId: string | null;
+    round: number;
+    count: number;
+  }>({ playerId: null, round: -1, count: -1 });
+  const [betMenuOpen, setBetMenuOpen] = useState(false);
+  const [pendingTableNumber, setPendingTableNumber] = useState(0);
+  const [pendingMinBet, setPendingMinBet] = useState(0);
+  const [pendingMaxBet, setPendingMaxBet] = useState(0);
+  const [gameMenuOpen, setGameMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   // Set game mode helper
   const setGameMode = (mode: string) => {
     sendWebSocketMessage({
-      action: 'set_game_mode',
-      mode
-    })
-  }
-
-
+      action: "set_game_mode",
+      mode,
+    });
+  };
 
   useEffect(() => {
-    let ws: WebSocket | null = null
-    let reconnectTimeout: NodeJS.Timeout
-    let reconnectAttempts = 0
-    const MAX_RECONNECT_ATTEMPTS = 5
-    const RECONNECT_DELAY = 3000
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 3000;
 
     const connect = () => {
-      ws = new WebSocket('ws://192.168.2.190:6790')
+      ws = new WebSocket("ws://10.16.23.9:6790");
 
       ws.onopen = () => {
-        console.log('Connected to server')
-        setIsConnected(true)
-        reconnectAttempts = 0
+        console.log("Connected to server");
+        setIsConnected(true);
+        reconnectAttempts = 0;
         // Send set_game_mode only after connection is open
         // if (ws && ws.readyState === WebSocket.OPEN) {
         //   console.log("Sending set_game_mode to backend (onopen)");
@@ -155,25 +153,25 @@ const GameMenu = () => {
         //     mode: 'manual'
         //   }));
         // }
-      }
+      };
 
       ws.onclose = () => {
-        console.log('Disconnected from server')
-        setIsConnected(false)
+        console.log("Disconnected from server");
+        setIsConnected(false);
 
         // Attempt to reconnect
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttempts++
+          reconnectAttempts++;
           console.log(
             `Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
-          )
-          reconnectTimeout = setTimeout(connect, RECONNECT_DELAY)
+          );
+          reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
         } else {
-          console.log('Max reconnection attempts reached')
-          setPopupMessage('⚠️ Connection lost. Please refresh the page.')
-          setShowPopup(true)
+          console.log("Max reconnection attempts reached");
+          setPopupMessage("⚠️ Connection lost. Please refresh the page.");
+          setShowPopup(true);
         }
-      }
+      };
 
       // ws.onerror = error => {
       //   console.error('WebSocket error:', error)
@@ -181,411 +179,413 @@ const GameMenu = () => {
       //   setShowPopup(true)
       // }
 
-      ws.onmessage = event => {
-        const data = JSON.parse(event.data)
-        console.log('Received:', data)
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("Received:", data);
 
         // Update game state for all relevant actions
         if (data.game_state) {
-          setGameState(data.game_state)
+          setGameState(data.game_state);
         }
 
         // Handle specific actions
         switch (data.action) {
-          case 'player_activated':
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            break
-          case 'player_removed':
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            break
-          case 'turn_updated':
-            setIsDealerSelected(data.current_turn === 'dealer')
-            break
-          case 'game_started':
-            setIsPlaying(true)
-            setIsGameStarted(true)
-            setIsRoundFinished(false)
-            setShowNextButton(true)
-            setIsDealerSelected(data.current_turn === 'dealer')
-            setLastPlayerTotal({}) // Reset player totals
-            lastDealerTotalRef.current = 0 // Reset dealer ref
-            lastPlayerTotalRef.current = {} // Reset player ref
-            nextTurnCalledRef.current = {} // Reset next turn called ref
-            console.log('Manual distribution counter reset to 0 (game started)')
-            break
-          case 'round_reset':
-            setIsPlaying(false)
-            setIsGameStarted(false)
-            setIsDealerSelected(false)
-            setShowNextButton(false)
-            setIsRoundFinished(true)
-            setLastPlayerTotal({}) // Reset player totals
-            lastDealerTotalRef.current = 0 // Reset dealer ref
-            lastPlayerTotalRef.current = {} // Reset player ref
-            nextTurnCalledRef.current = {} // Reset next turn called ref
-            console.log('Manual distribution counter reset to 0 (round reset)')
-            break
-          case 'game_reset':
+          case "player_activated":
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "player_removed":
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "turn_updated":
+            setIsDealerSelected(data.current_turn === "dealer");
+            break;
+          case "game_started":
+            setIsPlaying(true);
+            setIsGameStarted(true);
+            setIsRoundFinished(false);
+            setShowNextButton(true);
+            setIsDealerSelected(data.current_turn === "dealer");
+            setLastPlayerTotal({}); // Reset player totals
+            lastDealerTotalRef.current = 0; // Reset dealer ref
+            lastPlayerTotalRef.current = {}; // Reset player ref
+            nextTurnCalledRef.current = {}; // Reset next turn called ref
+            console.log(
+              "Manual distribution counter reset to 0 (game started)"
+            );
+            break;
+          case "round_reset":
+            setIsPlaying(false);
+            setIsGameStarted(false);
+            setIsDealerSelected(false);
+            setShowNextButton(false);
+            setIsRoundFinished(true);
+            setLastPlayerTotal({}); // Reset player totals
+            lastDealerTotalRef.current = 0; // Reset dealer ref
+            lastPlayerTotalRef.current = {}; // Reset player ref
+            nextTurnCalledRef.current = {}; // Reset next turn called ref
+            console.log("Manual distribution counter reset to 0 (round reset)");
+            break;
+          case "game_reset":
             // Reset all local state
-            setIsPlaying(false)
-            setIsGameStarted(false)
-            setIsRoundFinished(false)
-            setShowNextButton(false)
-            setIsDealerSelected(false)
-            setSelectedCard(null)
-            setSelectedSuit(null)
-            setLastPlayerTotal({}) // Reset player totals
-            lastDealerTotalRef.current = 0 // Reset dealer ref
-            lastPlayerTotalRef.current = {} // Reset player ref
-            nextTurnCalledRef.current = {} // Reset next turn called ref
-            console.log('Manual distribution counter reset to 0 (game reset)')
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 3000)
-            break
-          case 'error':
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            setWaitingForServer(false) // Reset waiting state on error
-            break
-          case 'split1_activated':
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            break
-          case 'split2_activated':
-            setPopupMessage(data.message)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            break
-          case 'manual_make_win':
-          case 'manual_make_lose':
-          case 'manual_make_tie':
-            setPopupMessage(`Hand set to ${data.result}`)
-            setShowPopup(true)
-            setTimeout(() => setShowPopup(false), 1000)
-            break
-          case 'player_hit':
-          case 'dealer_hit':
-            setWaitingForServer(false)
-            break
+            setIsPlaying(false);
+            setIsGameStarted(false);
+            setIsRoundFinished(false);
+            setShowNextButton(false);
+            setIsDealerSelected(false);
+            setSelectedCard(null);
+            setSelectedSuit(null);
+            setLastPlayerTotal({}); // Reset player totals
+            lastDealerTotalRef.current = 0; // Reset dealer ref
+            lastPlayerTotalRef.current = {}; // Reset player ref
+            nextTurnCalledRef.current = {}; // Reset next turn called ref
+            console.log("Manual distribution counter reset to 0 (game reset)");
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 3000);
+            break;
+          case "error":
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            setWaitingForServer(false); // Reset waiting state on error
+            break;
+          case "split1_activated":
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "split2_activated":
+            setPopupMessage(data.message);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "manual_make_win":
+          case "manual_make_lose":
+          case "manual_make_tie":
+            setPopupMessage(`Hand set to ${data.result}`);
+            setShowPopup(true);
+            setTimeout(() => setShowPopup(false), 1000);
+            break;
+          case "player_hit":
+          case "dealer_hit":
+            setWaitingForServer(false);
+            break;
         }
-      }
+      };
 
-      setSocket(ws)
-    }
+      setSocket(ws);
+    };
 
-    connect()
+    connect();
 
     return () => {
       if (ws) {
-        ws.close()
+        ws.close();
       }
       if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout)
+        clearTimeout(reconnectTimeout);
       }
-    }
-  }, [])
+    };
+  }, []);
 
-  const prevIsConnectedRef = useRef(isConnected)
+  const prevIsConnectedRef = useRef(isConnected);
 
   useEffect(() => {
     if (
       isConnected &&
       showPopup &&
-      popupMessage === '⚠️ Not connected to server'
+      popupMessage === "⚠️ Not connected to server"
     ) {
-      const timer = setTimeout(() => setShowPopup(false), 1000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
     }
-  }, [isConnected, showPopup, popupMessage])
+  }, [isConnected, showPopup, popupMessage]);
 
   useEffect(() => {
     // Show connected popup only on reconnection (not initial mount)
     if (prevIsConnectedRef.current === false && isConnected) {
-      setPopupMessage('✅ Connected to server')
-      setShowPopup(true)
-      const timer = setTimeout(() => setShowPopup(false), 1000)
-      return () => clearTimeout(timer)
+      setPopupMessage("✅ Connected to server");
+      setShowPopup(true);
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
     }
-    prevIsConnectedRef.current = isConnected
-  }, [isConnected])
+    prevIsConnectedRef.current = isConnected;
+  }, [isConnected]);
 
   useEffect(() => {
     // Show connected popup only on reconnection (not initial mount)
     if (prevIsConnectedRef.current === false && isConnected) {
-      setPopupMessage('✅ Connected to server')
-      setShowPopup(true)
-      const timer = setTimeout(() => setShowPopup(false), 1000)
-      return () => clearTimeout(timer)
+      setPopupMessage("✅ Connected to server");
+      setShowPopup(true);
+      const timer = setTimeout(() => setShowPopup(false), 1000);
+      return () => clearTimeout(timer);
     }
-    prevIsConnectedRef.current = isConnected
-  }, [isConnected])
+    prevIsConnectedRef.current = isConnected;
+  }, [isConnected]);
 
   const handleMainContainerClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       // Only clear dealer selection, player selection is managed by backend
-      setIsDealerSelected(false)
+      setIsDealerSelected(false);
     }
-  }
+  };
 
   const activatePlayer = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Send selection to backend first
     sendWebSocketMessage({
-      action: 'select_player',
-      player_id: playerId
-    })
+      action: "select_player",
+      player_id: playerId,
+    });
 
     // Then activate the player
     sendWebSocketMessage({
-      action: 'activate_player',
-      player_id: playerId
-    })
-  }
+      action: "activate_player",
+      player_id: playerId,
+    });
+  };
 
   const deactivatePlayer = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Clear selection if deactivating selected player
     if (gameState?.selected_hand?.player_id === playerId) {
       sendWebSocketMessage({
-        action: 'select_player',
-        player_id: null
-      })
+        action: "select_player",
+        player_id: null,
+      });
     }
 
     sendWebSocketMessage({
-      action: 'remove_player',
-      player_id: playerId
-    })
-  }
+      action: "remove_player",
+      player_id: playerId,
+    });
+  };
 
   const handlePlayerClick = (playerId: string) => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Send selection to backend
     sendWebSocketMessage({
-      action: 'select_player',
-      player_id: playerId
-    })
-  }
+      action: "select_player",
+      player_id: playerId,
+    });
+  };
 
   const startGameLoop = () => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Check if there are any active players
-    const activePlayers = getActivePlayers()
+    const activePlayers = getActivePlayers();
     if (activePlayers.length === 0) {
-      setPopupMessage('⚠️ No active players')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ No active players");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Send start game message
     sendWebSocketMessage({
-      action: 'start_game'
-    })
+      action: "start_game",
+    });
 
     // Update UI states
-    setIsPlaying(true)
-    setIsGameStarted(true)
-    setIsRoundFinished(false)
-    setShowNextButton(true)
-    setPopupMessage('🎮 Game started!')
-    setShowPopup(true)
-    setTimeout(() => setShowPopup(false), 3000)
-  }
+    setIsPlaying(true);
+    setIsGameStarted(true);
+    setIsRoundFinished(false);
+    setShowNextButton(true);
+    setPopupMessage("🎮 Game started!");
+    setShowPopup(true);
+    setTimeout(() => setShowPopup(false), 3000);
+  };
 
   const stopGameLoop = () => {
-    if (gameState?.game_phase === 'playing') {
+    if (gameState?.game_phase === "playing") {
       sendWebSocketMessage({
-        action: 'reset_round'
-      })
+        action: "reset_round",
+      });
     }
-    setIsPlaying(false)
-    setIsGameStarted(false)
-    setIsDealerSelected(false)
-    setShowNextButton(false)
-    setIsRoundFinished(true)
-    setPopupMessage('🛑 Game stopped')
-    setShowPopup(true)
-    setTimeout(() => setShowPopup(false), 3000)
-  }
+    setIsPlaying(false);
+    setIsGameStarted(false);
+    setIsDealerSelected(false);
+    setShowNextButton(false);
+    setIsRoundFinished(true);
+    setPopupMessage("🛑 Game stopped");
+    setShowPopup(true);
+    setTimeout(() => setShowPopup(false), 3000);
+  };
 
   const sendWebSocketMessage = (message: any) => {
     if (socket && socket.readyState === WebSocket.OPEN) {
-      console.log('Sending message to server:', message)
-      socket.send(JSON.stringify(message))
+      console.log("Sending message to server:", message);
+      socket.send(JSON.stringify(message));
     } else {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
     }
-  }
+  };
 
   // Set game mode when component loads
   useEffect(() => {
-    if (isConnected && sendWebSocketMessage && (gameState?.mode !== 'manual')) {
+    if (isConnected && sendWebSocketMessage && gameState?.mode !== "manual") {
       sendWebSocketMessage({
-        action: 'set_game_mode',
-        mode: 'manual'
-      })
-      console.log('Setting game mode to manual on component load')
+        action: "set_game_mode",
+        mode: "manual",
+      });
+      console.log("Setting game mode to manual on component load");
     }
-  }, [isConnected, sendWebSocketMessage, gameState?.mode])
+  }, [isConnected, sendWebSocketMessage, gameState?.mode]);
 
   // Add this new function to get active players
   const getActivePlayers = () => {
-    if (!gameState) return []
+    if (!gameState) return [];
     return Object.entries(gameState.players)
       .filter(([_, data]) => data.status === 1)
-      .map(([id]) => id)
-  }
+      .map(([id]) => id);
+  };
 
   const cardValues = [
-    'A',
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-    'T',
-    'J',
-    'Q',
-    'K'
-  ]
+    "A",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "T",
+    "J",
+    "Q",
+    "K",
+  ];
   const suits = [
-    { symbol: '♠', value: 'S', color: 'text-gray-800', name: 'Spades' },
-    { symbol: '♦', value: 'D', color: 'text-red-500', name: 'Diamonds' },
-    { symbol: '♣', value: 'C', color: 'text-gray-800', name: 'Clubs' },
-    { symbol: '♥', value: 'H', color: 'text-red-500', name: 'Hearts' }
-  ]
+    { symbol: "♠", value: "S", color: "text-gray-800", name: "Spades" },
+    { symbol: "♦", value: "D", color: "text-red-500", name: "Diamonds" },
+    { symbol: "♣", value: "C", color: "text-gray-800", name: "Clubs" },
+    { symbol: "♥", value: "H", color: "text-red-500", name: "Hearts" },
+  ];
 
   // Update the dealer total check
-  const dealerTotal = gameState?.dealer?.total ?? 0
+  const dealerTotal = gameState?.dealer?.total ?? 0;
 
   const handleNextTurn = () => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     sendWebSocketMessage({
-      action: 'next_turn'
-    })
-  }
+      action: "next_turn",
+    });
+  };
 
   const handleStandDealer = () => {
     sendWebSocketMessage({
-      action: 'stand_dealer'
-    })
-  }
+      action: "stand_dealer",
+    });
+  };
 
   const resetGame = () => {
     if (!socket || !isConnected) {
-      setPopupMessage('⚠️ Not connected to server')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Not connected to server");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
 
     // Reset all local state
-    setIsPlaying(false)
-    setIsGameStarted(false)
-    setIsRoundFinished(false)
-    setShowNextButton(false)
-    setIsDealerSelected(false)
-    setSelectedCard(null)
-    setSelectedSuit(null)
+    setIsPlaying(false);
+    setIsGameStarted(false);
+    setIsRoundFinished(false);
+    setShowNextButton(false);
+    setIsDealerSelected(false);
+    setSelectedCard(null);
+    setSelectedSuit(null);
 
     // Send reset game message to server
     sendWebSocketMessage({
-      action: 'reset_game'
-    })
+      action: "reset_game",
+    });
 
-    setPopupMessage('🔄 Game has been reset')
-    setShowPopup(true)
-    setTimeout(() => setShowPopup(false), 3000)
-  }
+    setPopupMessage("🔄 Game has been reset");
+    setShowPopup(true);
+    setTimeout(() => setShowPopup(false), 3000);
+  };
 
   const assignCard = () => {
-    if (waitingForServer) return // Prevent double send
+    if (waitingForServer) return; // Prevent double send
 
-    if (gameState?.game_phase === 'dealer' && selectedCard && selectedSuit) {
+    if (gameState?.game_phase === "dealer" && selectedCard && selectedSuit) {
       // Allow dealing card to dealer
-      const cardCode = selectedCard + selectedSuit
-      setWaitingForServer(true)
+      const cardCode = selectedCard + selectedSuit;
+      setWaitingForServer(true);
       sendWebSocketMessage({
-        action: 'hit_dealer',
-        card: cardCode
-      })
-      setSelectedCard(null)
-      setSelectedSuit(null)
-      setIsDealerSelected(false)
-      return
+        action: "hit_dealer",
+        card: cardCode,
+      });
+      setSelectedCard(null);
+      setSelectedSuit(null);
+      setIsDealerSelected(false);
+      return;
     }
     if (
       !gameState?.selected_hand?.player_id ||
       !selectedCard ||
       !selectedSuit
     ) {
-      setPopupMessage('⚠️ Please select player, card, and suit')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Please select player, card, and suit");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
     // Ensure player is active
     if (!gameState?.players[gameState.selected_hand.player_id]?.status) {
-      setPopupMessage('⚠️ Player must be active to add cards')
-      setShowPopup(true)
-      setTimeout(() => setShowPopup(false), 3000)
-      return
+      setPopupMessage("⚠️ Player must be active to add cards");
+      setShowPopup(true);
+      setTimeout(() => setShowPopup(false), 3000);
+      return;
     }
-    const cardCode = selectedCard + selectedSuit
-    setWaitingForServer(true)
+    const cardCode = selectedCard + selectedSuit;
+    setWaitingForServer(true);
     // Send the hit_player action
     sendWebSocketMessage({
-      action: 'hit_player',
+      action: "hit_player",
       player_id: gameState.selected_hand.player_id,
       hand_index: gameState.selected_hand.hand_index,
-      card: cardCode
-    })
-    setSelectedCard(null)
-    setSelectedSuit(null)
-  }
+      card: cardCode,
+    });
+    setSelectedCard(null);
+    setSelectedSuit(null);
+  };
 
   const handleInsurance = (
     playerId: string,
@@ -593,51 +593,55 @@ const GameMenu = () => {
     splitLevel: number = 0
   ) => {
     sendWebSocketMessage({
-      action: 'handle_insurance',
+      action: "handle_insurance",
       player_id: playerId,
       hand_index: handIndex,
-      split_level: splitLevel
-    })
-    setInsuranceState(prev => ({
+      split_level: splitLevel,
+    });
+    setInsuranceState((prev) => ({
       ...prev,
-      [`${playerId}_${handIndex}_${splitLevel}`]: true
-    }))
-  }
+      [`${playerId}_${handIndex}_${splitLevel}`]: true,
+    }));
+  };
 
   const clearInsuranceForHand = (
     playerId: string,
     handIndex: number,
     splitLevel: number = 0
   ) => {
-    setInsuranceState(prev => {
-      const newState = { ...prev }
-      delete newState[`${playerId}_${handIndex}_${splitLevel}`]
-      return newState
-    })
-  }
+    setInsuranceState((prev) => {
+      const newState = { ...prev };
+      delete newState[`${playerId}_${handIndex}_${splitLevel}`];
+      return newState;
+    });
+  };
 
   const handleSave = () => {
     // Uncomment and implement your WebSocket calls here
     sendWebSocketMessage({
-      action: 'change_bets',
+      action: "change_bets",
       min_bet: pendingMinBet,
-      max_bet: pendingMaxBet
-    })
+      max_bet: pendingMaxBet,
+    });
     sendWebSocketMessage({
-      action: 'change_table',
-      table_number: pendingTableNumber
-    })
+      action: "change_table",
+      table_number: pendingTableNumber,
+    });
 
-    console.log('Saving:', { pendingTableNumber, pendingMinBet, pendingMaxBet })
-  }
+    console.log("Saving:", {
+      pendingTableNumber,
+      pendingMinBet,
+      pendingMaxBet,
+    });
+  };
 
   // Determine current mode based on pathname
   const getCurrentMode = () => {
-    if (pathname === '/') return 'live'
-    if (pathname === '/dealer/auto') return 'auto'
-    if (pathname === '/dealer/manual') return 'manual'
-    return 'manual' // default
-  }
+    if (pathname === "/") return "live";
+    if (pathname === "/dealer/auto") return "auto";
+    if (pathname === "/dealer/manual") return "manual";
+    return "manual"; // default
+  };
 
   // const handleModeChange = (mode: string) => {
   //   // This will be called when mode changes but you don't need to do anything
@@ -647,20 +651,20 @@ const GameMenu = () => {
 
   // Helper to get hand color class
   const getHandBoxColor = (selected: boolean, result?: string) => {
-    if (selected) return 'bg-yellow-300 border-2 border-yellow-500'
-    if (result === 'surrender')
-      return 'bg-blue-500 border-2 border-blue-700 text-white'
-    if (result === 'fail')
-      return 'bg-red-500 border-2 border-red-700 text-white'
-    if (result === 'win')
-      return 'bg-green-500 border-2 border-green-700 text-white'
-    if (result === 'tie')
-      return 'bg-purple-500 border-2 border-purple-700 text-white'
-    return 'bg-black/20'
-  }
+    if (selected) return "bg-yellow-300 border-2 border-yellow-500";
+    if (result === "surrender")
+      return "bg-blue-500 border-2 border-blue-700 text-white";
+    if (result === "fail")
+      return "bg-red-500 border-2 border-red-700 text-white";
+    if (result === "win")
+      return "bg-green-500 border-2 border-green-700 text-white";
+    if (result === "tie")
+      return "bg-purple-500 border-2 border-purple-700 text-white";
+    return "bg-black/20";
+  };
 
   return (
-    <div className='min-h-screen bg-[#450A03] text-white px-4'>
+    <div className="min-h-screen bg-[#450A03] text-white px-4">
       {/* Animated Background Elements */}
       {/* <div className='fixed inset-0 overflow-hidden pointer-events-none'>
         <div className='absolute -top-4 -right-4 w-72 h-72 bg-gradient-to-br from-red-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse'></div>
@@ -725,7 +729,7 @@ const GameMenu = () => {
         gameState={gameState}
         activatePlayer={activatePlayer}
         deactivatePlayer={deactivatePlayer}
-        currentMode='manual'
+        currentMode="manual"
         betMenuOpen={betMenuOpen}
         setBetMenuOpen={setBetMenuOpen}
         gameMenuOpen={gameMenuOpen}
@@ -843,18 +847,18 @@ const GameMenu = () => {
       </nav> */}
 
       {/* Main Content Area - Full width */}
-      <div className='pt-[14vh]'>
-        <div className='border-2 border-yellow-500 bg-[#911606] mx-auto flex flex-col gap-6 p-4 relative z-10'>
+      <div className="pt-[14vh]">
+        <div className="border-2 border-yellow-500 bg-[#911606] mx-auto flex flex-col gap-6 p-4 relative z-10">
           {/* Dealer Window */}
-          <div className='flex justify-center'>
+          <div className="flex justify-center">
             <div
               className={`w-full rounded-2xl ${
-                gameState?.game_phase === 'dealer'
-                  ? 'bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400'
-                  : 'bg-[#911606] text-white'
+                gameState?.game_phase === "dealer"
+                  ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                  : "bg-[#911606] text-white"
               }`}
             >
-              <div className='flex items-center justify-between mb-4'>
+              <div className="flex items-center justify-between mb-4">
                 {/* <h2 className={`text-xl font-bold flex items-center ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-white"
                 }`}>
                 <svg className={`w-5 h-5 mr-2 ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-blue-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -884,26 +888,23 @@ const GameMenu = () => {
               </div> */}
               </div>
 
-              <div className='bg-black/20 rounded-lg p-2 border-2 border-yellow-500 border-dashed'>
+              <div className="bg-black/20 rounded-lg p-2 border-2 border-yellow-500 border-dashed">
                 {/* Main horizontal layout */}
-                <div className='flex items-start justify-between '>
+                <div className="flex items-start justify-between ">
                   {/* Left: Dealer's Cards text */}
-                  <div className='text-base font-medium text-white flex-shrink-0'>
+                  <div className="text-base font-medium text-white flex-shrink-0">
                     Dealer's Cards
                   </div>
                   {/* Right: Total and buttons */}
-                  <div className='flex flex-col items-end gap-y-2 flex-shrink-0'>
-                    
+                  <div className="flex flex-col items-end gap-y-2 flex-shrink-0">
                     <button
                       onClick={() =>
-                        sendWebSocketMessage({ action: 'reset_round' })
+                        sendWebSocketMessage({ action: "reset_round" })
                       }
-                      className='px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3'
+                      className="px-2 py-1 bg-white text-[#911606] rounded-md transition-all duration-300 transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center justify-center space-x-3"
                     >
                       New Game
                     </button>
-
-                    
                   </div>
                 </div>
               </div>
@@ -911,46 +912,46 @@ const GameMenu = () => {
           </div>
 
           {/* Players Grid - 2 per row */}
-          <div className='grid grid-cols-3 gap-2'>
+          <div className="grid grid-cols-3 gap-2">
             {Object.entries(gameState?.players || {}).map(
               ([playerId, playerData]) => {
                 const isCurrentHand =
                   gameState?.selected_hand?.player_id === playerId &&
                   gameState?.selected_hand?.hand_index === 0 &&
-                  gameState?.selected_hand?.split_level === 0
+                  gameState?.selected_hand?.split_level === 0;
 
                 const isCurrentSplit1Hand =
                   gameState?.selected_hand?.player_id === playerId &&
                   gameState?.selected_hand?.hand_index === 0 &&
-                  gameState?.selected_hand?.split_level === 1
+                  gameState?.selected_hand?.split_level === 1;
 
                 const isCurrentSplit2Hand =
                   gameState?.selected_hand?.player_id === playerId &&
                   gameState?.selected_hand?.hand_index === 0 &&
-                  gameState?.selected_hand?.split_level === 2
+                  gameState?.selected_hand?.split_level === 2;
 
-                const isActive = playerData.status === 1
+                const isActive = playerData.status === 1;
                 return (
                   <div
                     key={playerId}
                     className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                      'bg-[#C1351D] text-gray-200 border border-red-500/30'
+                      "bg-[#C1351D] text-gray-200 border border-red-500/30"
                       // isCurrentHand
                       //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                       //   : isActive
                       //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                       //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
                     }`}
-                    onClick={e => {
-                      e.stopPropagation()
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (isActive) {
-                        handlePlayerClick(playerId)
+                        handlePlayerClick(playerId);
                       }
                     }}
                   >
-                    <div className='flex flex-col space-y-3'>
-                      <div className='flex items-center justify-between'>
-                        <div className='flex items-center space-x-3'>
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
                           {/* <div
                             className={`w-4 h-4 rounded-full shadow-lg ${
                               isCurrentHand
@@ -962,7 +963,7 @@ const GameMenu = () => {
                           /> */}
                           <div>
                             <div className={`text-lg font-bold text-white`}>
-                                {playerId.replace('player', 'Player ')}
+                              {playerId.replace("player", "Player ")}
                             </div>
                             {/* <div
                               className={`text-sm ${
@@ -979,47 +980,53 @@ const GameMenu = () => {
                           {isActive && (
                             <>
                               <button
-                                onClick={e => {
-                                  e.stopPropagation()
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   sendWebSocketMessage({
-                                    action: 'handle_manual_insurance',
-                                    player_id: playerId
-                                  })
+                                    action: "handle_manual_insurance",
+                                    player_id: playerId,
+                                  });
                                 }}
                                 className={`px-1 py-0.5 rounded transition-colors text-sm ${
-                                  gameState?.players?.[playerId]?.insurence === 1
-                                    ? 'bg-gray-500 text-white hover:bg-gray-600'
-                                    : 'bg-yellow-500 text-white hover:bg-yellow-600'
+                                  gameState?.players?.[playerId]?.insurence ===
+                                  1
+                                    ? "bg-gray-500 text-white hover:bg-gray-600"
+                                    : "bg-yellow-500 text-white hover:bg-yellow-600"
                                 }`}
                               >
                                 {gameState?.players?.[playerId]?.insurence === 1
-                                  ? 'Cancel Insurance'
-                                  : 'Insurance'}
+                                  ? "Cancel Insurance"
+                                  : "Insurance"}
                               </button>
                               <button
-                                onClick={e => {
-                                  e.stopPropagation()
-                                  if (gameState?.players?.[playerId]?.even_money === 1) {
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    gameState?.players?.[playerId]
+                                      ?.even_money === 1
+                                  ) {
                                     sendWebSocketMessage({
-                                      action: 'no_for_player_even_money',
-                                      player_id: playerId
-                                    })
+                                      action: "no_for_player_even_money",
+                                      player_id: playerId,
+                                    });
                                   } else {
                                     sendWebSocketMessage({
-                                      action: 'yes_for_player_even_money',
-                                      player_id: playerId
-                                    })
+                                      action: "yes_for_player_even_money",
+                                      player_id: playerId,
+                                    });
                                   }
                                 }}
                                 className={`px-1 py-0.5 rounded transition-colors text-sm ${
-                                  gameState?.players?.[playerId]?.even_money === 1
-                                    ? 'bg-gray-500 text-white hover:bg-gray-600'
-                                    : 'bg-purple-500 text-white hover:bg-purple-600'
+                                  gameState?.players?.[playerId]?.even_money ===
+                                  1
+                                    ? "bg-gray-500 text-white hover:bg-gray-600"
+                                    : "bg-purple-500 text-white hover:bg-purple-600"
                                 }`}
                               >
-                                {gameState?.players?.[playerId]?.even_money === 1
-                                  ? 'Cancel Even Money'
-                                  : 'Even Money'}
+                                {gameState?.players?.[playerId]?.even_money ===
+                                1
+                                  ? "Cancel Even Money"
+                                  : "Even Money"}
                               </button>
                             </>
                           )}
@@ -1047,7 +1054,7 @@ const GameMenu = () => {
                         )} */}
                       </div>
                       {isActive && (
-                        <div className='space-y-2'>
+                        <div className="space-y-2">
                           {/* Main Hand */}
                           <div
                             className={`rounded-lg p-2 ${getHandBoxColor(
@@ -1056,84 +1063,84 @@ const GameMenu = () => {
                               gameState?.players?.[playerId]?.hands?.[0]?.result
                             )}`}
                           >
-                            <div className='flex items-center justify-between mb-2'>
+                            <div className="flex items-center justify-between mb-2">
                               <div
                                 className={`text-sm font-medium ${
-                                  isCurrentHand ? 'text-gray-900' : 'text-white'
+                                  isCurrentHand ? "text-gray-900" : "text-white"
                                 }`}
                               >
                                 Main Hand:
                               </div>
                             </div>
 
-                            <div className='flex flex-wrap justify-center items-center gap-1'>
+                            <div className="flex flex-wrap justify-center items-center gap-1">
                               <>
                                 <button
                                   onClick={() =>
                                     sendWebSocketMessage({
-                                      action: 'manual_make_win',
+                                      action: "manual_make_win",
                                       player_id: playerId,
                                       split_level: 0,
-                                      hand_index: 0
+                                      hand_index: 0,
                                     })
                                   }
-                                  className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
+                                  className="px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg"
                                 >
                                   MAKE WIN
                                 </button>
                                 <button
                                   onClick={() =>
                                     sendWebSocketMessage({
-                                      action: 'manual_make_lose',
+                                      action: "manual_make_lose",
                                       player_id: playerId,
                                       split_level: 0,
-                                      hand_index: 0
+                                      hand_index: 0,
                                     })
                                   }
-                                  className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
+                                  className="px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg"
                                 >
                                   MAKE LOSE
                                 </button>
                                 <button
                                   onClick={() =>
                                     sendWebSocketMessage({
-                                      action: 'manual_make_tie',
+                                      action: "manual_make_tie",
                                       player_id: playerId,
                                       split_level: 0,
-                                      hand_index: 0
+                                      hand_index: 0,
                                     })
                                   }
-                                  className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
+                                  className="px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg"
                                 >
                                   MAKE PUSH
                                 </button>
                                 <button
                                   onClick={() =>
                                     sendWebSocketMessage({
-                                      action: 'manual_make_default',
+                                      action: "manual_make_default",
                                       player_id: playerId,
                                       split_level: 0,
-                                      hand_index: 0
+                                      hand_index: 0,
                                     })
                                   }
-                                  className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
+                                  className="px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg"
                                 >
                                   DEFAULT
                                 </button>
                                 {/* Surrender Button - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
                                 <button
-                                        onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'manual_make_surrender',
-                                              player_id: playerId,
-                                              split_level: 0,
-                                              hand_index: 0
-                                            })
-                                        }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
-                                      >
-                                        SURRENDER
-                                      </button>
+                                  onClick={() => {
+                                    sendWebSocketMessage({
+                                      action: "manual_make_surrender",
+                                      player_id: playerId,
+                                      split_level: 0,
+                                      hand_index: 0,
+                                    });
+                                  }}
+                                  className="px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg"
+                                >
+                                  SURRENDER
+                                </button>
                               </>
                             </div>
                           </div>
@@ -1141,7 +1148,7 @@ const GameMenu = () => {
                           {/* Split1 Hand */}
                           {gameState?.players?.[playerId]?.split1_status ===
                           1 ? (
-                            <div className='mt-4'>
+                            <div className="mt-4">
                               <div
                                 className={`rounded-lg p-2 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 1) &&
@@ -1149,12 +1156,12 @@ const GameMenu = () => {
                                   gameState.players[playerId].split1[0].result
                                 )}`}
                               >
-                                <div className='flex items-center justify-between mb-2'>
+                                <div className="flex items-center justify-between mb-2">
                                   <div
                                     className={`text-sm font-medium ${
                                       isCurrentSplit1Hand
-                                        ? 'text-gray-900'
-                                        : 'text-white'
+                                        ? "text-gray-900"
+                                        : "text-white"
                                     }`}
                                   >
                                     Split 1:
@@ -1162,98 +1169,98 @@ const GameMenu = () => {
                                   <button
                                     onClick={() =>
                                       sendWebSocketMessage({
-                                        action: 'deactivate_split1',
-                                        player_id: playerId
+                                        action: "deactivate_split1",
+                                        player_id: playerId,
                                       })
                                     }
-                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
+                                    className="px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg"
                                   >
                                     Deactivate Split
                                   </button>
                                 </div>
-                                <div className='flex flex-wrap justify-center items-center gap-1'>
+                                <div className="flex flex-wrap justify-center items-center gap-1">
                                   <>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_win',
+                                          action: "manual_make_win",
                                           player_id: playerId,
                                           split_level: 1,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE WIN
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_lose',
+                                          action: "manual_make_lose",
                                           player_id: playerId,
                                           split_level: 1,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE LOSE
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_tie',
+                                          action: "manual_make_tie",
                                           player_id: playerId,
                                           split_level: 1,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE PUSH
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_default',
+                                          action: "manual_make_default",
                                           player_id: playerId,
                                           split_level: 1,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg"
                                     >
                                       DEFAULT
                                     </button>
                                     {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
                                     <button
-                                        onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'manual_make_surrender',
-                                              player_id: playerId,
-                                              split_level: 1,
-                                              hand_index: 0
-                                            })
-                                        }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
-                                      >
-                                        SURRENDER
-                                      </button>
+                                      onClick={() => {
+                                        sendWebSocketMessage({
+                                          action: "manual_make_surrender",
+                                          player_id: playerId,
+                                          split_level: 1,
+                                          hand_index: 0,
+                                        });
+                                      }}
+                                      className="px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg"
+                                    >
+                                      SURRENDER
+                                    </button>
                                   </>
                                 </div>
                               </div>
                             </div>
                           ) : (
-                            <div className='mt-4'>
+                            <div className="mt-4">
                               <button
-                                onClick={e => {
-                                  e.stopPropagation()
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   sendWebSocketMessage({
-                                    action: 'activate_split1',
-                                    player_id: playerId
-                                  })
+                                    action: "activate_split1",
+                                    player_id: playerId,
+                                  });
                                 }}
-                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
+                                className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg"
                               >
                                 Activate Split1
                               </button>
@@ -1263,7 +1270,7 @@ const GameMenu = () => {
                           {/* Split2 Hand */}
                           {gameState?.players?.[playerId]?.split2_status ===
                           1 ? (
-                            <div className='mt-4'>
+                            <div className="mt-4">
                               <div
                                 className={`rounded-lg p-2 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 2) &&
@@ -1271,12 +1278,12 @@ const GameMenu = () => {
                                   gameState.players[playerId].split2[0].result
                                 )}`}
                               >
-                                <div className='flex items-center justify-between mb-2'>
+                                <div className="flex items-center justify-between mb-2">
                                   <div
                                     className={`text-sm font-medium ${
                                       isCurrentSplit2Hand
-                                        ? 'text-gray-900'
-                                        : 'text-white'
+                                        ? "text-gray-900"
+                                        : "text-white"
                                     }`}
                                   >
                                     Split 2:
@@ -1284,84 +1291,84 @@ const GameMenu = () => {
                                   <button
                                     onClick={() =>
                                       sendWebSocketMessage({
-                                        action: 'deactivate_split2',
-                                        player_id: playerId
+                                        action: "deactivate_split2",
+                                        player_id: playerId,
                                       })
                                     }
-                                    className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
+                                    className="px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg"
                                   >
                                     Deactivate Split
                                   </button>
                                 </div>
 
-                                <div className='flex flex-wrap justify-center items-center gap-1'>
+                                <div className="flex flex-wrap justify-center items-center gap-1">
                                   <>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_win',
+                                          action: "manual_make_win",
                                           player_id: playerId,
                                           split_level: 2,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE WIN
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_lose',
+                                          action: "manual_make_lose",
                                           player_id: playerId,
                                           split_level: 2,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE LOSE
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_tie',
+                                          action: "manual_make_tie",
                                           player_id: playerId,
                                           split_level: 2,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors border-2 border-white text-lg"
                                     >
                                       MAKE PUSH
                                     </button>
                                     <button
                                       onClick={() =>
                                         sendWebSocketMessage({
-                                          action: 'manual_make_default',
+                                          action: "manual_make_default",
                                           player_id: playerId,
                                           split_level: 2,
-                                          hand_index: 0
+                                          hand_index: 0,
                                         })
                                       }
-                                      className='px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg'
+                                      className="px-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors border-2 border-white text-lg"
                                     >
                                       DEFAULT
                                     </button>
-                                    
+
                                     <button
-                                        onClick={() => {
-                                            sendWebSocketMessage({
-                                              action: 'manual_make_surrender',
-                                              player_id: playerId,
-                                              split_level: 2,
-                                              hand_index: 0
-                                            })
-                                        }}
-                                        className='px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg'
-                                      >
-                                        SURRENDER
-                                      </button>
+                                      onClick={() => {
+                                        sendWebSocketMessage({
+                                          action: "manual_make_surrender",
+                                          player_id: playerId,
+                                          split_level: 2,
+                                          hand_index: 0,
+                                        });
+                                      }}
+                                      className="px-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors border-2 border-white text-lg"
+                                    >
+                                      SURRENDER
+                                    </button>
                                     {/* <button
                                       onClick={() =>
                                         sendWebSocketMessage({
@@ -1378,16 +1385,16 @@ const GameMenu = () => {
                               </div>
                             </div>
                           ) : (
-                            <div className='mt-4'>
+                            <div className="mt-4">
                               <button
-                                onClick={e => {
-                                  e.stopPropagation()
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   sendWebSocketMessage({
-                                    action: 'activate_split2',
-                                    player_id: playerId
-                                  })
+                                    action: "activate_split2",
+                                    player_id: playerId,
+                                  });
                                 }}
-                                className='px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg'
+                                className="px-3 py-1 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-lg"
                               >
                                 Activate Split2
                               </button>
@@ -1397,26 +1404,26 @@ const GameMenu = () => {
                       )}
 
                       {/* Next Button - Show for current player */}
-                      {isActive && gameState?.current_turn === 'player' && (
-                        <div className='mt-4 flex justify-end'>
+                      {isActive && gameState?.current_turn === "player" && (
+                        <div className="mt-4 flex justify-end">
                           <button
-                            onClick={e => {
-                              e.stopPropagation()
-                              handleNextTurn()
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNextTurn();
                             }}
-                            className='px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-lg'
+                            className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center space-x-2 text-lg"
                           >
                             <svg
-                              className='w-4 h-4'
-                              fill='none'
-                              viewBox='0 0 24 24'
-                              stroke='currentColor'
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
                             >
                               <path
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                                 strokeWidth={2}
-                                d='M13 5l7 7-7 7M5 5l7 7-7 7'
+                                d="M13 5l7 7-7 7M5 5l7 7-7 7"
                               />
                             </svg>
                             <span>Next</span>
@@ -1425,7 +1432,7 @@ const GameMenu = () => {
                       )}
                     </div>
                   </div>
-                )
+                );
               }
             )}
           </div>
@@ -1436,15 +1443,15 @@ const GameMenu = () => {
 
       {/* Enhanced Popup Message */}
       {showPopup && (
-        <div className='fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-bounce'>
-          <div className='bg-gradient-to-r from-red-800 to-red-700 border border-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-xl'>
-            <div className='w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse'></div>
-            <span className='font-medium text-lg'>{popupMessage}</span>
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
+          <div className="bg-gradient-to-r from-red-800 to-red-700 border border-red-600 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-xl">
+            <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-green-500 rounded-full animate-pulse"></div>
+            <span className="font-medium text-lg">{popupMessage}</span>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default GameMenu
+export default GameMenu;
