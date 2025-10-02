@@ -334,7 +334,7 @@ const DisplayPage = () => {
     const RECONNECT_DELAY = 3000
 
     const connect = () => {
-      ws = new WebSocket('ws://localhost:6790')
+      ws = new WebSocket('ws://192.168.2.190:6790')
 
       ws.onopen = () => {
         console.log('Display connected to server')
