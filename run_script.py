@@ -15,8 +15,8 @@ node_proc = None
 python_proc = None
 
 # URL to open
-WEB_URL = "http://10.16.23.9:3000"
-# /10.16.23.9:3000
+WEB_URL = "http://192.168.2.190:3000"
+# /192.168.2.190:3000
 
 # Tkinter setup
 # root = tk.Tk()
