@@ -336,7 +336,8 @@ const DisplayPage = () => {
     const RECONNECT_DELAY = 3000;
 
     const connect = () => {
-      ws = new WebSocket("ws://192.168.2.190:6790");
+      ws = new WebSocket('ws://192.168.2.190:6790')
+
 
       ws.onopen = () => {
         console.log("Display connected to server");
@@ -490,72 +491,76 @@ const DisplayPage = () => {
             />
           </div>
 
-          {/* Players - Left side (1-3) */}
-          {playerGrid.slice(0, 3).map(([playerId, gridClass], idx) => {
+          {/* Players - Left side (1-3) - now mapped to players 6, 5, 4 */}
+          {playerGrid.slice(0, 3).map(([currentPlayerId, gridClass], idx) => {
+            // Remap playerId: player1 -> player6, player2 -> player5, player3 -> player4
+            const playerId = `player${6 - idx}`;
             const player = gameState.players?.[playerId];
             const state = getPlayerState(player);
             const imgSrc = stateToImg[state];
             const overlay = stateToOverlay[state];
 
             return (
-              <div key={playerId} className={gridClass}>
-                <div className="w-[17vw] h-[17vh] flex flex-row items-center relative">
+              <div key={currentPlayerId} className={gridClass}>
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center relative'>
                   {/* Cards container - positioned absolutely to the left of player image */}
-                  <div className="absolute right-[8vw] top-1/2 -translate-y-1/2 flex justify-end pr-4">
+                  <div className='absolute right-[8vw] top-1/2 -translate-y-1/2 flex justify-end pr-4'>
                     <BlackJackHand playerId={playerId} player={player} />
                   </div>
 
                   {/* Player image - fixed position on the right */}
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center">
+                  <div className='absolute right-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center'>
                     <img
                       src={imgSrc}
-                      alt="Player State"
-                      className="w-full h-full object-contain"
+                      alt='Player State'
+                      className='w-full h-full object-contain'
                     />
-                    <div className="absolute inset-0 flex items-center justify-center text-white text-lg">
-                      <div className="flex flex-col items-center">
-                        <div className="font-bold text-3xl">{idx + 1}</div>
-                        <div className="text-2xl">{overlay}</div>
+                    <div className='absolute inset-0 flex items-center justify-center text-white text-lg'>
+                      <div className='flex flex-col items-center'>
+                        <div className='font-bold text-3xl'>{6 - idx}</div>
+                        <div className='text-2xl'>{overlay}</div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            );
+            )
           })}
 
-          {/* Players - Right side (4-6) */}
-          {playerGrid.slice(3).map(([playerId, gridClass], idx) => {
+          {/* Players - Right side (4-6) - now mapped to players 3, 2, 1 */}
+          {playerGrid.slice(3).map(([currentPlayerId, gridClass], idx) => {
+            // Remap playerId: player4 -> player3, player5 -> player2, player6 -> player1
+            const playerId = `player${3 - idx}`;
             const player = gameState.players?.[playerId];
             const state = getPlayerState(player);
             const imgSrc = stateToImg[state];
             const overlay = stateToOverlay[state];
 
             return (
-              <div key={playerId} className={gridClass}>
-                <div className="w-[17vw] h-[17vh] flex flex-row items-center relative">
+              <div key={currentPlayerId} className={gridClass}>
+                <div className='w-[17vw] h-[17vh] flex flex-row items-center relative'>
                   {/* Player image - fixed position on the left */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center">
+                  <div className='absolute left-0 top-1/2 -translate-y-1/2 w-[8vw] h-[14vh] flex items-center justify-center'>
                     <img
                       src={imgSrc}
-                      alt="Player State"
-                      className="w-full h-full object-contain"
+                      alt='Player State'
+                      className='w-full h-full object-contain'
                     />
-                    <div className="absolute inset-0 flex items-center justify-center text-white text-lg">
-                      <div className="flex flex-col items-center">
-                        <div className="font-bold text-3xl">{idx + 4}</div>
-                        <div className="text-2xl">{overlay}</div>
+                    <div className='absolute inset-0 flex items-center justify-center text-white text-lg'>
+                      <div className='flex flex-col items-center'>
+                        <div className='font-bold text-3xl'>{3 - idx}</div>
+                        <div className='text-2xl'>{overlay}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Cards container - positioned absolutely to the right of player image */}
-                  <div className="absolute left-[8vw] top-1/2 -translate-y-1/2 flex justify-start pl-4">
+                  <div className='absolute left-[8vw] top-1/2 -translate-y-1/2 flex justify-start pl-4'>
                     <BlackJackHand playerId={playerId} player={player} />
                   </div>
                 </div>
               </div>
-            );
+            )
           })}
 
           {/* Center Logo/Game Info */}
