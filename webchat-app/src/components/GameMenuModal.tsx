@@ -85,7 +85,7 @@ export default function GameMenuModal ({
     // Navigate to the appropriate route without closing the modal
     switch (mode) {
       case 'live':
-        router.push('/')
+        router.push('/dealer')
         break
       case 'auto':
         router.push('/dealer/auto')

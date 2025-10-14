@@ -637,7 +637,7 @@ const GameMenu = () => {
 
   // Determine current mode based on pathname
   const getCurrentMode = () => {
-    if (pathname === "/") return "live";
+    if (pathname === "/dealer") return "live";
     if (pathname === "/dealer/auto") return "auto";
     if (pathname === "/dealer/manual") return "manual";
     return "manual"; // default

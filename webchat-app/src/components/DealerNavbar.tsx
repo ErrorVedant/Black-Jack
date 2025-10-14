@@ -160,9 +160,7 @@ const DealerNavbar = ({
             })}
           </div>
 
-          {/* Right Mode Buttons */}
-          <div className='flex items-center gap-1 sm:gap-2 md:gap-3'>
-            {/* Live Mode Button */}
+          {/* <div className='flex items-center gap-1 sm:gap-2 md:gap-3'>
             <button
               onClick={() => handleModeChange('live')}
               className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'live'
@@ -174,7 +172,6 @@ const DealerNavbar = ({
               LIVE
             </button>
 
-            {/* Auto Mode Button */}
             <button
               onClick={() => handleModeChange('auto')}
               className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'auto'
@@ -186,7 +183,6 @@ const DealerNavbar = ({
               AUTO
             </button>
 
-            {/* Manual Mode Button */}
             <button
               onClick={() => handleModeChange('manual')}
               className={`px-2 py-1 sm:px-3 sm:py-2 md:px-4 md:py-2 text-xs sm:text-sm md:text-base font-bold rounded-lg transition-all duration-200 hover:scale-105 ${currentMode === 'manual'
@@ -197,7 +193,7 @@ const DealerNavbar = ({
             >
               MANUAL
             </button>
-          </div>
+          </div> */}
 
           <div
             className='w-24 h-16 sm:w-28 sm:h-16 md:w-32 md:h-20 lg:w-40 lg:h-24 relative flex items-center justify-center cursor-pointer hover:scale-105 transition-transform overflow-hidden'

@@ -665,7 +665,7 @@ const GameMenu = () => {
 
   // Determine current mode based on pathname
   const getCurrentMode = () => {
-    if (pathname === "/") return "live";
+    if (pathname === "/dealer") return "live";
     if (pathname === "/dealer/auto") return "auto";
     if (pathname === "/dealer/manual") return "manual";
     return "auto"; // default
@@ -2027,7 +2027,7 @@ const GameMenu = () => {
                   Deal Card
                 </button>
               )}
-              <button
+              {/* <button
                 onClick={() => {
                   if (gameState?.current_turn === "dealer") {
                     sendWebSocketMessage({ action: "hit_player" });
@@ -2048,7 +2048,7 @@ const GameMenu = () => {
                 className="flex-1 py-3 bg-white hover:bg-gray-100 text-black rounded font-semibold text-sm"
               >
                 Pull from Top of Stack
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
