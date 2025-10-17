@@ -151,22 +151,33 @@ signal.signal(signal.SIGTERM, signal_handler)
 def main():
     print("Starting servers...")
     start_servers()
-    time.sleep(5)  # Give servers more time to start
+
+    # --- Wait until Node.js server is ready ---
+    timeout = 30  # max wait time in seconds
+    start_time = time.time()
+    print("Waiting for Node.js server to start on port 3000...")
+    while not is_port_open(3000):
+        if time.time() - start_time > timeout:
+            print("Error: Node.js server did not start in time.")
+            close_servers()
+            sys.exit(1)
+        time.sleep(1)
+    print("Node.js server is ready!")
+
+    # --- Open browser ---
     chrome_path = find_chrome_path()
     browser_proc = None
     if chrome_path:
         print("Opening Chrome in fullscreen mode...")
-        browser_proc = subprocess.Popen([
+        subprocess.Popen([
             chrome_path,
             '--start-fullscreen',
             '--new-window',
             WEB_URL
         ])
-        try:
-            browser_proc.wait()
-        except KeyboardInterrupt:
-            pass
-        print("Chrome closed. Shutting down servers...")
+        print("Chrome opened. Servers are running...")
+        input("Press Enter to stop servers and exit...")
+
     else:
         print("Chrome not found. Opening in default browser (no fullscreen, press Enter to exit)...")
         webbrowser.open(WEB_URL)
@@ -174,6 +185,8 @@ def main():
             input("Press Enter after closing the browser to stop servers...")
         except KeyboardInterrupt:
             pass
+
+    # --- Cleanup ---
     close_servers()
     print("Cleanup complete. Exiting.")
 
