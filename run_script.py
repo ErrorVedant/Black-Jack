@@ -8,32 +8,15 @@ import sys
 import signal
 import shutil
 
-# Path to your venv's python.exe
-# VENV_PYTHON = r"D:\Projects\venv\Scripts\python.exe"
-
 node_proc = None
 python_proc = None
 
-# URL to open
 WEB_URL = "http://192.168.2.190:3000"
-# /192.168.2.190:3000
-
-# Tkinter setup
-# root = tk.Tk()
-# root.title("Mini Flush Server Control")
-# root.geometry("350x220")
-
-# status_node = tk.StringVar()
-# status_python = tk.StringVar()
-# status_node.set("Node App: Not running")
-# status_python.set("Python Server: Not running")
-
-SERIAL_PORT = "COM1"  # Match with server.py
+SERIAL_PORT = "COM1"
 BAUD_RATE = 9600
 
-# --- Chrome detection ---
+# ---------------- Chrome detection ----------------
 def find_chrome_path():
-    # Try to find Chrome in common Windows locations
     chrome_names = [
         os.path.join(os.environ.get('PROGRAMFILES', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
         os.path.join(os.environ.get('PROGRAMFILES(X86)', ''), 'Google', 'Chrome', 'Application', 'chrome.exe'),
@@ -42,25 +25,17 @@ def find_chrome_path():
     for path in chrome_names:
         if os.path.isfile(path):
             return path
-    # Try PATH
-    chrome_path = shutil.which('chrome')
-    if chrome_path:
-        return chrome_path
-    return None
+    return shutil.which('chrome')
 
+# ---------------- Port management ----------------
 def kill_process_on_port(port):
-    """Kill any process listening on the given port using Windows commands."""
     try:
-        # Find the PID of the process using the port
         cmd = f"netstat -ano | findstr :{port}"
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
         if result.returncode == 0 and result.stdout:
-            lines = result.stdout.strip().split('\n')
-            for line in lines:
+            for line in result.stdout.strip().split('\n'):
                 if "LISTENING" in line:
-                    parts = line.split()
-                    pid = parts[-1]  # PID is the last column
-                    # Kill the process
+                    pid = line.split()[-1]
                     subprocess.run(f"taskkill /pid {pid} /f", shell=True, capture_output=True)
                     print(f"Killed process {pid} on port {port}")
         else:
@@ -68,94 +43,81 @@ def kill_process_on_port(port):
     except Exception as e:
         print(f"Error killing process on port {port}: {e}")
 
-# --- Server management ---
-def start_servers():
-    global node_proc, python_proc
-    kill_process_on_port(3000)
-    kill_process_on_port(6789)
-    # Start Node.js app from the webchat-app directory
-    if node_proc is None or node_proc.poll() is not None:
-        node_app_dir = os.path.join(os.getcwd(), "webchat-app")
-        if os.path.exists(node_app_dir):
-            node_proc = subprocess.Popen(
-                "npm run dev -- --port 3000",  # Use npm run dev instead of npx next dev
-                cwd=node_app_dir,
-                shell=True
-            )
-            print(f"Starting Node.js app from: {node_app_dir}")
-        else:
-            print(f"Warning: Node.js app directory not found: {node_app_dir}")
-    
-    # Start Python server from current directory
-    if python_proc is None or python_proc.poll() is not None:
-        python_proc = subprocess.Popen(
-            # f'"{VENV_PYTHON}" server.py',
-            "python server.py", 
-            cwd=os.getcwd(),
-            shell=True
-        )
-        print("Starting Python server...")
-
-
-def open_web():
-    webbrowser.open(WEB_URL)
-
 def is_port_open(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('0.0.0.0', port)) == 0 or s.connect_ex(('127.0.0.1', port)) == 0
+        return s.connect_ex(('127.0.0.1', port)) == 0
 
+# ---------------- Serial port ----------------
 def close_serial_port():
-    """Close the serial port if it's in use."""
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)
         if ser.is_open:
             ser.close()
-            print(f"Closed {SERIAL_PORT} successfully.")
+            print(f"Closed {SERIAL_PORT}")
     except serial.SerialException as e:
-        print(f"Serial port {SERIAL_PORT} not available (this is normal if no device is connected): {e}")
+        print(f"Serial port {SERIAL_PORT} not available (normal if no device): {e}")
+
+# ---------------- Server management ----------------
+def start_servers():
+    global node_proc, python_proc
+    kill_process_on_port(3000)
+    kill_process_on_port(6789)
+
+    # Node.js server
+    node_dir = os.path.join(os.getcwd(), "webchat-app")
+    if os.path.exists(node_dir):
+        node_proc = subprocess.Popen(
+            "npm run dev -- --port 3000",
+            cwd=node_dir,
+            shell=True,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+        )
+        print(f"Starting Node.js app from: {node_dir}")
+    else:
+        print(f"Warning: Node.js directory not found: {node_dir}")
+
+    # Python server
+    python_proc = subprocess.Popen(
+        "python server.py",
+        cwd=os.getcwd(),
+        shell=True,
+        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+    )
+    print("Starting Python server...")
 
 def close_servers():
     global node_proc, python_proc
     kill_process_on_port(3000)
     kill_process_on_port(6789)
     close_serial_port()
-    if node_proc is not None and node_proc.poll() is None:
-        node_proc.terminate()
-        try:
-            node_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            node_proc.kill()
-        time.sleep(1)
-        if is_port_open(3000):
-            print("Node App: Port still in use!")
-        else:
-            print("Node App: Stopped")
-    if python_proc is not None and python_proc.poll() is None:
-        python_proc.terminate()
-        try:
-            python_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            python_proc.kill()
-        print("Python Server: Stopped")
-    close_serial_port()
 
+    for proc, name in [(node_proc, "Node App"), (python_proc, "Python Server")]:
+        if proc and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            print(f"{name}: Stopped")
+
+# ---------------- Signal handler ----------------
 def signal_handler(sig, frame):
-    print("\nReceived exit signal. Cleaning up...")
+    print("\nExit signal received. Cleaning up...")
     close_servers()
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
-# --- Main logic ---
+# ---------------- Main ----------------
 def main():
     print("Starting servers...")
     start_servers()
 
-    # --- Wait until Node.js server is ready ---
-    timeout = 30  # max wait time in seconds
+    # Wait for Node.js server to start
+    print("Waiting for Node.js server on port 3000...")
+    timeout = 30
     start_time = time.time()
-    print("Waiting for Node.js server to start on port 3000...")
     while not is_port_open(3000):
         if time.time() - start_time > timeout:
             print("Error: Node.js server did not start in time.")
@@ -164,30 +126,32 @@ def main():
         time.sleep(1)
     print("Node.js server is ready!")
 
-    # --- Open browser ---
+    # Open Chrome fullscreen
     chrome_path = find_chrome_path()
     browser_proc = None
     if chrome_path:
-        print("Opening Chrome in fullscreen mode...")
-        subprocess.Popen([
+        browser_proc = subprocess.Popen([
             chrome_path,
             '--start-fullscreen',
             '--new-window',
             WEB_URL
-        ])
-        print("Chrome opened. Servers are running...")
-        input("Press Enter to stop servers and exit...")
-
+        ], creationflags=subprocess.CREATE_NEW_PROCESS_GROUP)
+        print("Chrome opened in fullscreen.")
     else:
-        print("Chrome not found. Opening in default browser (no fullscreen, press Enter to exit)...")
+        print("Chrome not found. Opening default browser...")
         webbrowser.open(WEB_URL)
-        try:
-            input("Press Enter after closing the browser to stop servers...")
-        except KeyboardInterrupt:
-            pass
 
-    # --- Cleanup ---
+    # Keep running until user exits
+    print("Servers running. Press Enter to stop everything...")
+    try:
+        input()
+    except KeyboardInterrupt:
+        pass
+
+    # Cleanup
     close_servers()
+    if browser_proc and browser_proc.poll() is None:
+        browser_proc.terminate()
     print("Cleanup complete. Exiting.")
 
 if __name__ == "__main__":
