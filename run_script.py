@@ -12,7 +12,7 @@ node_proc = None
 python_proc = None
 
 WEB_URL = "http://169.254.11.80:3000"
-SERIAL_PORT = "COM1"
+SERIAL_PORT = "COM3"
 BAUD_RATE = 9600
 
 # ---------------- Chrome detection ----------------
@@ -44,8 +44,12 @@ def kill_process_on_port(port):
         print(f"Error killing process on port {port}: {e}")
 
 def is_port_open(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('127.0.0.1', port)) == 0
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            return s.connect_ex(('127.0.0.1', port)) == 0
+    except:
+        return False
 
 # ---------------- Serial port ----------------
 def close_serial_port():
@@ -61,7 +65,7 @@ def close_serial_port():
 def start_servers():
     global node_proc, python_proc
     kill_process_on_port(3000)
-    kill_process_on_port(6789)
+    kill_process_on_port(6790)
 
     # Node.js server
     node_dir = os.path.join(os.getcwd(), "webchat-app")
@@ -72,12 +76,22 @@ def start_servers():
         #     shell=True,
         #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         # )
-        node_proc = subprocess.Popen(
-            "npm run dev -- --hostname 169.254.11.80 --port 3000",
-            cwd=node_dir,
-            shell=True,
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-        )
+        # Try with specific hostname first, fallback to localhost
+        try:
+            node_proc = subprocess.Popen(
+                "npm run dev -- --hostname 169.254.11.80 --port 3000",
+                cwd=node_dir,
+                shell=True,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+        except Exception as e:
+            print(f"Failed to start with hostname 169.254.11.80, trying localhost: {e}")
+            node_proc = subprocess.Popen(
+                "npm run dev -- --port 3000",
+                cwd=node_dir,
+                shell=True,
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            )
 
         print(f"Starting Node.js app from: {node_dir}")
     else:
@@ -95,7 +109,7 @@ def start_servers():
 def close_servers():
     global node_proc, python_proc
     kill_process_on_port(3000)
-    kill_process_on_port(6789)
+    kill_process_on_port(6790)
     close_serial_port()
 
     for proc, name in [(node_proc, "Node App"), (python_proc, "Python Server")]:
@@ -123,14 +137,19 @@ def main():
 
     # Wait for Node.js server to start
     print("Waiting for Node.js server on port 3000...")
-    timeout = 30
+    timeout = 60  # Increased timeout to 60 seconds
     start_time = time.time()
     while not is_port_open(3000):
         if time.time() - start_time > timeout:
             print("Error: Node.js server did not start in time.")
+            print("This might be due to:")
+            print("1. Port 3000 being blocked or in use")
+            print("2. Node.js installation issues")
+            print("3. Network configuration problems")
             close_servers()
             sys.exit(1)
-        time.sleep(1)
+        print(f"Waiting... ({int(time.time() - start_time)}s)")
+        time.sleep(2)
     print("Node.js server is ready!")
 
     # Open Chrome fullscreen

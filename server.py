@@ -12,7 +12,7 @@ import re
 
 import serial
 # Serial port configuration for shoe reader
-SERIAL_PORT = "COM1"  # Adjust this to match your serial port
+SERIAL_PORT = "COM3"  # Adjust this to match your serial port
 BAUD_RATE = 9600
 ser = None
 
@@ -30,7 +30,7 @@ previous_game_states = []
 # Serial port setup (adjust as needed)
 ser = None
 try:
-    ser = serial.Serial('COM3', 9600, timeout=1)  # Change COM3 to your port
+    ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=1)  # Use consistent SERIAL_PORT
 except Exception as e:
     print(f"Serial port not available: {e}")
 
