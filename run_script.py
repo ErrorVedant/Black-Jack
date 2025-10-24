@@ -11,7 +11,7 @@ import shutil
 node_proc = None
 python_proc = None
 
-WEB_URL = "http://192.168.2.190:3000"
+WEB_URL = "http://169.254.11.80:3000"
 SERIAL_PORT = "COM1"
 BAUD_RATE = 9600
 
