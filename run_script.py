@@ -47,7 +47,15 @@ def is_port_open(port):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(1)
-            return s.connect_ex(('127.0.0.1', port)) == 0
+            # Try multiple addresses to check if the port is accessible
+            addresses_to_try = ['127.0.0.1', 'localhost', '169.254.11.80', '0.0.0.0']
+            for addr in addresses_to_try:
+                try:
+                    if s.connect_ex((addr, port)) == 0:
+                        return True
+                except:
+                    continue
+            return False
     except:
         return False
 
@@ -139,6 +147,10 @@ def main():
     print("Waiting for Node.js server on port 3000...")
     timeout = 60  # Increased timeout to 60 seconds
     start_time = time.time()
+    
+    # Give the server a moment to start
+    time.sleep(3)
+    
     while not is_port_open(3000):
         if time.time() - start_time > timeout:
             print("Error: Node.js server did not start in time.")
@@ -146,11 +158,13 @@ def main():
             print("1. Port 3000 being blocked or in use")
             print("2. Node.js installation issues")
             print("3. Network configuration problems")
-            close_servers()
-            sys.exit(1)
+            print("4. Server binding to a different IP address")
+            print("\nTrying to continue anyway...")
+            break
         print(f"Waiting... ({int(time.time() - start_time)}s)")
         time.sleep(2)
-    print("Node.js server is ready!")
+    
+    print("Node.js server check completed!")
 
     # Open Chrome fullscreen
     chrome_path = find_chrome_path()

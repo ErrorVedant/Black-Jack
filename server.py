@@ -2349,12 +2349,14 @@ async def main():
     try:
         ser = serial.Serial(SERIAL_PORT, BAUD_RATE, timeout=0.5)
         print(f"Connected to shoe reader on {SERIAL_PORT}")
+        # Start the serial reader as a background task
+        serial_task = asyncio.create_task(read_from_serial())
     except serial.SerialException as e:
         print(f"Serial port error: {e}")
         logging.error(f"Failed to connect to shoe reader on {SERIAL_PORT}: {e}")
         ser = None
-    # Start the serial reader as a background task
-    serial_task = asyncio.create_task(read_from_serial())
+        # Create a dummy task that does nothing
+        serial_task = asyncio.create_task(asyncio.sleep(float('inf')))
 
     async with websockets.serve(handle_connection, "0.0.0.0", 6790):
         print("Mini Flush WebSocket server running on ws://localhost:6790")
@@ -2426,21 +2428,30 @@ async def foolproof_deal_card(card):
 async def read_from_serial():
     """Continuously reads card values from the casino shoe reader and adds them to the game."""
     print("[read_from_serial] Starting to read from serial port...")
-    while True:
-        if ser and ser.in_waiting > 0:
-            raw_data = ser.readline().decode("utf-8").strip()
-            print(f"[read_from_serial] Raw data from serial: {raw_data}")
-            logging.info(f"Raw data from serial: {raw_data}")
-            card = extract_card_value(raw_data)
-            logging.info(f"Extracted card: {card}")
-            print(f"[read_from_serial] Extracted card: {card}")
-            if card:
-                print(f"[SHOE READER] Card read from shoe reader: {card}")
-                await foolproof_deal_card(card)
-            else:
-                logging.info("No valid card extracted from serial data.")
-                print("[read_from_serial] No valid card extracted from serial data.")
-        await asyncio.sleep(0.01)  # Minimal sleep to yield control
+    if not ser:
+        print("[read_from_serial] No serial port available, running in simulation mode")
+        while True:
+            await asyncio.sleep(1)  # Just sleep if no serial port
+    else:
+        while True:
+            try:
+                if ser and ser.in_waiting > 0:
+                    raw_data = ser.readline().decode("utf-8").strip()
+                    print(f"[read_from_serial] Raw data from serial: {raw_data}")
+                    logging.info(f"Raw data from serial: {raw_data}")
+                    card = extract_card_value(raw_data)
+                    logging.info(f"Extracted card: {card}")
+                    print(f"[read_from_serial] Extracted card: {card}")
+                    if card:
+                        print(f"[SHOE READER] Card read from shoe reader: {card}")
+                        await foolproof_deal_card(card)
+                    else:
+                        logging.info("No valid card extracted from serial data.")
+                        print("[read_from_serial] No valid card extracted from serial data.")
+                await asyncio.sleep(0.01)  # Minimal sleep to yield control
+            except Exception as e:
+                print(f"[read_from_serial] Error reading from serial: {e}")
+                await asyncio.sleep(1)
 
 async def handle_change_bets(min_bet=None, max_bet=None):
     log_function_call("handle_change_bets", min_bet=min_bet, max_bet=max_bet)
