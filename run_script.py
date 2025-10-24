@@ -66,12 +66,19 @@ def start_servers():
     # Node.js server
     node_dir = os.path.join(os.getcwd(), "webchat-app")
     if os.path.exists(node_dir):
+        # node_proc = subprocess.Popen(
+        #     "npm run dev -- --port 3000",
+        #     cwd=node_dir,
+        #     shell=True,
+        #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+        # )
         node_proc = subprocess.Popen(
-            "npm run dev -- --port 3000",
+            "npm run dev -- --hostname 169.254.11.80 --port 3000",
             cwd=node_dir,
             shell=True,
             creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         )
+
         print(f"Starting Node.js app from: {node_dir}")
     else:
         print(f"Warning: Node.js directory not found: {node_dir}")
