@@ -7,11 +7,14 @@ import serial
 import sys
 import signal
 import shutil
+from ip_config import get_ip_address, get_web_url, get_websocket_url, FALLBACK_IP
 
 node_proc = None
 python_proc = None
 
-WEB_URL = "http://169.254.11.80:3000"
+# Get IP from ip.txt file; fall back to the target PC's IP if file is missing
+SERVER_IP = get_ip_address() or FALLBACK_IP
+WEB_URL = get_web_url(3000) or f"http://{SERVER_IP}:3000"
 SERIAL_PORT = "COM3"
 BAUD_RATE = 9600
 
@@ -48,7 +51,7 @@ def is_port_open(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.settimeout(1)
             # Try multiple addresses to check if the port is accessible
-            addresses_to_try = ['127.0.0.1', 'localhost', '169.254.11.80', '0.0.0.0']
+            addresses_to_try = [SERVER_IP] if SERVER_IP else ['localhost']
             for addr in addresses_to_try:
                 try:
                     if s.connect_ex((addr, port)) == 0:
@@ -84,16 +87,16 @@ def start_servers():
         #     shell=True,
         #     creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
         # )
-        # Try with specific hostname first, fallback to localhost
+        # Start Next.js server listening on all interfaces (0.0.0.0)
         try:
             node_proc = subprocess.Popen(
-                "npm run dev -- --hostname 169.254.11.80 --port 3000",
+                "npm run dev -- --hostname 0.0.0.0 --port 3000",
                 cwd=node_dir,
                 shell=True,
                 creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
             )
         except Exception as e:
-            print(f"Failed to start with hostname 169.254.11.80, trying localhost: {e}")
+            print(f"Failed to start with hostname 0.0.0.0, trying default: {e}")
             node_proc = subprocess.Popen(
                 "npm run dev -- --port 3000",
                 cwd=node_dir,

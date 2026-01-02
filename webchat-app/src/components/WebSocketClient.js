@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getWebSocketUrl } from "@/lib/ip-config";
 
 export default function WebSocketClient({ pageName }) {
   const [socket, setSocket] = useState(null);
@@ -10,26 +11,41 @@ export default function WebSocketClient({ pageName }) {
   const [receivedCard, setReceivedCard] = useState("");
 
   useEffect(() => {
-    const ws = new WebSocket("ws://localhost:6789");
+    let ws;
+    let cancelled = false;
 
-    ws.onopen = () => console.log(`✅ Connected to WebSocket as ${pageName}`);
+    const connect = async () => {
+      const url = await getWebSocketUrl(6789);
+      if (cancelled) return;
 
-    ws.onmessage = (event) => {
-      console.log("📩 Received from server:", event.data);
-      const parsedData = JSON.parse(event.data);
-      setMessages((prev) => [...prev, parsedData]);
+      ws = new WebSocket(url);
 
-      if (parsedData.card) {
-        setReceivedCard(parsedData.card);
-      }
+      ws.onopen = () => console.log(`✅ Connected to WebSocket as ${pageName}`);
+
+      ws.onmessage = (event) => {
+        console.log("📩 Received from server:", event.data);
+        const parsedData = JSON.parse(event.data);
+        setMessages((prev) => [...prev, parsedData]);
+
+        if (parsedData.card) {
+          setReceivedCard(parsedData.card);
+        }
+      };
+
+      ws.onclose = () => console.log("❌ Disconnected from WebSocket");
+      ws.onerror = (error) => console.error("⚠️ WebSocket error:", error);
+
+      setSocket(ws);
     };
 
-    ws.onclose = () => console.log("❌ Disconnected from WebSocket");
-    ws.onerror = (error) => console.error("⚠️ WebSocket error:", error);
+    connect();
 
-    setSocket(ws);
-
-    return () => ws.close();
+    return () => {
+      cancelled = true;
+      if (ws) {
+        ws.close();
+      }
+    };
   }, [pageName]);
 
   const sendMessage = () => {
@@ -117,26 +133,41 @@ export default function WebSocketClient({ pageName }) {
   const [receivedCard, setReceivedCard] = useState("");
 
   useEffect(() => {
-    const ws = new WebSocket("ws://169.254.192.244:6789");
+    let ws;
+    let cancelled = false;
 
-    ws.onopen = () => console.log(`✅ Connected to WebSocket as ${pageName}`);
+    const connect = async () => {
+      const url = await getWebSocketUrl(6789);
+      if (cancelled) return;
 
-    ws.onmessage = (event) => {
-      console.log("📩 Received from server:", event.data);
-      const parsedData = JSON.parse(event.data);
-      setMessages((prev) => [...prev, parsedData]);
+      ws = new WebSocket(url);
 
-      if (parsedData.card) {
-        setReceivedCard(parsedData.card);
-      }
+      ws.onopen = () => console.log(`✅ Connected to WebSocket as ${pageName}`);
+
+      ws.onmessage = (event) => {
+        console.log("📩 Received from server:", event.data);
+        const parsedData = JSON.parse(event.data);
+        setMessages((prev) => [...prev, parsedData]);
+
+        if (parsedData.card) {
+          setReceivedCard(parsedData.card);
+        }
+      };
+
+      ws.onclose = () => console.log("❌ Disconnected from WebSocket");
+      ws.onerror = (error) => console.error("⚠️ WebSocket error:", error);
+
+      setSocket(ws);
     };
 
-    ws.onclose = () => console.log("❌ Disconnected from WebSocket");
-    ws.onerror = (error) => console.error("⚠️ WebSocket error:", error);
+    connect();
 
-    setSocket(ws);
-
-    return () => ws.close();
+    return () => {
+      cancelled = true;
+      if (ws) {
+        ws.close();
+      }
+    };
   }, [pageName]);
 
   const sendMessage = () => {

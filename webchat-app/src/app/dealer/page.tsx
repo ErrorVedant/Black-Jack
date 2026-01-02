@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { getWebSocketUrl } from "@/lib/ip-config";
 import DealerNavbar from "@/components/DealerNavbar";
 import BetTableModal from "@/components/BetTableModal";
 import GameMenuModal from "@/components/GameMenuModal";
@@ -143,8 +144,9 @@ const GameMenu = () => {
     const MAX_RECONNECT_ATTEMPTS = 5;
     const RECONNECT_DELAY = 3000;
 
-    const connect = () => {
-      ws = new WebSocket("ws://169.254.11.80:6790");
+    const connect = async () => {
+      const wsUrl = await getWebSocketUrl(6790);
+      ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         console.log("Connected to server");

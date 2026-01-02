@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getWebSocketUrl } from "@/lib/ip-config";
 
 interface Hand {
   cards: string[];
@@ -335,8 +336,9 @@ const DisplayPage = () => {
     const MAX_RECONNECT_ATTEMPTS = 5;
     const RECONNECT_DELAY = 3000;
 
-    const connect = () => {
-      ws = new WebSocket('ws://169.254.11.80:6790')
+    const connect = async () => {
+      const wsUrl = await getWebSocketUrl(6790);
+      ws = new WebSocket(wsUrl);
 
 
       ws.onopen = () => {

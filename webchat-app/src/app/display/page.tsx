@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getWebSocketUrl } from "@/lib/ip-config";
 
 interface Hand {
   cards: string[];
@@ -335,32 +336,40 @@ const DisplayPage = () => {
     const MAX_RECONNECT_ATTEMPTS = 5;
     const RECONNECT_DELAY = 3000;
 
-    const connect = () => {
-      ws = new WebSocket('ws://169.254.11.80:6790')
+    const connect = async () => {
+      try {
+        const wsUrl = await getWebSocketUrl(6790);
+        console.log("Display attempting to connect to:", wsUrl);
+        ws = new WebSocket(wsUrl);
 
+        ws.onopen = () => {
+          console.log("Display connected to server at:", wsUrl);
+          setIsConnected(true);
+          reconnectAttempts = 0;
+        };
 
-      ws.onopen = () => {
-        console.log("Display connected to server");
-        setIsConnected(true);
-        reconnectAttempts = 0;
-      };
+        ws.onclose = (event) => {
+          console.log("Display disconnected from server. Code:", event.code, "Reason:", event.reason);
+          setIsConnected(false);
 
-      ws.onclose = () => {
-        console.log("Display disconnected from server");
-        setIsConnected(false);
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttempts++;
+            console.log(
+              `Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
+            );
+            reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
+          } else {
+            console.error("Max reconnection attempts reached. Please check if the server is running.");
+          }
+        };
 
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-          reconnectAttempts++;
-          console.log(
-            `Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
-          );
-          reconnectTimeout = setTimeout(connect, RECONNECT_DELAY);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-      };
+        ws.onerror = (error) => {
+          console.error("WebSocket error connecting to:", wsUrl, error);
+          console.error("Make sure the Python server is running on port 6790");
+        };
+      } catch (error) {
+        console.error("Error getting WebSocket URL:", error);
+      }
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);

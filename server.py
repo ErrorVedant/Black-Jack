@@ -11,6 +11,7 @@ import re
 # win,fail,tie
 
 import serial
+from ip_config import get_ip_address, get_websocket_url
 # Serial port configuration for shoe reader
 SERIAL_PORT = "COM3"  # Adjust this to match your serial port
 BAUD_RATE = 9600
@@ -751,8 +752,12 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     if card in game_state["deck"]:
                         game_state["deck"].remove(card)
                     else:
-                        await broadcast({"action": "error", "message": "Card not available in deck"})
-                        return
+                        # If the requested card is not in deck, draw a random card instead
+                        print(f"[WARN] Requested dealer card {card} not in deck; drawing random instead")
+                        if not game_state["deck"]:
+                            await broadcast({"action": "error", "message": "Deck is empty"})
+                            return
+                        card = game_state["deck"].pop()
                 else:
                     if not game_state["deck"]:
                         await broadcast({"action": "error", "message": "Deck is empty"})
@@ -850,12 +855,14 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 if card in game_state["deck"]:
                     game_state["deck"].remove(card)
                 else:
-                    print(f"Error: Card {card} not available in deck")
-                    await broadcast({
-                        "action": "error",
-                        "message": "Card not available in deck"
-                    })
-                    return
+                    print(f"[WARN] Requested card {card} not in deck; drawing random instead")
+                    if not game_state["deck"]:
+                        await broadcast({
+                            "action": "error",
+                            "message": "Deck is empty"
+                        })
+                        return
+                    card = game_state["deck"].pop()
             else:
                 if not game_state["deck"]:
                     print("Error: Deck is empty")
@@ -1907,16 +1914,27 @@ async def handle_distribute_cards_auto():
             all_empty = False
     if all_empty:
         print("no cards assigned")
-        # Distribute one card to each active player and dealer, with delay
+        # First round: Give 1 card to each active player
         for player_id, player_data in game_state["players"].items():
             if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
                 await asyncio.sleep(0.4)
+        
+        # Give 1 card to dealer, then advance turn (preserves original flow)
+        await handle_hit_player("dealer", 0)
+        await handle_next_turn()
+        await asyncio.sleep(0.4)
+        
+        # Second round: Give 2nd card to each active player
+        for player_id, player_data in game_state["players"].items():
+            if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
                 await handle_next_turn()
                 await asyncio.sleep(0.4)
-        await handle_hit_player("dealer", 0)
-        await handle_next_turn()
+
+        # Set round_number to 1 so insurance/surrender buttons can appear
+        game_state["round_number"] = 1
+        print("Round number set to 1 after card distribution")
 
         await broadcast({
             "action": "update_game_state",
@@ -2359,7 +2377,8 @@ async def main():
         serial_task = asyncio.create_task(asyncio.sleep(float('inf')))
 
     async with websockets.serve(handle_connection, "0.0.0.0", 6790):
-        print("Mini Flush WebSocket server running on ws://localhost:6790")
+        ws_url = get_websocket_url(6790) or "ws://localhost:6790"
+        print(f"Mini Flush WebSocket server running on {ws_url}")
         print(f"Shoe reader attempting to connect on {SERIAL_PORT}")
         try:
             await asyncio.gather(

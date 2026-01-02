@@ -15,8 +15,8 @@ node_proc = None
 python_proc = None
 
 # URL to open
-WEB_URL = "http://169.254.11.80:3000"
-# /169.254.11.80:3000
+WEB_URL = "http://152.58.3.207:3000"
+# /152.58.3.207:3000
 
 # Tkinter setup
 # root = tk.Tk()
@@ -102,7 +102,7 @@ def open_web():
 
 def is_port_open(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('0.0.0.0', port)) == 0 or s.connect_ex(('127.0.0.1', port)) == 0
+        return s.connect_ex(('152.58.3.207', port)) == 0
 
 def close_serial_port():
     """Close the serial port if it's in use."""
