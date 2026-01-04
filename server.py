@@ -752,12 +752,17 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     if card in game_state["deck"]:
                         game_state["deck"].remove(card)
                     else:
-                        # If the requested card is not in deck, draw a random card instead
-                        print(f"[WARN] Requested dealer card {card} not in deck; drawing random instead")
-                        if not game_state["deck"]:
-                            await broadcast({"action": "error", "message": "Deck is empty"})
-                            return
-                        card = game_state["deck"].pop()
+                        # Card not in deck - show error
+                        rank = card[0] if len(card) > 0 else "?"
+                        suit = card[1] if len(card) > 1 else "?"
+                        suit_name = {"S": "Spades", "D": "Diamonds", "C": "Clubs", "H": "Hearts"}.get(suit, suit)
+                        print(f"[ERROR] Requested dealer card {card} not available in deck")
+                        await broadcast({
+                            "action": "error",
+                            "message": f"Card {card} ({rank} of {suit_name}) is not available in deck. All {rank} of {suit_name} cards may have been used.",
+                            "game_state": serialize_game_state()
+                        })
+                        return
                 else:
                     if not game_state["deck"]:
                         await broadcast({"action": "error", "message": "Deck is empty"})
@@ -789,9 +794,28 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                     # Dealer should auto-advance after 1 card in round 0, live mode
                     print("auto_advance (dealer)")
                     hand_ref = game_state["dealer"]
-                    if hand_ref and len(hand_ref["cards"]) == 1 and game_state["round_number"] == 0:
-                        print(f"[DEBUG] Auto-advancing turn for dealer (1 card, round 0, live mode)")
-                        await handle_next_turn()
+                    if hand_ref and len(hand_ref["cards"]) >= 1 and game_state["round_number"] == 0:
+                        print(f"[DEBUG] Dealer has 1 card - progressing to first player for second round")
+                        # Move to first active player
+                        active_players = [pid for pid, pdata in game_state["players"].items() if pdata["status"] == 1]
+                        if active_players:
+                            first_player = active_players[0]
+                            game_state["current_player"] = first_player
+                            game_state["game_phase"] = "playing"
+                            game_state["selected_hand"] = {
+                                "player_id": first_player,
+                                "hand_index": 0,
+                                "split_level": 0
+                            }
+                            game_state["manual_distribution_count"] = 0
+                            print(f"[DEBUG] Moved from dealer to {first_player}")
+                            
+                            await broadcast({
+                                "action": "turn_updated",
+                                "current_player": game_state["current_player"],
+                                "selected_hand": game_state["selected_hand"],
+                                "game_state": serialize_game_state()
+                            })
                 log_game_state()
                 return
 
@@ -843,6 +867,21 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
             
             print(f"Current hand before hit:", hand)
             
+            # Check if we should prevent adding card (already at limit in round 0, live mode)
+            if game_state["mode"] == "live" and game_state["round_number"] == 0 and player_id != "dealer":
+                dealer_has_card = len(game_state["dealer"]["cards"]) > 0
+                current_card_count = len(hand["cards"])
+                expected_count = 1 if not dealer_has_card else 2
+                
+                if current_card_count >= expected_count:
+                    print(f"[WARNING] Player {player_id} already has {current_card_count} cards (expected {expected_count}). Rejecting card.")
+                    await broadcast({
+                        "action": "error",
+                        "message": f"Player {player_id} already has {current_card_count} cards. Card rejected.",
+                        "game_state": serialize_game_state()
+                    })
+                    return
+            
             if card:
                 print(f"Using provided card: {card}")
                 if not (len(card) >= 2 and card[-1] in ['S', 'D', 'C', 'H']):
@@ -855,14 +894,17 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 if card in game_state["deck"]:
                     game_state["deck"].remove(card)
                 else:
-                    print(f"[WARN] Requested card {card} not in deck; drawing random instead")
-                    if not game_state["deck"]:
-                        await broadcast({
-                            "action": "error",
-                            "message": "Deck is empty"
-                        })
-                        return
-                    card = game_state["deck"].pop()
+                    # Card not in deck - show error
+                    rank = card[0] if len(card) > 0 else "?"
+                    suit = card[1] if len(card) > 1 else "?"
+                    suit_name = {"S": "Spades", "D": "Diamonds", "C": "Clubs", "H": "Hearts"}.get(suit, suit)
+                    print(f"[ERROR] Requested card {card} not available in deck")
+                    await broadcast({
+                        "action": "error",
+                        "message": f"Card {card} ({rank} of {suit_name}) is not available in deck. All {rank} of {suit_name} cards may have been used.",
+                        "game_state": serialize_game_state()
+                    })
+                    return
             else:
                 if not game_state["deck"]:
                     print("Error: Deck is empty")
@@ -1008,27 +1050,84 @@ async def handle_hit_player(player_id, hand_index=0, card=None):
                 
                 # If the live_function_hand was "Hit", perform additional logic here
 
-            # Auto-advance turn if this is the second card for a player in round 0, live mode
-            if game_state["mode"] == "live" and game_state["round_number"] == 0:
-                print(f"game_phase: {game_state['game_phase']}")
-                if player_id != "dealer":
-                    # Find the hand we just added to
-                    print("auto_advance (player)")
-                    hand_ref = None
-                    split_level = 0
-                    if game_state["selected_hand"] and game_state["selected_hand"]["player_id"] == player_id:
-                        split_level = game_state["selected_hand"]["split_level"]
-                        if split_level == 1:
-                            hand_ref = game_state["players"][player_id]["split1"][hand_index]
-                        elif split_level == 2:
-                            hand_ref = game_state["players"][player_id]["split2"][hand_index]
-                        else:
-                            hand_ref = game_state["players"][player_id]["hands"][hand_index]
-                    else:
-                        hand_ref = game_state["players"][player_id]["hands"][hand_index]
-                    if hand_ref and len(hand_ref["cards"]) == 2:
-                        print(f"[DEBUG] Auto-advancing turn for {player_id} (2 cards, round 0, live mode)")
-                        await handle_next_turn()
+            # Direct progression to next player in live mode, round 0
+            if game_state["mode"] == "live" and game_state["round_number"] == 0 and player_id != "dealer":
+                dealer_has_card = len(game_state["dealer"]["cards"]) > 0
+                hand_card_count = len(hand["cards"])
+                expected_count = 1 if not dealer_has_card else 2
+                
+                if hand_card_count >= expected_count:
+                    print(f"[DEBUG] Player {player_id} has {hand_card_count} cards (expected {expected_count}). Progressing to next player...")
+                    
+                    # Get all active player hands
+                    all_hands = get_all_player_hands()
+                    current_selected = game_state.get("selected_hand")
+                    
+                    # Find current hand index
+                    current_index = -1
+                    if current_selected:
+                        current_index = next(
+                            (i for i, h in enumerate(all_hands)
+                            if h["player_id"] == current_selected["player_id"]
+                            and h["hand_index"] == current_selected["hand_index"]
+                            and h["split_level"] == current_selected["split_level"]),
+                            -1
+                        )
+                    
+                    # Find next hand
+                    next_hand = None
+                    active_players = [pid for pid, pdata in game_state["players"].items() if pdata["status"] == 1]
+                    
+                    if current_index >= 0 and current_index < len(all_hands) - 1:
+                        # Move to next hand in list
+                        next_hand = all_hands[current_index + 1]
+                    elif not dealer_has_card:
+                        # First round: check if all players have 1 card, then go to dealer
+                        all_have_1 = all(len(game_state["players"][pid]["hands"][0]["cards"]) >= 1 for pid in active_players)
+                        if all_have_1:
+                            # Move to dealer
+                            game_state["current_player"] = "dealer"
+                            game_state["game_phase"] = "dealer"
+                            game_state["selected_hand"] = {"player_id": "dealer", "hand_index": 0, "split_level": 0}
+                            game_state["manual_distribution_count"] = 0
+                            print(f"[DEBUG] All players have 1 card - moving to dealer")
+                            
+                            await broadcast({
+                                "action": "turn_updated",
+                                "current_player": game_state["current_player"],
+                                "selected_hand": game_state["selected_hand"],
+                                "game_state": serialize_game_state()
+                            })
+                    elif dealer_has_card:
+                        # Second round: check if all players have 2 cards, then distribution is complete
+                        all_have_2 = all(len(game_state["players"][pid]["hands"][0]["cards"]) >= 2 for pid in active_players)
+                        if all_have_2:
+                            # Distribution complete - set round_number to 1
+                            game_state["round_number"] = 1
+                            print(f"[DEBUG] All players have 2 cards - distribution complete, round_number set to 1")
+                            
+                            await broadcast({
+                                "action": "update_game_state",
+                                "game_state": serialize_game_state()
+                            })
+                    
+                    if next_hand:
+                        # Move to next player
+                        game_state["current_player"] = next_hand["player_id"]
+                        game_state["selected_hand"] = {
+                            "player_id": next_hand["player_id"],
+                            "hand_index": next_hand["hand_index"],
+                            "split_level": next_hand["split_level"]
+                        }
+                        game_state["manual_distribution_count"] = 0  # Reset for next player
+                        print(f"[DEBUG] Progressed from {player_id} to {next_hand['player_id']}")
+                        
+                        await broadcast({
+                            "action": "turn_updated",
+                            "current_player": game_state["current_player"],
+                            "selected_hand": game_state["selected_hand"],
+                            "game_state": serialize_game_state()
+                        })
             
             # Check if double_status is "1" and mode is "live", then call handle_next_turn
             if player_id in game_state["players"] and player_id != "dealer":
@@ -1582,31 +1681,43 @@ async def handle_next_turn():
             game_state["split_fire_state"] = 1
             game_state["split_current_pointer"] = 2
 
-        if (
-    (
-        game_state["mode"] == "live" and
-        game_state["next_manual_counter"] == 1 and
-        game_state["round_number"] == 0 and
-        (
-            (game_state["manual_distribution_count"] == 2 and game_state["current_player"] != "dealer") or
-            (game_state["manual_distribution_count"] == 1 and game_state["current_player"] == "dealer")
-        )
-    )
-    or
-    (
-        game_state["mode"] == "auto" and
-        game_state["next_manual_counter"] == 1 and
-        game_state["round_number"] == 0 and
-        (
-            (game_state["manual_distribution_count"] == 2 and game_state["current_player"] != "dealer") or
-            (game_state["manual_distribution_count"] == 1 and game_state["current_player"] == "dealer")
-        )
-    )
-    or
-    (
-        game_state["round_number"] == 1
-    )
-):
+        # Check if we should proceed with next_turn
+        # For LIVE mode in round 0:
+        #   - First round (dealer has 0 cards): allow after 1 card for players
+        #   - Second round (dealer has 1 card): allow after 2 cards for players
+        #   - Dealer: always allow after 1 card
+        dealer_has_card = len(game_state["dealer"]["cards"]) > 0
+        should_proceed = False
+        
+        print(f"[DEBUG handle_next_turn] round_number={game_state['round_number']}, mode={game_state['mode']}, next_manual_counter={game_state['next_manual_counter']}, current_player={game_state['current_player']}, manual_distribution_count={game_state['manual_distribution_count']}, dealer_has_card={dealer_has_card}")
+        
+        if game_state["round_number"] == 1:
+            should_proceed = True
+            print(f"[DEBUG handle_next_turn] Proceeding: round_number == 1")
+        elif game_state["mode"] == "live" and game_state["round_number"] == 0 and game_state["next_manual_counter"] == 1:
+            if game_state["current_player"] == "dealer":
+                should_proceed = (game_state["manual_distribution_count"] >= 1)
+                print(f"[DEBUG handle_next_turn] Dealer check: manual_distribution_count={game_state['manual_distribution_count']}, should_proceed={should_proceed}")
+            else:
+                # Player: check if first round (dealer has 0 cards) or second round (dealer has 1 card)
+                if not dealer_has_card:
+                    # First round: allow after 1 card (or more if we missed it)
+                    should_proceed = (game_state["manual_distribution_count"] >= 1)
+                    print(f"[DEBUG handle_next_turn] Player first round: manual_distribution_count={game_state['manual_distribution_count']}, should_proceed={should_proceed}")
+                else:
+                    # Second round: allow after 2 cards (or more if we missed it)
+                    should_proceed = (game_state["manual_distribution_count"] >= 2)
+                    print(f"[DEBUG handle_next_turn] Player second round: manual_distribution_count={game_state['manual_distribution_count']}, should_proceed={should_proceed}")
+        elif game_state["mode"] == "auto" and game_state["round_number"] == 0 and game_state["next_manual_counter"] == 1:
+            if game_state["current_player"] == "dealer":
+                should_proceed = (game_state["manual_distribution_count"] == 1)
+            else:
+                # Auto mode: keep original logic (2 cards)
+                should_proceed = (game_state["manual_distribution_count"] == 2)
+        else:
+            print(f"[DEBUG handle_next_turn] Condition NOT met - not proceeding")
+        
+        if should_proceed:
             if (game_state["mode"] == "live" and game_state["round_number"] == 0) or (game_state["mode"] == "auto" and game_state["round_number"] == 0):
                 game_state["next_manual_counter"] = 0
 
@@ -1635,10 +1746,22 @@ async def handle_next_turn():
                 first_player = next((pid for pid in active_players if pid != "dealer"), None)
                 print(f"first active player: {first_player}")
                 if first_player:
-                    # Set round number to 1 if it's currently 0 (do this only when moving to first player)
-                    if game_state["round_number"] == 0:
+                    # Check if all active players have 2 cards (second round complete)
+                    all_players_have_2_cards = True
+                    for pid in active_players:
+                        if pid != "dealer":
+                            player = game_state["players"][pid]
+                            if len(player["hands"][0]["cards"]) < 2:
+                                all_players_have_2_cards = False
+                                break
+                    
+                    # Only set round_number = 1 if all players have 2 cards (distribution complete)
+                    if game_state["round_number"] == 0 and all_players_have_2_cards:
                         game_state["round_number"] = 1
-                        print("Round number set to 1")
+                        print("Round number set to 1 (all players have 2 cards)")
+                    elif game_state["round_number"] == 0:
+                        print("Continuing to second round of distribution (dealer has 1 card, players getting 2nd card)")
+                    
                     game_state["game_phase"] = "playing"
                     game_state["current_player"] = first_player
                     game_state["selected_hand"] = {
@@ -1666,6 +1789,18 @@ async def handle_next_turn():
                 current_hand["hand_index"] == last_hand["hand_index"] and \
                 current_hand["split_level"] == last_hand["split_level"]:
                     print("Current hand is last active hand - moving to dealer")
+                    # Check if all active players have 2 cards (distribution complete)
+                    if game_state["round_number"] == 0 and game_state["mode"] == "live":
+                        all_players_have_2_cards = True
+                        for pid in active_players:
+                            if pid != "dealer":
+                                player = game_state["players"][pid]
+                                if len(player["hands"][0]["cards"]) < 2:
+                                    all_players_have_2_cards = False
+                                    break
+                        if all_players_have_2_cards:
+                            game_state["round_number"] = 1
+                            print("Round number set to 1 (all players have 2 cards, distribution complete)")
                     game_state["game_phase"] = "dealer"
                     game_state["current_player"] = "dealer"
                     game_state["selected_hand"] = {
@@ -1682,9 +1817,23 @@ async def handle_next_turn():
                         and hand["split_level"] == game_state["selected_hand"]["split_level"]),
                         -1
                     )
+                    print(f"[DEBUG] Current index: {current_index}, Total hands: {len(all_hands)}")
+                    print(f"[DEBUG] All hands: {all_hands}")
+                    print(f"[DEBUG] Current player: {game_state['current_player']}, Selected hand: {game_state['selected_hand']}")
+                    
+                    if current_index == -1:
+                        print(f"[ERROR] Current hand not found in all_hands! This should not happen.")
+                        # Fallback: find first hand that's not current player
+                        for hand in all_hands:
+                            if hand["player_id"] != game_state["current_player"]:
+                                next_hand = hand
+                                print(f"[DEBUG] Fallback: Found next hand: {next_hand}")
+                                break
+                    else:
                     next_hand = None
                     for i in range(current_index + 1, len(all_hands)):
                         next_hand = all_hands[i]
+                            print(f"[DEBUG] Found next hand at index {i}: {next_hand}")
                         break
                     if next_hand:
                         game_state["current_player"] = next_hand["player_id"]
@@ -1698,7 +1847,20 @@ async def handle_next_turn():
                         await maybe_auto_skip_blackjack()
                     else:
                         # No more hands, move to dealer
+                        print(f"[DEBUG] No more hands found - current_index={current_index}, all_hands length={len(all_hands)}")
                         print("No more hands found - moving to dealer phase")
+                        # Check if all active players have 2 cards (distribution complete)
+                        if game_state["round_number"] == 0 and game_state["mode"] == "live":
+                            all_players_have_2_cards = True
+                            for pid in active_players:
+                                if pid != "dealer":
+                                    player = game_state["players"][pid]
+                                    if len(player["hands"][0]["cards"]) < 2:
+                                        all_players_have_2_cards = False
+                                        break
+                            if all_players_have_2_cards:
+                                game_state["round_number"] = 1
+                                print("Round number set to 1 (all players have 2 cards, distribution complete)")
                         game_state["game_phase"] = "dealer"
                         game_state["current_player"] = "dealer"
                         game_state["selected_hand"] = {
@@ -1922,14 +2084,14 @@ async def handle_distribute_cards_auto():
         
         # Give 1 card to dealer, then advance turn (preserves original flow)
         await handle_hit_player("dealer", 0)
-        await handle_next_turn()
-        await asyncio.sleep(0.4)
+                await handle_next_turn()
+                await asyncio.sleep(0.4)
         
         # Second round: Give 2nd card to each active player
         for player_id, player_data in game_state["players"].items():
             if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
-                await handle_next_turn()
+        await handle_next_turn()
                 await asyncio.sleep(0.4)
 
         # Set round_number to 1 so insurance/surrender buttons can appear
