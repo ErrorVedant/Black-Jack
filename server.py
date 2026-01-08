@@ -1830,10 +1830,10 @@ async def handle_next_turn():
                                 print(f"[DEBUG] Fallback: Found next hand: {next_hand}")
                                 break
                     else:
-                    next_hand = None
+                        next_hand = None
                     for i in range(current_index + 1, len(all_hands)):
                         next_hand = all_hands[i]
-                            print(f"[DEBUG] Found next hand at index {i}: {next_hand}")
+                        print(f"[DEBUG] Found next hand at index {i}: {next_hand}")
                         break
                     if next_hand:
                         game_state["current_player"] = next_hand["player_id"]
@@ -2084,14 +2084,14 @@ async def handle_distribute_cards_auto():
         
         # Give 1 card to dealer, then advance turn (preserves original flow)
         await handle_hit_player("dealer", 0)
-                await handle_next_turn()
-                await asyncio.sleep(0.4)
+        await handle_next_turn()
+        await asyncio.sleep(0.4)
         
         # Second round: Give 2nd card to each active player
         for player_id, player_data in game_state["players"].items():
             if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
-        await handle_next_turn()
+                await handle_next_turn()
                 await asyncio.sleep(0.4)
 
         # Set round_number to 1 so insurance/surrender buttons can appear
