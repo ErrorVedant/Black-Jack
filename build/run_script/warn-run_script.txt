@@ -22,7 +22,6 @@ missing module named 'collections.abc' - imported by traceback (top-level), insp
 missing module named posix - imported by posixpath (optional), shutil (conditional), importlib._bootstrap_external (conditional), os (conditional, optional)
 missing module named resource - imported by posix (top-level)
 missing module named _suggestions - imported by traceback (delayed, optional)
-invalid module named ip_config - imported by C:\Users\vedan\OneDrive\Desktop\Hi_final\Casino\gaurav web\Black-Jack\run_script.py (top-level)
 missing module named termios - imported by serial.serialposix (top-level)
 missing module named fcntl - imported by subprocess (optional), serial.serialposix (top-level)
 missing module named 'System.IO' - imported by serial.serialcli (top-level)

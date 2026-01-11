@@ -208,6 +208,10 @@
    'C:\\Users\\vedan\\miniconda3\\Lib\\importlib\\util.py',
    'PYMODULE'),
   ('inspect', 'C:\\Users\\vedan\\miniconda3\\Lib\\inspect.py', 'PYMODULE'),
+  ('ip_config',
+   'C:\\Users\\vedan\\OneDrive\\Desktop\\Hi_final\\Casino\\gaurav '
+   'web\\Black-Jack\\ip_config.py',
+   'PYMODULE'),
   ('ipaddress', 'C:\\Users\\vedan\\miniconda3\\Lib\\ipaddress.py', 'PYMODULE'),
   ('json', 'C:\\Users\\vedan\\miniconda3\\Lib\\json\\__init__.py', 'PYMODULE'),
   ('json.decoder',
