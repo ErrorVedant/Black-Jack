@@ -4,8 +4,8 @@ Helper module to read IP address from ip.txt file
 import os
 
 # Fallback IP for the target PC (update this to the target machine's IP)
-FALLBACK_IP = "192.168.2.190"
-192.168.2.190
+FALLBACK_IP = "192.168.1.50"
+
 def get_ip_address():
     """
     Read IP address from ip.txt file in the same directory as this script.

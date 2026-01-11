@@ -389,11 +389,72 @@ async def handle_connection(websocket):
 async def handle_set_game_mode(mode):
     log_function_call("handle_set_game_mode", mode=mode)
     print(f"[DEBUG] Setting game mode to {mode}")
+    
+    # Check if we're switching between LIVE and AUTO modes
+    old_mode = game_state.get("mode", "")
+    if (old_mode == "live" and mode == "auto") or (old_mode == "auto" and mode == "live"):
+        print(f"[DEBUG] Switching from {old_mode} to {mode} - creating new deck")
+        # Create a new deck while preserving active players
+        game_state["deck"] = create_deck()
+        print(f"[DEBUG] New deck created with {len(game_state['deck'])} cards")
+        
+        # Clear all cards from players and dealer but keep their active status
+        # Clear dealer cards
+        game_state["dealer"]["cards"] = []
+        game_state["dealer"]["total"] = 0
+        game_state["dealer"]["status"] = "playing"
+        game_state["dealer"]["result"] = ""
+        game_state["dealer"]["live_function_hand"] = ""
+        
+        # Clear all player cards but preserve their active status
+        for player_id, player_data in game_state["players"].items():
+            # Clear main hands
+            for hand in player_data["hands"]:
+                hand["cards"] = []
+                hand["total"] = 0
+                hand["status"] = "waiting"
+                hand["result"] = ""
+                hand["live_function_hand"] = ""
+                hand["double_status"] = ""
+            
+            # Clear split hands
+            for hand in player_data["split1"]:
+                hand["cards"] = []
+                hand["total"] = 0
+                hand["status"] = "waiting"
+                hand["result"] = ""
+                hand["live_function_hand"] = ""
+                hand["double_status"] = ""
+            
+            for hand in player_data["split2"]:
+                hand["cards"] = []
+                hand["total"] = 0
+                hand["status"] = "waiting"
+                hand["result"] = ""
+                hand["live_function_hand"] = ""
+                hand["double_status"] = ""
+            
+            # Reset other game state but preserve active status
+            player_data["split1_status"] = 0
+            player_data["split2_status"] = 0
+            player_data["insurence"] = 0
+            player_data["surrender"] = 0
+            player_data["even_money"] = 0
+            player_data["live_function_player"] = ""
+        
+        # Reset round number and other game state
+        game_state["round_number"] = 0
+        game_state["current_player"] = None
+        game_state["game_phase"] = "betting"
+        game_state["selected_hand"] = None
+        
+        print(f"[DEBUG] Game state reset for mode switch - active players preserved")
+    
     game_state["mode"] = mode
     await broadcast({
         "action": "game_state_update",
         "game_state": serialize_game_state(),
-        "message": f"Game mode set to {mode.title()}"
+        "message": f"Game mode set to {mode.title()}" + (" with new deck" if (old_mode == "live" and mode == "auto") or (old_mode == "auto" and mode == "live") else "")
     })
     log_game_state()
 
@@ -1831,10 +1892,10 @@ async def handle_next_turn():
                                 break
                     else:
                         next_hand = None
-                    for i in range(current_index + 1, len(all_hands)):
-                        next_hand = all_hands[i]
-                        print(f"[DEBUG] Found next hand at index {i}: {next_hand}")
-                        break
+                        for i in range(current_index + 1, len(all_hands)):
+                            next_hand = all_hands[i]
+                            print(f"[DEBUG] Found next hand at index {i}: {next_hand}")
+                            break
                     if next_hand:
                         game_state["current_player"] = next_hand["player_id"]
                         game_state["selected_hand"] = {
@@ -2091,8 +2152,8 @@ async def handle_distribute_cards_auto():
         for player_id, player_data in game_state["players"].items():
             if player_data["status"] == 1:
                 await handle_hit_player(player_id, 0)
-                await handle_next_turn()
-                await asyncio.sleep(0.4)
+        await handle_next_turn()
+        await asyncio.sleep(0.4)
 
         # Set round_number to 1 so insurance/surrender buttons can appear
         game_state["round_number"] = 1
