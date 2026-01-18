@@ -1486,7 +1486,9 @@ const GameMenu = () => {
                                         </button>
                                       </>
                                     )}
-                                  {gameState.all_done === 1 &&
+                                  {gameState.players.player1.hands[0]?.cards
+                                    ?.length > 1 &&
+                                    gameState.all_done === 1 &&
                                     isHandSelected(
                                       gameState,
                                       "player1",
@@ -1602,7 +1604,9 @@ const GameMenu = () => {
                                         Double
                                       </button>
                                     )}
-                                  {gameState.all_done === 1 &&
+                                  {gameState.players.player1.hands[0]?.cards
+                                    ?.length > 1 &&
+                                    gameState.all_done === 1 &&
                                     isHandSelected(
                                       gameState,
                                       "player1",
@@ -2137,7 +2141,9 @@ const GameMenu = () => {
                                       1
                                     ) &&
                                       gameState?.current_player ===
-                                        "player1" && (
+                                        "player1" &&
+                                      gameState.players.player1.split1[0]?.cards
+                                        ?.length > 1 && (
                                         <>
                                           <button
                                             onClick={() => {
@@ -2446,7 +2452,9 @@ const GameMenu = () => {
                                       2
                                     ) &&
                                       gameState?.current_player ===
-                                        "player1" && (
+                                        "player1" &&
+                                      gameState.players.player1.split2[0]?.cards
+                                        ?.length > 1 && (
                                         <>
                                           <button
                                             onClick={() => {

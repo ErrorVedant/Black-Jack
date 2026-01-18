@@ -1403,57 +1403,60 @@ const GameMenu = () => {
                                     ) &&
                                     gameState?.current_player === "player4" && (
                                       <>
-                                        <button
-                                          onClick={() => {
-                                            if (gameState?.mode === "live") {
-                                              const lockKey = `${JSON.stringify(
-                                                gameState?.selected_hand ?? null
-                                              )}|${gameState?.current_player ?? ""}`;
-                                              setActionInProgress(true);
-                                              setActionLockKey(lockKey);
-                                              sessionStorage.setItem(
-                                                "actionInProgress_player4",
-                                                "true"
-                                              );
-                                              sessionStorage.setItem(
-                                                "actionLockKey_player4",
-                                                lockKey
-                                              );
-                                              sessionStorage.setItem(
-                                                "actionLockTs_player4",
-                                                Date.now().toString()
-                                              );
-                                              sendWebSocketMessage({
-                                                action:
-                                                  "set_live_function_hand",
-                                                player_id: "player4",
-                                                split_level: 0,
-                                                hand_index: 0,
-                                                value: "Hit",
-                                              });
-                                            }
-                                            if (
-                                              gameState?.mode === "auto" ||
-                                              gameState?.mode === "manual"
-                                            ) {
-                                              sendWebSocketMessage({
-                                                action: "hit_player",
-                                                player_id: "player4",
-                                                hand_index: 0,
-                                              });
-                                              clearInsuranceForHand(
-                                                "player4",
-                                                0,
-                                                0
-                                              );
-                                            }
-                                          }}
-                                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                                        >
-                                          Hit
-                                        </button>
+                                        {gameState.players.player4.hands[0]?.cards
+                                          ?.length > 1 && (
+                                          <button
+                                            onClick={() => {
+                                              if (gameState?.mode === "live") {
+                                                const lockKey = `${JSON.stringify(
+                                                  gameState?.selected_hand ?? null
+                                                )}|${gameState?.current_player ?? ""}`;
+                                                setActionInProgress(true);
+                                                setActionLockKey(lockKey);
+                                                sessionStorage.setItem(
+                                                  "actionInProgress_player4",
+                                                  "true"
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockKey_player4",
+                                                  lockKey
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockTs_player4",
+                                                  Date.now().toString()
+                                                );
+                                                sendWebSocketMessage({
+                                                  action:
+                                                    "set_live_function_hand",
+                                                  player_id: "player4",
+                                                  split_level: 0,
+                                                  hand_index: 0,
+                                                  value: "Hit",
+                                                });
+                                              }
+                                              if (
+                                                gameState?.mode === "auto" ||
+                                                gameState?.mode === "manual"
+                                              ) {
+                                                sendWebSocketMessage({
+                                                  action: "hit_player",
+                                                  player_id: "player4",
+                                                  hand_index: 0,
+                                                });
+                                                clearInsuranceForHand(
+                                                  "player4",
+                                                  0,
+                                                  0
+                                                );
+                                              }
+                                            }}
+                                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                          >
+                                            Hit
+                                          </button>
+                                        )}
                                         {gameState.players.player4.hands[0]
-                                          ?.cards?.length === 2 && (
+                                          ?.cards?.length > 1 && (
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === "live") {
@@ -1504,6 +1507,8 @@ const GameMenu = () => {
                                             Double
                                           </button>
                                         )}
+                                        {gameState.players.player4.hands[0]?.cards
+                                          ?.length > 1 && (
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === "live") {
@@ -1553,6 +1558,7 @@ const GameMenu = () => {
                                         >
                                           Stand
                                         </button>
+                                        )}
                                       </>
                                     )}
                                 </>
@@ -1700,7 +1706,7 @@ const GameMenu = () => {
                                       ) &&
                                       gameState?.current_player === "player4" &&
                                       gameState.players.player4.split1[0]?.cards
-                                        ?.length === 2 &&
+                                        ?.length > 1 &&
                                       canSplit(
                                         gameState.players.player4.split1[0]
                                           .cards
@@ -1764,7 +1770,9 @@ const GameMenu = () => {
                                         1
                                       ) &&
                                       gameState?.current_player ===
-                                        "player4" && (
+                                        "player4" &&
+                                      gameState.players.player4.split1[0]?.cards
+                                        ?.length > 1 && (
                                         <>
                                           <button
                                             onClick={() => {
@@ -1815,9 +1823,8 @@ const GameMenu = () => {
                                           >
                                             Hit
                                           </button>
-                                          {gameState?.players?.player4
-                                            ?.split1?.[0]?.cards?.length ===
-                                            2 && (
+                                          {gameState.players.player4.split1[0]
+                                            ?.cards?.length > 1 && (
                                             <button
                                               onClick={() => {
                                                 if (
@@ -2009,9 +2016,10 @@ const GameMenu = () => {
                                         0,
                                         2
                                       ) &&
-                                      gameState?.current_player === "player4" &&
+                                      gameState?.current_player ===
+                                        "player4" &&
                                       gameState.players.player4.split2[0]?.cards
-                                        ?.length === 2 &&
+                                        ?.length > 1 &&
                                       canSplit(
                                         gameState.players.player4.split2[0]
                                           .cards
@@ -2075,7 +2083,9 @@ const GameMenu = () => {
                                         2
                                       ) &&
                                       gameState?.current_player ===
-                                        "player4" && (
+                                        "player4" &&
+                                      gameState.players.player4.split2[0]?.cards
+                                        ?.length > 1 && (
                                         <>
                                           <button
                                             onClick={() => {
