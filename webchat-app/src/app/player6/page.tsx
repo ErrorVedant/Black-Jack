@@ -99,6 +99,55 @@ const GameMenu = () => {
   const [pairType, setPairType] = useState<string>("");
   const [showPairPopup, setShowPairPopup] = useState(false);
   const [shownPairCards, setShownPairCards] = useState<string>("");
+  const [actionInProgress, setActionInProgress] = useState(false);
+
+  const [actionLockKey, setActionLockKey] = useState<string | null>(null);
+
+  const ACTION_LOCK_TTL_MS = 15000;
+
+  useEffect(() => {
+    const storedInProgress =
+      sessionStorage.getItem("actionInProgress_player6") === "true";
+    const storedLockKey = sessionStorage.getItem("actionLockKey_player6");
+    const storedLockTs = Number(
+      sessionStorage.getItem("actionLockTs_player6") || "0"
+    );
+
+    const isExpired =
+      !storedLockTs || Date.now() - storedLockTs > ACTION_LOCK_TTL_MS;
+
+    if (storedInProgress && (!storedLockKey || isExpired)) {
+      sessionStorage.removeItem("actionInProgress_player6");
+      sessionStorage.removeItem("actionLockKey_player6");
+      sessionStorage.removeItem("actionLockTs_player6");
+      setActionInProgress(false);
+      setActionLockKey(null);
+      return;
+    }
+
+    setActionInProgress(storedInProgress);
+    setActionLockKey(storedLockKey);
+  }, []);
+
+  useEffect(() => {
+    if (actionInProgress && actionLockKey) {
+      sessionStorage.setItem("actionInProgress_player6", "true");
+      sessionStorage.setItem("actionLockKey_player6", actionLockKey);
+      if (!sessionStorage.getItem("actionLockTs_player6")) {
+        sessionStorage.setItem(
+          "actionLockTs_player6",
+          Date.now().toString()
+        );
+      }
+      return;
+    }
+
+    if (!actionInProgress) {
+      sessionStorage.removeItem("actionInProgress_player6");
+      sessionStorage.removeItem("actionLockKey_player6");
+      sessionStorage.removeItem("actionLockTs_player6");
+    }
+  }, [actionInProgress, actionLockKey]);
 
   useEffect(() => {
     let ws: WebSocket | null = null;
@@ -146,6 +195,82 @@ const GameMenu = () => {
 
         if (data.game_state) {
           setGameState(data.game_state);
+          // Reset action in progress when dealer performs action (current_turn changes to dealer or back)
+          const nextLockKey = `${JSON.stringify(
+            data.game_state.selected_hand ?? null
+          )}|${data.game_state.current_player ?? ""}`;
+
+          const storedInProgress =
+            sessionStorage.getItem("actionInProgress_player6") === "true";
+          const storedLockKey = sessionStorage.getItem("actionLockKey_player6");
+          const storedLockTs = Number(
+            sessionStorage.getItem("actionLockTs_player6") || "0"
+          );
+
+          const isExpired =
+            !storedLockTs || Date.now() - storedLockTs > ACTION_LOCK_TTL_MS;
+
+          if (storedInProgress && !storedLockKey) {
+            setActionInProgress(false);
+            setActionLockKey(null);
+            sessionStorage.removeItem("actionInProgress_player6");
+            sessionStorage.removeItem("actionLockKey_player6");
+            sessionStorage.removeItem("actionLockTs_player6");
+            return;
+          }
+
+          if (storedInProgress && storedLockKey) {
+            if (isExpired) {
+              setActionInProgress(false);
+              setActionLockKey(null);
+              sessionStorage.removeItem("actionInProgress_player6");
+              sessionStorage.removeItem("actionLockKey_player6");
+              sessionStorage.removeItem("actionLockTs_player6");
+              return;
+            }
+
+            let shouldUnlock = nextLockKey !== storedLockKey;
+
+            const lockedSelectedHandJson = storedLockKey.split("|")[0];
+            let lockedSelectedHand:
+              | { player_id: string; split_level: number; hand_index: number }
+              | null = null;
+            try {
+              lockedSelectedHand = JSON.parse(lockedSelectedHandJson);
+            } catch {
+              lockedSelectedHand = null;
+            }
+
+            if (!lockedSelectedHand) {
+              shouldUnlock = true;
+            }
+
+            if (!shouldUnlock && lockedSelectedHand?.player_id) {
+              const pid = lockedSelectedHand.player_id;
+              const sl = lockedSelectedHand.split_level;
+              const hi = lockedSelectedHand.hand_index;
+              const pdata = data.game_state.players?.[pid];
+
+              const liveFn =
+                sl === 1
+                  ? pdata?.split1?.[hi]?.live_function_hand
+                  : sl === 2
+                    ? pdata?.split2?.[hi]?.live_function_hand
+                    : pdata?.hands?.[hi]?.live_function_hand;
+
+              if (!liveFn) {
+                shouldUnlock = true;
+              }
+            }
+
+            if (shouldUnlock) {
+              setActionInProgress(false);
+              setActionLockKey(null);
+              sessionStorage.removeItem("actionInProgress_player6");
+              sessionStorage.removeItem("actionLockKey_player6");
+              sessionStorage.removeItem("actionLockTs_player6");
+            }
+          }
         }
 
         switch (data.action) {
@@ -1162,6 +1287,23 @@ const GameMenu = () => {
                                                 value: "Hit",
                                               });
                                             }
+                                            const lockKey = `${JSON.stringify(
+                                              gameState?.selected_hand ?? null
+                                            )}|${gameState?.current_player ?? ""}`;
+                                            setActionInProgress(true);
+                                            setActionLockKey(lockKey);
+                                            sessionStorage.setItem(
+                                              "actionInProgress_player6",
+                                              "true"
+                                            );
+                                            sessionStorage.setItem(
+                                              "actionLockKey_player6",
+                                              lockKey
+                                            );
+                                            sessionStorage.setItem(
+                                              "actionLockTs_player6",
+                                              Date.now().toString()
+                                            );
                                             sendWebSocketMessage({
                                               action: "hit_player",
                                               player_id: "player6",
@@ -1173,7 +1315,12 @@ const GameMenu = () => {
                                               0
                                             );
                                           }}
-                                          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                          disabled={actionInProgress || gameState?.mode !== "live"}
+                                          className={`px-4 py-2 bg-green-500 text-white rounded transition-colors ${
+                                            actionInProgress || gameState?.mode !== "live"
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : "hover:bg-green-600"
+                                          }`}
                                         >
                                           Hit
                                         </button>
@@ -1191,6 +1338,23 @@ const GameMenu = () => {
                                                   value: "Double",
                                                 });
                                               }
+                                              const lockKey = `${JSON.stringify(
+                                                gameState?.selected_hand ?? null
+                                              )}|${gameState?.current_player ?? ""}`;
+                                              setActionInProgress(true);
+                                              setActionLockKey(lockKey);
+                                              sessionStorage.setItem(
+                                                "actionInProgress_player6",
+                                                "true"
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockKey_player6",
+                                                lockKey
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockTs_player6",
+                                                Date.now().toString()
+                                              );
                                               sendWebSocketMessage({
                                                 action: "double_player",
                                                 player_id: "player6",
@@ -1202,7 +1366,12 @@ const GameMenu = () => {
                                                 0
                                               );
                                             }}
-                                            className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
+                                            disabled={actionInProgress || gameState?.mode !== "live"}
+                                            className={`px-4 py-2 bg-orange-500 text-white rounded transition-colors ${
+                                              actionInProgress || gameState?.mode !== "live"
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : "hover:bg-orange-600"
+                                            }`}
                                           >
                                             Double
                                           </button>
@@ -1219,6 +1388,23 @@ const GameMenu = () => {
                                                 value: "Stand",
                                               });
                                             }
+                                            const lockKey = `${JSON.stringify(
+                                              gameState?.selected_hand ?? null
+                                            )}|${gameState?.current_player ?? ""}`;
+                                            setActionInProgress(true);
+                                            setActionLockKey(lockKey);
+                                            sessionStorage.setItem(
+                                              "actionInProgress_player6",
+                                              "true"
+                                            );
+                                            sessionStorage.setItem(
+                                              "actionLockKey_player6",
+                                              lockKey
+                                            );
+                                            sessionStorage.setItem(
+                                              "actionLockTs_player6",
+                                              Date.now().toString()
+                                            );
                                             sendWebSocketMessage({
                                               action: "next_turn",
                                               player_id: "player6",
@@ -1230,7 +1416,12 @@ const GameMenu = () => {
                                               0
                                             );
                                           }}
-                                          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                                          disabled={actionInProgress || gameState?.mode !== "live"}
+                                          className={`px-4 py-2 bg-blue-500 text-white rounded transition-colors ${
+                                            actionInProgress || gameState?.mode !== "live"
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : "hover:bg-blue-600"
+                                          }`}
                                         >
                                           Stand
                                         </button>
@@ -1393,6 +1584,23 @@ const GameMenu = () => {
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === "live") {
+                                              const lockKey = `${JSON.stringify(
+                                                gameState?.selected_hand ?? null
+                                              )}|${gameState?.current_player ?? ""}`;
+                                              setActionInProgress(true);
+                                              setActionLockKey(lockKey);
+                                              sessionStorage.setItem(
+                                                "actionInProgress_player6",
+                                                "true"
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockKey_player6",
+                                                lockKey
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockTs_player6",
+                                                Date.now().toString()
+                                              );
                                               sendWebSocketMessage({
                                                 action:
                                                   "set_live_function_hand",
@@ -1459,6 +1667,23 @@ const GameMenu = () => {
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === "live") {
+                                                const lockKey = `${JSON.stringify(
+                                                  gameState?.selected_hand ?? null
+                                                )}|${gameState?.current_player ?? ""}`;
+                                                setActionInProgress(true);
+                                                setActionLockKey(lockKey);
+                                                sessionStorage.setItem(
+                                                  "actionInProgress_player6",
+                                                  "true"
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockKey_player6",
+                                                  lockKey
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockTs_player6",
+                                                  Date.now().toString()
+                                                );
                                                 sendWebSocketMessage({
                                                   action:
                                                     "set_live_function_hand",
@@ -1496,6 +1721,23 @@ const GameMenu = () => {
                                                 if (
                                                   gameState?.mode === "live"
                                                 ) {
+                                                  const lockKey = `${JSON.stringify(
+                                                    gameState?.selected_hand ?? null
+                                                  )}|${gameState?.current_player ?? ""}`;
+                                                  setActionInProgress(true);
+                                                  setActionLockKey(lockKey);
+                                                  sessionStorage.setItem(
+                                                    "actionInProgress_player6",
+                                                    "true"
+                                                  );
+                                                  sessionStorage.setItem(
+                                                    "actionLockKey_player6",
+                                                    lockKey
+                                                  );
+                                                  sessionStorage.setItem(
+                                                    "actionLockTs_player6",
+                                                    Date.now().toString()
+                                                  );
                                                   sendWebSocketMessage({
                                                     action:
                                                       "set_live_function_hand",
@@ -1529,6 +1771,23 @@ const GameMenu = () => {
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === "live") {
+                                                const lockKey = `${JSON.stringify(
+                                                  gameState?.selected_hand ?? null
+                                                )}|${gameState?.current_player ?? ""}`;
+                                                setActionInProgress(true);
+                                                setActionLockKey(lockKey);
+                                                sessionStorage.setItem(
+                                                  "actionInProgress_player6",
+                                                  "true"
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockKey_player6",
+                                                  lockKey
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockTs_player6",
+                                                  Date.now().toString()
+                                                );
                                                 sendWebSocketMessage({
                                                   action:
                                                     "set_live_function_hand",
@@ -1558,49 +1817,7 @@ const GameMenu = () => {
                                           >
                                             Stand
                                           </button>
-                                          {/* Surrender Button for Split1 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                          {gameState?.players?.player6
-                                            ?.split1?.[0]?.cards?.length ===
-                                            2 &&
-                                            gameState?.dealer
-                                              ?.cards?.[0]?.[0] !== "A" && (
-                                              <button
-                                                onClick={() => {
-                                                  if (
-                                                    gameState?.mode === "live"
-                                                  ) {
-                                                    sendWebSocketMessage({
-                                                      action:
-                                                        "set_live_function_hand",
-                                                      player_id: "player6",
-                                                      split_level: 1,
-                                                      hand_index: 0,
-                                                      value: "Surrender",
-                                                    });
-                                                  }
-                                                  if (
-                                                    gameState?.mode ===
-                                                      "auto" ||
-                                                    gameState?.mode === "manual"
-                                                  ) {
-                                                    sendWebSocketMessage({
-                                                      action:
-                                                        "surrender_player",
-                                                      player_id: "player6",
-                                                      hand_index: 0,
-                                                    });
-                                                    clearInsuranceForHand(
-                                                      "player6",
-                                                      0,
-                                                      1
-                                                    );
-                                                  }
-                                                }}
-                                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                              >
-                                                Surrender
-                                              </button>
-                                            )}
+                                          {/* Surrender Button for Split1 - REMOVED - No surrender in split hands */}
                                         </>
                                       )}
                                   </div>
@@ -1704,6 +1921,23 @@ const GameMenu = () => {
                                         <button
                                           onClick={() => {
                                             if (gameState?.mode === "live") {
+                                              const lockKey = `${JSON.stringify(
+                                                gameState?.selected_hand ?? null
+                                              )}|${gameState?.current_player ?? ""}`;
+                                              setActionInProgress(true);
+                                              setActionLockKey(lockKey);
+                                              sessionStorage.setItem(
+                                                "actionInProgress_player6",
+                                                "true"
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockKey_player6",
+                                                lockKey
+                                              );
+                                              sessionStorage.setItem(
+                                                "actionLockTs_player6",
+                                                Date.now().toString()
+                                              );
                                               sendWebSocketMessage({
                                                 action:
                                                   "set_live_function_hand",
@@ -1770,6 +2004,23 @@ const GameMenu = () => {
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === "live") {
+                                                const lockKey = `${JSON.stringify(
+                                                  gameState?.selected_hand ?? null
+                                                )}|${gameState?.current_player ?? ""}`;
+                                                setActionInProgress(true);
+                                                setActionLockKey(lockKey);
+                                                sessionStorage.setItem(
+                                                  "actionInProgress_player6",
+                                                  "true"
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockKey_player6",
+                                                  lockKey
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockTs_player6",
+                                                  Date.now().toString()
+                                                );
                                                 sendWebSocketMessage({
                                                   action:
                                                     "set_live_function_hand",
@@ -1807,6 +2058,23 @@ const GameMenu = () => {
                                                 if (
                                                   gameState?.mode === "live"
                                                 ) {
+                                                  const lockKey = `${JSON.stringify(
+                                                    gameState?.selected_hand ?? null
+                                                  )}|${gameState?.current_player ?? ""}`;
+                                                  setActionInProgress(true);
+                                                  setActionLockKey(lockKey);
+                                                  sessionStorage.setItem(
+                                                    "actionInProgress_player6",
+                                                    "true"
+                                                  );
+                                                  sessionStorage.setItem(
+                                                    "actionLockKey_player6",
+                                                    lockKey
+                                                  );
+                                                  sessionStorage.setItem(
+                                                    "actionLockTs_player6",
+                                                    Date.now().toString()
+                                                  );
                                                   sendWebSocketMessage({
                                                     action:
                                                       "set_live_function_hand",
@@ -1840,6 +2108,23 @@ const GameMenu = () => {
                                           <button
                                             onClick={() => {
                                               if (gameState?.mode === "live") {
+                                                const lockKey = `${JSON.stringify(
+                                                  gameState?.selected_hand ?? null
+                                                )}|${gameState?.current_player ?? ""}`;
+                                                setActionInProgress(true);
+                                                setActionLockKey(lockKey);
+                                                sessionStorage.setItem(
+                                                  "actionInProgress_player6",
+                                                  "true"
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockKey_player6",
+                                                  lockKey
+                                                );
+                                                sessionStorage.setItem(
+                                                  "actionLockTs_player6",
+                                                  Date.now().toString()
+                                                );
                                                 sendWebSocketMessage({
                                                   action:
                                                     "set_live_function_hand",
@@ -1869,49 +2154,7 @@ const GameMenu = () => {
                                           >
                                             Stand
                                           </button>
-                                          {/* Surrender Button for Split2 - Only show if hand has exactly 2 cards and dealer's upcard is not Ace */}
-                                          {gameState?.players?.player6
-                                            ?.split2?.[0]?.cards?.length ===
-                                            2 &&
-                                            gameState?.dealer
-                                              ?.cards?.[0]?.[0] !== "A" && (
-                                              <button
-                                                onClick={() => {
-                                                  if (
-                                                    gameState?.mode === "live"
-                                                  ) {
-                                                    sendWebSocketMessage({
-                                                      action:
-                                                        "set_live_function_hand",
-                                                      player_id: "player6",
-                                                      split_level: 2,
-                                                      hand_index: 0,
-                                                      value: "Surrender",
-                                                    });
-                                                  }
-                                                  if (
-                                                    gameState?.mode ===
-                                                      "auto" ||
-                                                    gameState?.mode === "manual"
-                                                  ) {
-                                                    sendWebSocketMessage({
-                                                      action:
-                                                        "surrender_player",
-                                                      player_id: "player6",
-                                                      hand_index: 0,
-                                                    });
-                                                    clearInsuranceForHand(
-                                                      "player6",
-                                                      0,
-                                                      2
-                                                    );
-                                                  }
-                                                }}
-                                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                                              >
-                                                Surrender
-                                              </button>
-                                            )}
+                                          {/* Surrender Button for Split2 - REMOVED - No surrender in split hands */}
                                         </>
                                       )}
                                   </div>
