@@ -1030,8 +1030,8 @@ const GameMenu = () => {
                             <div className="text-left mb-1">
                               <div
                                 className={`text-lg font-medium ${isHandSelected(gameState, "player3", 0, 0)
-                                    ? "text-gray-950"
-                                    : "text-white"
+                                  ? "text-gray-950"
+                                  : "text-white"
                                   }`}
                               >
                                 Main Hand
@@ -2323,6 +2323,13 @@ const GameMenu = () => {
                       {playerResult === "tie" && "PUSH"}
                       {playerResult === "surrender" && "SURRENDER"}
                     </h2>
+                    {gameState?.players?.player3?.insurence === 1 && (
+                      <div className="mt-2 inline-block px-4 py-1 bg-yellow-400/20 border border-yellow-400 rounded-full animate-pulse">
+                        <span className="text-xl font-bold text-yellow-400 tracking-widest">
+                          INSURED
+                        </span>
+                      </div>
+                    )}
                     <div className="text-xl text-yellow-100 opacity-90">
                       {playerResult === "win" && "Congratulations!"}
                       {playerResult === "lose" && "Better luck next time"}
@@ -2354,6 +2361,18 @@ const GameMenu = () => {
                           icon: "🎯",
                         },
                       ];
+
+                      if (player3Data.insurence === 1) {
+                        handResults.push({
+                          label: "Insurance",
+                          result:
+                            gameState?.dealer?.total === 21 &&
+                              gameState?.dealer?.cards?.length === 2
+                              ? "win"
+                              : "lose",
+                          icon: "🛡️",
+                        });
+                      }
 
                       const getResultDisplay = (result: string) => {
                         switch (result) {
