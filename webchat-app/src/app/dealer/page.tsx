@@ -1077,11 +1077,10 @@ const GameMenu = () => {
             {/* Dealer Window */}
             <div className="flex justify-center">
               <div
-                className={`w-full rounded-2xl ${
-                  gameState?.game_phase === "dealer"
-                    ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
-                    : "bg-[#911606] text-white"
-                }`}
+                className={`w-full rounded-2xl ${gameState?.game_phase === "dealer"
+                  ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
+                  : "bg-[#911606] text-white"
+                  }`}
               >
                 {/* <div className='flex items-center justify-between mb-4'>
                   <h2
@@ -1177,13 +1176,12 @@ const GameMenu = () => {
                     </div>
 
                     {/* Right: Total */}
-                    <div className="flex flex-col items-end gap-y-2 flex-shrink-0 mr-2 mt-2">
+                    <div className="flex flex-col items-end gap-y-8 flex-shrink-0 mr-2 mt-2">
                       <div className="text-base font-medium bg-[#911606] text-yellow-500 rounded-2xl px-2 border border-yellow-500">
                         Total:{" "}
                         <span
-                          className={`${
-                            dealerTotal > 21 ? "text-red-500" : "text-blue-400"
-                          }`}
+                          className={`${dealerTotal > 21 ? "text-red-500" : "text-blue-400"
+                            }`}
                         >
                           {dealerTotal}
                         </span>
@@ -1226,14 +1224,13 @@ const GameMenu = () => {
                   return (
                     <div
                       key={playerId}
-                      className={`p-1 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                        "bg-[#C1351D] text-gray-200 border border-red-500/30"
+                      className={`p-1 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${"bg-[#C1351D] text-gray-200 border border-red-500/30"
                         // isCurrentHand
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : isActive
                         //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                         //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
-                      }`}
+                        }`}
                       onClick={(e) => {
                         e.stopPropagation();
                         if (isActive) {
@@ -1258,16 +1255,16 @@ const GameMenu = () => {
                                 {playerId.replace("player", "Player ")}
                                 {gameState?.players?.[playerId]?.insurence ===
                                   1 && (
-                                  <span className="ml-2 text-yellow-400 font-semibold text-lg">
-                                    Insured
-                                  </span>
-                                )}
+                                    <span className="ml-2 text-yellow-400 font-semibold text-lg">
+                                      Insured
+                                    </span>
+                                  )}
                                 {gameState?.players?.[playerId]?.even_money ===
                                   1 && (
-                                  <span className="ml-2 text-purple-400 font-semibold text-lg">
-                                    Even Money
-                                  </span>
-                                )}
+                                    <span className="ml-2 text-purple-400 font-semibold text-lg">
+                                      Even Money
+                                    </span>
+                                  )}
                               </div>
 
                               {/* <div
@@ -1339,31 +1336,30 @@ const GameMenu = () => {
                               <div
                                 className={`rounded-lg p-1 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 0) &&
-                                    gameState?.current_player === playerId,
+                                  gameState?.current_player === playerId,
                                   gameState?.players?.[playerId]?.hands?.[0]
                                     ?.result
                                 )}`}
                               >
                                 <span
-                                  className={`text-sm ${
-                                    isHandSelected(gameState, playerId, 0, 0) &&
+                                  className={`text-sm ${isHandSelected(gameState, playerId, 0, 0) &&
                                     gameState?.current_player === playerId
-                                      ? "text-black"
-                                      : "text-white"
-                                  }`}
+                                    ? "text-black"
+                                    : "text-white"
+                                    }`}
                                 >
                                   Total:{" "}
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.total ?? 0}
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.live_function_hand && (
-                                    <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                      {
-                                        gameState.players[playerId].hands[0]
-                                          .live_function_hand
-                                      }
-                                    </span>
-                                  )}
+                                      <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                        {
+                                          gameState.players[playerId].hands[0]
+                                            .live_function_hand
+                                        }
+                                      </span>
+                                    )}
                                 </span>
 
                                 {/* <div className='flex items-center justify-between'>
@@ -1405,18 +1401,17 @@ const GameMenu = () => {
                                       Math.max(
                                         0,
                                         2 -
-                                          (gameState?.players?.[playerId]
-                                            ?.hands?.[0]?.cards?.length ?? 0)
+                                        (gameState?.players?.[playerId]
+                                          ?.hands?.[0]?.cards?.length ?? 0)
                                       )
                                     ),
                                   ].map((_, index) => (
                                     <div
                                       key={`empty-${index}`}
-                                      className={`w-24 h-32 border-2 border-dashed rounded-lg ${
-                                        isCurrentHand
-                                          ? "border-yellow-400/50 bg-yellow-500/10"
-                                          : "border-gray-400 bg-gray-800/50"
-                                      }`}
+                                      className={`w-24 h-32 border-2 border-dashed rounded-lg ${isCurrentHand
+                                        ? "border-yellow-400/50 bg-yellow-500/10"
+                                        : "border-gray-400 bg-gray-800/50"
+                                        }`}
                                     />
                                   ))}
                                 </div>
@@ -1427,11 +1422,11 @@ const GameMenu = () => {
                                   {gameState?.players?.[playerId]?.hands?.[0]
                                     ?.total ?? 0}
                                 </span> */}
-                                  <div className="flex flex-wrap justify-center items-center gap-x-1">
+                                  <div className="flex flex-wrap justify-center items-center gap-8">
                                     {/* Insurance Button: Only show if dealer's first card is Ace and insurance not taken */}
                                     {gameState?.round_number !== 0 &&
                                       gameState?.dealer?.cards?.[0]?.[0] ===
-                                        "A" &&
+                                      "A" &&
                                       !gameState.players[playerId].hands[0]
                                         .insurence &&
                                       gameState.players[playerId]
@@ -1443,7 +1438,7 @@ const GameMenu = () => {
                                       gameState.players[playerId].hands[0]
                                         ?.total !== 21 &&
                                       gameState.players[playerId].insurence ===
-                                        0 && (
+                                      0 && (
                                         <>
                                           <button
                                             onClick={() =>
@@ -1470,7 +1465,7 @@ const GameMenu = () => {
                                     {/* Even Money Button: Only show if dealer's first card is Ace, hand has 2 cards, total is 21, and even money not taken */}
                                     {gameState?.round_number !== 0 &&
                                       gameState?.dealer?.cards?.[0]?.[0] ===
-                                        "A" &&
+                                      "A" &&
                                       gameState.players[playerId]
                                         .split1_status === 0 &&
                                       gameState.players[playerId]
@@ -1480,7 +1475,7 @@ const GameMenu = () => {
                                       gameState.players[playerId].hands[0]
                                         ?.total === 21 &&
                                       gameState.players[playerId].even_money ===
-                                        0 && (
+                                      0 && (
                                         <>
                                           <button
                                             onClick={() => {
@@ -1513,9 +1508,9 @@ const GameMenu = () => {
                                       gameState?.players?.[playerId]?.hands[0]
                                         ?.cards?.length === 2 &&
                                       gameState?.dealer?.cards?.[0]?.[0] !==
-                                        "A" &&
+                                      "A" &&
                                       gameState.players[playerId].surrender ===
-                                        0 && (
+                                      0 && (
                                         <>
                                           <button
                                             onClick={() => {
@@ -1555,13 +1550,13 @@ const GameMenu = () => {
                                       0
                                     ) &&
                                       gameState?.current_player ===
-                                        playerId && (
+                                      playerId && (
                                         <>
                                           {/* Split Button */}
                                           {gameState?.round_number !== 0 &&
                                             gameState?.players?.[playerId]
                                               ?.hands?.[0]?.cards?.length ===
-                                              2 &&
+                                            2 &&
                                             canSplit(
                                               gameState.players[playerId]
                                                 .hands[0].cards
@@ -1662,8 +1657,8 @@ const GameMenu = () => {
                                           0,
                                           1
                                         ) &&
-                                          gameState?.current_player ===
-                                            playerId,
+                                        gameState?.current_player ===
+                                        playerId,
                                         gameState.players[playerId].split1[0]
                                           .result
                                       )}`}
@@ -1679,46 +1674,44 @@ const GameMenu = () => {
                                         Cards:
                                       </div> */}
                                         <div
-                                          className={`text-sm font-medium ${
-                                            isHandSelected(
+                                          className={`text-sm font-medium ${isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            1
+                                          ) &&
+                                            gameState?.current_player ===
+                                            playerId
+                                            ? "text-black"
+                                            : "text-white"
+                                            }`}
+                                        >
+                                          Total:{" "}
+                                          <span
+                                            className={`text-sm font-medium ${isHandSelected(
                                               gameState,
                                               playerId,
                                               0,
                                               1
                                             ) &&
-                                            gameState?.current_player ===
+                                              gameState?.current_player ===
                                               playerId
                                               ? "text-black"
                                               : "text-white"
-                                          }`}
-                                        >
-                                          Total:{" "}
-                                          <span
-                                            className={`text-sm font-medium ${
-                                              isHandSelected(
-                                                gameState,
-                                                playerId,
-                                                0,
-                                                1
-                                              ) &&
-                                              gameState?.current_player ===
-                                                playerId
-                                                ? "text-black"
-                                                : "text-white"
-                                            }`}
+                                              }`}
                                           >
                                             {gameState.players[playerId]
                                               .split1[0].total ?? 0}
                                             {gameState.players[playerId]
                                               .split1[0].live_function_hand && (
-                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                                {
-                                                  gameState.players[playerId]
-                                                    .split1[0]
-                                                    .live_function_hand
-                                                }
-                                              </span>
-                                            )}
+                                                <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                                  {
+                                                    gameState.players[playerId]
+                                                      .split1[0]
+                                                      .live_function_hand
+                                                  }
+                                                </span>
+                                              )}
                                           </span>
                                         </div>
                                       </div>
@@ -1748,18 +1741,17 @@ const GameMenu = () => {
                                             Math.max(
                                               0,
                                               2 -
-                                                (gameState.players[playerId]
-                                                  .split1[0].cards.length ?? 0)
+                                              (gameState.players[playerId]
+                                                .split1[0].cards.length ?? 0)
                                             )
                                           ),
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${
-                                              isCurrentSplit1Hand
-                                                ? "border-yellow-400/50 bg-yellow-500/10"
-                                                : "border-gray-400 bg-gray-800/50"
-                                            }`}
+                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${isCurrentSplit1Hand
+                                              ? "border-yellow-400/50 bg-yellow-500/10"
+                                              : "border-gray-400 bg-gray-800/50"
+                                              }`}
                                           />
                                         ))}
                                       </div>
@@ -1772,7 +1764,7 @@ const GameMenu = () => {
                                         {gameState.players[playerId].split1[0]
                                           .total ?? 0}
                                       </span> */}
-                                        <div className="flex flex-wrap justify-center items-center gap-1">
+                                        <div className="flex flex-wrap justify-center items-center gap-8">
                                           {isHandSelected(
                                             gameState,
                                             playerId,
@@ -1780,7 +1772,7 @@ const GameMenu = () => {
                                             1
                                           ) &&
                                             gameState?.current_player ===
-                                              playerId && (
+                                            playerId && (
                                               <>
                                                 {/* Split Button for Split1 */}
                                                 {gameState?.round_number !==
@@ -1794,7 +1786,7 @@ const GameMenu = () => {
                                                   ) &&
                                                   gameState.players[playerId]
                                                     .split1[0].status ===
-                                                    "playing" &&
+                                                  "playing" &&
                                                   (gameState.players[playerId]
                                                     .split1_status === 0 ||
                                                     gameState.players[playerId]
@@ -1878,8 +1870,8 @@ const GameMenu = () => {
                                           0,
                                           2
                                         ) &&
-                                          gameState?.current_player ===
-                                            playerId,
+                                        gameState?.current_player ===
+                                        playerId,
                                         gameState.players[playerId].split2[0]
                                           .result
                                       )}`}
@@ -1895,46 +1887,44 @@ const GameMenu = () => {
                                         Cards:
                                       </div> */}
                                         <div
-                                          className={`text-sm font-medium ${
-                                            isHandSelected(
+                                          className={`text-sm font-medium ${isHandSelected(
+                                            gameState,
+                                            playerId,
+                                            0,
+                                            2
+                                          ) &&
+                                            gameState?.current_player ===
+                                            playerId
+                                            ? "text-black"
+                                            : "text-white"
+                                            }`}
+                                        >
+                                          Total:{" "}
+                                          <span
+                                            className={`text-sm font-medium ${isHandSelected(
                                               gameState,
                                               playerId,
                                               0,
                                               2
                                             ) &&
-                                            gameState?.current_player ===
+                                              gameState?.current_player ===
                                               playerId
                                               ? "text-black"
                                               : "text-white"
-                                          }`}
-                                        >
-                                          Total:{" "}
-                                          <span
-                                            className={`text-sm font-medium ${
-                                              isHandSelected(
-                                                gameState,
-                                                playerId,
-                                                0,
-                                                2
-                                              ) &&
-                                              gameState?.current_player ===
-                                                playerId
-                                                ? "text-black"
-                                                : "text-white"
-                                            }`}
+                                              }`}
                                           >
                                             {gameState.players[playerId]
                                               .split2[0].total ?? 0}
                                             {gameState.players[playerId]
                                               .split2[0].live_function_hand && (
-                                              <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
-                                                {
-                                                  gameState.players[playerId]
-                                                    .split2[0]
-                                                    .live_function_hand
-                                                }
-                                              </span>
-                                            )}
+                                                <span className="ml-2 px-2 py-0.5 rounded bg-blue-300 text-xs text-black align-middle">
+                                                  {
+                                                    gameState.players[playerId]
+                                                      .split2[0]
+                                                      .live_function_hand
+                                                  }
+                                                </span>
+                                              )}
                                           </span>
                                         </div>
                                       </div>
@@ -1964,18 +1954,17 @@ const GameMenu = () => {
                                             Math.max(
                                               0,
                                               2 -
-                                                (gameState.players[playerId]
-                                                  .split2[0].cards.length ?? 0)
+                                              (gameState.players[playerId]
+                                                .split2[0].cards.length ?? 0)
                                             )
                                           ),
                                         ].map((_, index) => (
                                           <div
                                             key={`empty-${index}`}
-                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${
-                                              isCurrentSplit2Hand
-                                                ? "border-yellow-400/50 bg-yellow-500/10"
-                                                : "border-gray-400 bg-gray-800/50"
-                                            }`}
+                                            className={`w-24 h-32 border-2 border-dashed rounded-lg ${isCurrentSplit2Hand
+                                              ? "border-yellow-400/50 bg-yellow-500/10"
+                                              : "border-gray-400 bg-gray-800/50"
+                                              }`}
                                           />
                                         ))}
                                       </div>
@@ -1988,7 +1977,7 @@ const GameMenu = () => {
                                         {gameState.players[playerId].split2[0]
                                           .total ?? 0}
                                       </span> */}
-                                        <div className="flex flex-wrap justify-center items-center gap-1">
+                                        <div className="flex flex-wrap justify-center items-center gap-8">
                                           {isHandSelected(
                                             gameState,
                                             playerId,
@@ -1996,7 +1985,7 @@ const GameMenu = () => {
                                             2
                                           ) &&
                                             gameState?.current_player ===
-                                              playerId && (
+                                            playerId && (
                                               <>
                                                 {/* Split Button for Split2 */}
                                                 {gameState?.round_number !==
@@ -2010,7 +1999,7 @@ const GameMenu = () => {
                                                   ) &&
                                                   gameState.players[playerId]
                                                     .split2[0].status ===
-                                                    "playing" &&
+                                                  "playing" &&
                                                   (gameState.players[playerId]
                                                     .split1_status === 0 ||
                                                     gameState.players[playerId]
@@ -2176,15 +2165,14 @@ const GameMenu = () => {
 
             {/* Deal Card Section (existing, now only for dealing cards) */}
             {/* Card Values */}
-            <div className="grid grid-cols-3 gap-2 flex-shrink-0 mt-1">
+            <div className="grid grid-cols-3 gap-8 flex-shrink-0 mt-1">
               {/* First row - Ace in center */}
               <div></div>
               <button
-                className={`py-3 rounded font-bold text-xl ${
-                  selectedCard === "A"
-                    ? "bg-red-800 text-white"
-                    : "bg-white hover:bg-gray-100 text-black"
-                }`}
+                className={`py-3 rounded font-bold text-xl ${selectedCard === "A"
+                  ? "bg-red-800 text-white"
+                  : "bg-white hover:bg-gray-100 text-black"
+                  }`}
                 onClick={() => setSelectedCard("A")}
               >
                 A
@@ -2195,11 +2183,10 @@ const GameMenu = () => {
               {cardValues.slice(1).map((value) => (
                 <button
                   key={value}
-                  className={`py-3 rounded font-bold text-xl ${
-                    selectedCard === value
-                      ? "bg-red-800 text-white"
-                      : "bg-white hover:bg-gray-100 text-black"
-                  }`}
+                  className={`py-3 rounded font-bold text-xl ${selectedCard === value
+                    ? "bg-red-800 text-white"
+                    : "bg-white hover:bg-gray-100 text-black"
+                    }`}
                   onClick={() => setSelectedCard(value)}
                 >
                   {value}
@@ -2208,15 +2195,14 @@ const GameMenu = () => {
             </div>
 
             {/* Suits */}
-            <div className="grid grid-cols-2 gap-2 flex-shrink-0 mt-1">
+            <div className="grid grid-cols-2 gap-8 flex-shrink-0 mt-1">
               {suits.map((suit) => (
                 <button
                   key={suit.value}
-                  className={`py-3 rounded text-3xl ${
-                    selectedSuit === suit.value
-                      ? "bg-red-800 text-white"
-                      : "bg-white hover:bg-gray-100"
-                  }`}
+                  className={`py-3 rounded text-3xl ${selectedSuit === suit.value
+                    ? "bg-red-800 text-white"
+                    : "bg-white hover:bg-gray-100"
+                    }`}
                   onClick={() => setSelectedSuit(suit.value)}
                 >
                   <span className={suit.color}>{suit.symbol}</span>

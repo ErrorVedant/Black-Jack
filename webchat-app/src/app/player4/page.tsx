@@ -1030,8 +1030,8 @@ const GameMenu = () => {
                             <div className="text-left mb-1">
                               <div
                                 className={`text-lg font-medium ${isHandSelected(gameState, "player4", 0, 0)
-                                    ? "text-gray-950"
-                                    : "text-white"
+                                  ? "text-gray-950"
+                                  : "text-white"
                                   }`}
                               >
                                 Main Hand
@@ -1087,7 +1087,7 @@ const GameMenu = () => {
 
                             {/* Action Buttons */}
                             {!(gameState?.mode === "live" && actionInProgress) && (
-                              <div className="flex justify-center gap-2 flex-wrap mt-2 mb-4">
+                              <div className="flex justify-center gap-8 flex-wrap mt-2 mb-4">
                                 {gameState?.round_number !== 0 &&
                                   isHandSelected(gameState, "player4", 0, 0) &&
                                   gameState?.current_player === "player4" &&
@@ -1695,7 +1695,7 @@ const GameMenu = () => {
 
                                   {/* Split1 Hand Action Buttons for Player 4 */}
                                   {!(gameState?.mode === "live" && actionInProgress) && (
-                                    <div className="flex justify-center gap-2 flex-wrap mt-2 mb-4">
+                                    <div className="flex justify-center gap-8 flex-wrap mt-2 mb-4">
                                       {gameState?.round_number !== 0 &&
                                         isHandSelected(
                                           gameState,
@@ -2007,7 +2007,7 @@ const GameMenu = () => {
 
                                   {/* Split2 Hand Action Buttons for Player 4 */}
                                   {!(gameState?.mode === "live" && actionInProgress) && (
-                                    <div className="flex justify-center gap-2 flex-wrap mt-8">
+                                    <div className="flex justify-center gap-8 flex-wrap mt-8">
                                       {gameState?.round_number !== 0 &&
                                         isHandSelected(
                                           gameState,

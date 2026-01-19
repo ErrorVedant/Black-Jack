@@ -854,11 +854,10 @@ const GameMenu = () => {
           {/* Dealer Window */}
           <div className="flex justify-center">
             <div
-              className={`w-full rounded-2xl ${
-                gameState?.game_phase === "dealer"
+              className={`w-full rounded-2xl ${gameState?.game_phase === "dealer"
                   ? "bg-yellow-300 border-2 border-yellow-500 text-gray-900 shadow-2xl shadow-yellow-500/25 ring-2 ring-yellow-400"
                   : "bg-[#911606] text-white"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-4">
                 {/* <h2 className={`text-xl font-bold flex items-center ${gameState?.game_phase === "dealer" ? "text-gray-900" : "text-white"
@@ -936,14 +935,13 @@ const GameMenu = () => {
                 return (
                   <div
                     key={playerId}
-                    className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${
-                      "bg-[#C1351D] text-gray-200 border border-red-500/30"
+                    className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-[1.02] ${"bg-[#C1351D] text-gray-200 border border-red-500/30"
                       // isCurrentHand
                       //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                       //   : isActive
                       //   ? 'bg-gradient-to-br from-blue-600/80 to-blue-500/80 text-white shadow-xl border border-blue-400/30'
                       //   : 'bg-gradient-to-br from-red-700/80 to-red-600/80 text-gray-200 border border-red-500/30'
-                    }`}
+                      }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isActive) {
@@ -989,12 +987,11 @@ const GameMenu = () => {
                                     player_id: playerId,
                                   });
                                 }}
-                                className={`px-1 py-0.5 rounded transition-colors text-sm ${
-                                  gameState?.players?.[playerId]?.insurence ===
-                                  1
+                                className={`px-1 py-0.5 rounded transition-colors text-sm ${gameState?.players?.[playerId]?.insurence ===
+                                    1
                                     ? "bg-gray-500 text-white hover:bg-gray-600"
                                     : "bg-yellow-500 text-white hover:bg-yellow-600"
-                                }`}
+                                  }`}
                               >
                                 {gameState?.players?.[playerId]?.insurence === 1
                                   ? "Cancel Insurance"
@@ -1018,15 +1015,14 @@ const GameMenu = () => {
                                     });
                                   }
                                 }}
-                                className={`px-1 py-0.5 rounded transition-colors text-sm ${
-                                  gameState?.players?.[playerId]?.even_money ===
-                                  1
+                                className={`px-1 py-0.5 rounded transition-colors text-sm ${gameState?.players?.[playerId]?.even_money ===
+                                    1
                                     ? "bg-gray-500 text-white hover:bg-gray-600"
                                     : "bg-purple-500 text-white hover:bg-purple-600"
-                                }`}
+                                  }`}
                               >
                                 {gameState?.players?.[playerId]?.even_money ===
-                                1
+                                  1
                                   ? "Cancel Even Money"
                                   : "Even Money"}
                               </button>
@@ -1061,21 +1057,20 @@ const GameMenu = () => {
                           <div
                             className={`rounded-lg p-2 ${getHandBoxColor(
                               isHandSelected(gameState, playerId, 0, 0) &&
-                                gameState?.current_player === playerId,
+                              gameState?.current_player === playerId,
                               gameState?.players?.[playerId]?.hands?.[0]?.result
                             )}`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div
-                                className={`text-sm font-medium ${
-                                  isCurrentHand ? "text-gray-900" : "text-white"
-                                }`}
+                                className={`text-sm font-medium ${isCurrentHand ? "text-gray-900" : "text-white"
+                                  }`}
                               >
                                 Main Hand:
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap justify-center items-center gap-1">
+                            <div className="flex flex-wrap justify-center items-center gap-8">
                               <>
                                 <button
                                   onClick={() =>
@@ -1149,22 +1144,21 @@ const GameMenu = () => {
 
                           {/* Split1 Hand */}
                           {gameState?.players?.[playerId]?.split1_status ===
-                          1 ? (
+                            1 ? (
                             <div className="mt-4">
                               <div
                                 className={`rounded-lg p-2 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 1) &&
-                                    gameState?.current_player === playerId,
+                                  gameState?.current_player === playerId,
                                   gameState.players[playerId].split1[0].result
                                 )}`}
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div
-                                    className={`text-sm font-medium ${
-                                      isCurrentSplit1Hand
+                                    className={`text-sm font-medium ${isCurrentSplit1Hand
                                         ? "text-gray-900"
                                         : "text-white"
-                                    }`}
+                                      }`}
                                   >
                                     Split 1:
                                   </div>
@@ -1180,7 +1174,7 @@ const GameMenu = () => {
                                     Deactivate Split
                                   </button>
                                 </div>
-                                <div className="flex flex-wrap justify-center items-center gap-1">
+                                <div className="flex flex-wrap justify-center items-center gap-8">
                                   <>
                                     <button
                                       onClick={() =>
@@ -1271,22 +1265,21 @@ const GameMenu = () => {
 
                           {/* Split2 Hand */}
                           {gameState?.players?.[playerId]?.split2_status ===
-                          1 ? (
+                            1 ? (
                             <div className="mt-4">
                               <div
                                 className={`rounded-lg p-2 ${getHandBoxColor(
                                   isHandSelected(gameState, playerId, 0, 2) &&
-                                    gameState?.current_player === playerId,
+                                  gameState?.current_player === playerId,
                                   gameState.players[playerId].split2[0].result
                                 )}`}
                               >
                                 <div className="flex items-center justify-between mb-2">
                                   <div
-                                    className={`text-sm font-medium ${
-                                      isCurrentSplit2Hand
+                                    className={`text-sm font-medium ${isCurrentSplit2Hand
                                         ? "text-gray-900"
                                         : "text-white"
-                                    }`}
+                                      }`}
                                   >
                                     Split 2:
                                   </div>
@@ -1303,7 +1296,7 @@ const GameMenu = () => {
                                   </button>
                                 </div>
 
-                                <div className="flex flex-wrap justify-center items-center gap-1">
+                                <div className="flex flex-wrap justify-center items-center gap-8">
                                   <>
                                     <button
                                       onClick={() =>

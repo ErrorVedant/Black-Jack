@@ -1089,7 +1089,7 @@ const GameMenu = () => {
 
                             {/* Action Buttons */}
                             {!(gameState?.mode === "live" && actionInProgress) && (
-                              <div className="flex justify-center gap-2 flex-wrap mt-2 mb-4">
+                              <div className="flex justify-center gap-8 flex-wrap mt-2 mb-4">
                                 {gameState?.round_number !== 0 &&
                                   isHandSelected(gameState, "player6", 0, 0) &&
                                   gameState?.current_player === "player6" &&
@@ -1694,7 +1694,7 @@ const GameMenu = () => {
 
                                   {/* Split1 Hand Action Buttons for Player 6 */}
                                   {!(gameState?.mode === "live" && actionInProgress) && (
-                                    <div className="flex justify-center gap-2 flex-wrap mt-2 mb-4">
+                                    <div className="flex justify-center gap-8 flex-wrap mt-2 mb-4">
                                       {gameState?.round_number !== 0 &&
                                         isHandSelected(
                                           gameState,
@@ -2039,7 +2039,7 @@ const GameMenu = () => {
                                   {!(gameState?.mode === "live" && actionInProgress) &&
                                     gameState?.round_number !== 0 &&
                                     isHandSelected(gameState, "player6", 0, 2) && (
-                                      <div className="flex justify-center gap-2 flex-wrap mt-8">
+                                      <div className="flex justify-center gap-8 flex-wrap mt-8">
                                         {gameState?.current_player === "player6" &&
                                           gameState.players.player6.split2[0]?.cards
                                             ?.length === 2 &&
